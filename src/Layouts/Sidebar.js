@@ -54,28 +54,25 @@ const Sidebar = ({ layoutType }) => {
             <span className="logo-lg">
               <span
                 style={{
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                  width: '100px',
-                  height: '100px',
+                  // backgroundColor: 'white',
+                  // borderRadius: '50%',
+                  // width: '100px',
+                  height: '110px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   overflow: 'hidden',
-                  boxShadow: '0 0 5px rgba(0,0,0,0.2)',
-                  marginTop: '10px'
+                  // boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+                  marginTop: '10px',
+                  marginBottom: '10px'
                 }}
               >
-                <img
-                  src={logoLight}
-                  alt="Madrassa Logo"
-                  style={{
-                    height: '90%',
-                    paddingBottom: "2px",
-                    width: '90%',
-                    objectFit: 'cover'
-                  }}
-                />
+                <div className="col-auto">
+                  <div className="avatar-lg">
+                    <img src={logoLight} alt="user-img"
+                      className="img-thumbnail rounded-circle" />
+                  </div>
+                </div>
               </span>
 
             </span>

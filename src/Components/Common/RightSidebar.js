@@ -340,7 +340,7 @@ const RightSidebar = (props) => {
                                     </div>
                                 </div>
 
-                                {layoutType !== "horizontal" && layoutType !== "twocolumn" && (
+                                {/* {layoutType !== "horizontal" && layoutType !== "twocolumn" && (
                                     <div className="form-check form-switch form-switch-md mb-3 mt-4">
                                         <input
                                             type="checkbox"
@@ -351,9 +351,9 @@ const RightSidebar = (props) => {
                                         />
                                         <label className="form-check-label" htmlFor="sidebarUserProfile">Sidebar User Profile Avatar</label>
                                     </div>
-                                )}
+                                )} */}
 
-                                <h6 className="mt-4 mb-0 fw-semibold text-uppercase">Theme</h6>
+                                {/* <h6 className="mt-4 mb-0 fw-semibold text-uppercase">Theme</h6>
                                 <p className="text-muted">Choose your suitable Theme.</p>
 
                                 <div className="row">
@@ -591,7 +591,7 @@ const RightSidebar = (props) => {
                                         </div>
                                         <h5 className="fs-13 text-center fw-medium mt-2">Vintage</h5>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 <h6 className="mt-4 mb-0 fw-semibold text-uppercase">Color Scheme</h6>
                                 <p className="text-muted">Choose Light or Dark Scheme.</p>

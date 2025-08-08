@@ -7,19 +7,20 @@ import { ToastContainer } from 'react-toastify';
 
 //User Images
 import avatar2 from '../../../assets/images/users/avatar-2.jpg';
+import bg_users from "../../../assets/images/users/simad-users-bg.webp"
 import userdummyimg from '../../../assets/images/users/user-dummy-img.jpg';
-
+// import imgUrl from "../../../assets/images/users";
 //Small Images
-import smallImage9 from '../../../assets/images/small/img-9.jpg';
+import smallImage9 from '../../../assets/images/simad-pic.jpeg';
 //redux
 import { useSelector, useDispatch } from 'react-redux';
 
 //import action
 import {
-    getTeamData as onGetTeamData,
-    deleteTeamData as onDeleteTeamData,
-    addTeamData as onAddTeamData,
-    updateTeamData as onUpdateTeamData
+    getUsersData as onGetUsersData,
+    adduser as onAddNewUser,
+    updateUser as onUpdateUser,
+    deleteUser as onDeleteUser,
 } from "../../../slices/thunks";
 
 // Formik
@@ -32,76 +33,137 @@ const Users = () => {
 
     const dispatch = useDispatch();
 
-    const selectteamData = createSelector(
-        (state) => state.Team,
-        (teamData) => teamData.teamData
+    const selectusersData = createSelector(
+        (state) => state.Settings,
+        (usersData) => usersData.usersData
     );
     // Inside your component
-    const teamData = useSelector(selectteamData);
+    const usersData = useSelector(selectusersData);
 
 
-    const [team, setTeam] = useState(null);
+    const [users, setUsers] = useState(null);
     const [deleteModal, setDeleteModal] = useState(false);
-    const [teamList, setTeamlist] = useState([]);
+    const [usersList, setUsersList] = useState([]);
 
     //Modal  
-    const [teamMem, setTeamMem] = useState(null);
+    const [user, setUser] = useState(null);
     const [isEdit, setIsEdit] = useState(false);
     const [modal, setModal] = useState(false);
 
     useEffect(() => {
-        dispatch(onGetTeamData());
+        dispatch(onGetUsersData());
     }, [dispatch]);
 
     useEffect(() => {
-        setTeam(teamData);
-        setTeamlist(teamData);
-    }, [teamData]);
+        // setUsers(usersData?.data?.users);
+        setUsersList(usersData?.data?.users);
+    }, [usersData]);
+
+
+    // console.log("selectedData is ", usersData)
 
     const toggle = useCallback(() => {
         if (modal) {
             setModal(false);
-            setTeamMem(null);
+            setUser(null);
         } else {
             setModal(true);
         }
     }, [modal]);
 
-    // Update To do
-    const handleTeamClick = useCallback((arg) => {
-        const teamMem = arg;
-        setTeamMem({
-            id: teamMem.id,
-            name: teamMem.name,
-            designation: teamMem.designation,
-            projectCount: teamMem.projectCount,
-            taskCount: teamMem.taskCount,
+    const handleUserClick = useCallback((userData) => {
+        setUser({
+            id: userData._id,
+            username: userData.username,
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            phone: userData.phone,
+            title: userData.title,
+            avatar: userData.avatar,
+            bg_url: userData.bg_url,
+            isActive: userData.isActive
         });
-
         setIsEdit(true);
         toggle();
     }, [toggle]);
 
-    // Add To do
-    const handleTeamClicks = () => {
-        setTeamMem("");
+    // Add User
+    const handleUserAddClick = () => {
+        setUser(null);
         setModal(!modal);
         setIsEdit(false);
         toggle();
     };
 
-    // delete
-    const onClickData = (team) => {
-        setTeam(team);
+    // Delete User
+    const onClickDelete = (user) => {
+        setUser(user);
         setDeleteModal(true);
     };
 
-    const handleDeleteTeamData = () => {
-        if (team) {
-            dispatch(onDeleteTeamData(team.id));
+    const handleDeleteUser = () => {
+        if (user) {
+            dispatch(onDeleteUser(user));
             setDeleteModal(false);
         }
     };
+
+    // Form validation
+    const validation = useFormik({
+        enableReinitialize: true,
+        initialValues: {
+            username: (user && user.username) || '',
+            email: (user && user.email) || '',
+            password: '',
+            firstName: (user && user.firstName) || '',
+            lastName: (user && user.lastName) || '',
+            phone: (user && user.phone) || '',
+            title: (user && user.title) || '',
+            isActive: (user && user.isActive) || true
+        },
+        validationSchema: Yup.object({
+            username: Yup.string()
+                .required("Username is required")
+                .trim()
+                .lowercase(),
+            email: Yup.string()
+                .email("Invalid email format")
+                .required("Email is required")
+                .trim()
+                .lowercase(),
+            password: Yup.string()
+                .when('isEdit', (isEdit, schema) => {
+                    return isEdit ? schema.notRequired() : schema.min(8, "Password must be at least 8 characters").required("Password is required")
+                }),
+            firstName: Yup.string().required("First name is required").trim(),
+            lastName: Yup.string().required("Last name is required").trim(),
+            phone: Yup.string().trim(),
+            title: Yup.string().trim(),
+            isActive: Yup.boolean()
+        }),
+        onSubmit: (values) => {
+            if (isEdit) {
+                const updateUserData = {
+                    id: user ? user.id : 0,
+                    ...values,
+                    // Don't update password if not changed
+                    password: values.password || undefined
+                };
+                dispatch(onUpdateUser(updateUserData));
+            } else {
+                const newUserData = {
+                    id: (Math.floor(Math.random() * (30 - 20)) + 20).toString(),
+                    ...values,
+                    avatar: 'user-dummy-img.jpg',
+                    bg_url: 'user-dummy-img.jpg'
+                };
+                dispatch(onAddNewUser(newUserData));
+            }
+            validation.resetForm();
+            toggle();
+        },
+    });
 
     useEffect(() => {
         const list = document.querySelectorAll(".team-list");
@@ -142,13 +204,22 @@ const Users = () => {
         let inputVal = e.toLowerCase();
 
         const filterItems = (arr, query) => {
+            const lowerQuery = query.toLowerCase();
+
             return arr.filter((el) => {
-                return el.name.toLowerCase().indexOf(query.toLowerCase()) !== -1;
+                return (
+                    (el.username && el.username.toLowerCase().includes(lowerQuery)) ||
+                    (el.phone && el.phone.toLowerCase().includes(lowerQuery)) ||
+                    (el.firstName && el.firstName.toLowerCase().includes(lowerQuery)) ||
+                    (el.lastName && el.lastName.toLowerCase().includes(lowerQuery)) ||
+                    (el.title && el.title.toLowerCase().includes(lowerQuery))
+                );
             });
         };
 
-        let filterData = filterItems(teamData, inputVal);
-        setTeamlist(filterData);
+
+        let filterData = filterItems(usersData?.data?.users, inputVal);
+        setUsersList(filterData);
         if (filterData.length === 0) {
             document.getElementById("noresult").style.display = "block";
             document.getElementById("teamlist").style.display = "none";
@@ -169,66 +240,23 @@ const Users = () => {
         setDropdownOpen(!dropdownOpen);
     };
 
-    // validation
-    const validation = useFormik({
-        // enableReinitialize : use this flag when initial values needs to be changed
-        enableReinitialize: true,
-
-        initialValues: {
-            name: (teamMem && teamMem.name) || '',
-            designation: (teamMem && teamMem.designation) || '',
-        },
-        validationSchema: Yup.object({
-            name: Yup.string().required("Please Enter team Name"),
-            designation: Yup.string().required("Please Enter Your designation"),
-
-        }),
-        onSubmit: (values) => {
-            if (isEdit) {
-                const updateTeamData = {
-                    id: teamMem ? teamMem.id : 0,
-                    name: values.name,
-                    designation: values.designation,
-                    projectCount: values.projectCount,
-                    taskCount: values.taskCount
-                };
-                // save edit Team data
-                dispatch(onUpdateTeamData(updateTeamData));
-                validation.resetForm();
-            } else {
-                const newTeamData = {
-                    id: (Math.floor(Math.random() * (30 - 20)) + 20).toString(),
-                    name: values.name,
-                    designation: values.designation,
-                    projectCount: 0,
-                    taskCount: 0,
-                    backgroundImg: smallImage9
-                };
-                // save new TeamData
-                dispatch(onAddTeamData(newTeamData));
-                validation.resetForm();
-            }
-            toggle();
-        },
-    });
-
     return (
         <React.Fragment>
             <ToastContainer closeButton={false} />
             <DeleteModal
                 show={deleteModal}
-                onDeleteClick={() => handleDeleteTeamData()}
+                onDeleteClick={() => handleDeleteUser()}
                 onCloseClick={() => setDeleteModal(false)}
             />
             <div className="page-content">
                 <Container fluid>
-                    <BreadCrumb title="Team" pageTitle="Pages" />
+                    <BreadCrumb title="Users" pageTitle="Pages" />
                     <Card>
                         <CardBody>
                             <Row className="g-2">
                                 <Col sm={4}>
                                     <div className="search-box">
-                                        <Input type="text" className="form-control" placeholder="Search for name or designation..." onChange={(e) => searchList(e.target.value)} />
+                                        <Input type="text" className="form-control" placeholder="Search for name or phone or title..." onChange={(e) => searchList(e.target.value)} />
                                         <i className="ri-search-line search-icon"></i>
                                     </div>
                                 </Col>
@@ -237,7 +265,7 @@ const Users = () => {
 
                                         <Button color="info" id="grid-view-button" className="btn btn-soft-info nav-link btn-icon fs-14 active filter-button material-shadow-none"><i className="ri-grid-fill"></i></Button>
                                         <Button color="info" id="list-view-button" className="btn btn-soft-info nav-link  btn-icon fs-14 filter-button material-shadow-none"><i className="ri-list-unordered"></i></Button>
-                                        <Dropdown
+                                        {/* <Dropdown
                                             isOpen={dropdownOpen}
                                             toggle={toggledropDown}>
                                             <DropdownToggle type="button" className="btn btn-soft-info btn-icon fs-14 material-shadow-none">
@@ -249,8 +277,8 @@ const Users = () => {
                                                 <li><Link className="dropdown-item" to="#">Last Month</Link></li>
                                                 <li><Link className="dropdown-item" to="#">Last Year</Link></li>
                                             </DropdownMenu>
-                                        </Dropdown>
-                                        <Button color="success" onClick={() => handleTeamClicks()}>
+                                        </Dropdown> */}
+                                        <Button color="success" onClick={() => handleUserAddClick()}>
                                             <i className="ri-add-fill me-1 align-bottom"></i> Add Members</Button>
                                     </div>
                                 </Col>
@@ -262,11 +290,11 @@ const Users = () => {
                         <Col lg={12}>
                             <div id="teamlist">
                                 <Row className="team-list grid-view-filter">
-                                    {/* {(teamList || []).map((item, key) => (
+                                    {(usersList || []).map((item, key) => (
                                         <Col key={key}>
                                             <Card className="team-box">
                                                 <div className="team-cover">
-                                                    <img src={item.backgroundImg} alt="" className="img-fluid" />
+                                                    <img src={smallImage9} alt="" className="img-fluid" />
                                                 </div>
                                                 <CardBody className="p-4">
                                                     <Row className="align-items-center team-row">
@@ -274,9 +302,9 @@ const Users = () => {
                                                             <Row>
                                                                 <Col>
                                                                     <div className="flex-shrink-0 me-2">
-                                                                        <button type="button" className="btn btn-light btn-icon rounded-circle btn-sm favourite-btn" onClick={(e) => favouriteBtn(e.target)}>
+                                                                        {/* <button type="button" className="btn btn-light btn-icon rounded-circle btn-sm favourite-btn" onClick={(e) => favouriteBtn(e.target)}>
                                                                             <i className="ri-star-fill fs-14"></i>
-                                                                        </button>
+                                                                        </button> */}
                                                                     </div>
                                                                 </Col>
                                                                 <UncontrolledDropdown direction='start' className="col text-end">
@@ -284,10 +312,10 @@ const Users = () => {
                                                                         <i className="ri-more-fill fs-17"></i>
                                                                     </DropdownToggle>
                                                                     <DropdownMenu>
-                                                                        <DropdownItem className="dropdown-item edit-list" href="#addmemberModal" onClick={() => handleTeamClick(item)}>
+                                                                        <DropdownItem className="dropdown-item edit-list" href="#addmemberModal" onClick={() => handleUserClick(item)}>
                                                                             <i className="ri-pencil-line me-2 align-bottom text-muted"></i>Edit
                                                                         </DropdownItem>
-                                                                        <DropdownItem className="dropdown-item remove-list" href="#removeMemberModal" onClick={() => onClickData(item)}>
+                                                                        <DropdownItem className="dropdown-item remove-list" href="#removeMemberModal" onClick={() => onClickDelete(item)}>
                                                                             <i className="ri-delete-bin-5-line me-2 align-bottom text-muted"></i>Remove
                                                                         </DropdownItem>
                                                                     </DropdownMenu>
@@ -298,53 +326,53 @@ const Users = () => {
                                                             <div className="team-profile-img">
 
                                                                 <div className="avatar-lg img-thumbnail rounded-circle flex-shrink-0">
-                                                                    {item.userImage != null ?
-                                                                        <img src={item.userImage} alt="" className="img-fluid d-block rounded-circle" />
+                                                                    {item.avatar != null ?
+                                                                        <img src={require(`../../../assets/images/users/${item.avatar}`)} alt="" className="img-fluid d-block rounded-circle" />
 
                                                                         :
                                                                         <div className="avatar-title text-uppercase border rounded-circle bg-light text-primary">
-                                                                            {item.name.charAt(0) + item.name.split(" ").slice(-1).toString().charAt(0)}
+                                                                            {item.firstName.charAt(0) + item.lastName.split(" ").slice(-1).toString().charAt(0)}
                                                                         </div>}
                                                                 </div>
                                                                 <div className="team-content">
-                                                                    <Link to="#" onClick={() => { setIsOpen(!isOpen); setSideBar(item); }}><h5 className="fs-16 mb-1">{item.name}</h5></Link>
-                                                                    <p className="text-muted mb-0">{item.designation}</p>
+                                                                    <Link to="#" onClick={() => { setIsOpen(!isOpen); setSideBar(item); }}><h5 className="fs-16 mb-1">{item.username}</h5></Link>
+                                                                    <p className="text-muted mb-0">{item.title || "Team Member"}</p>
                                                                 </div>
                                                             </div>
                                                         </Col>
                                                         <Col lg={4} className="col">
                                                             <Row className="text-muted text-center">
                                                                 <Col xs={6} className="border-end border-end-dashed">
-                                                                    <h5 className="mb-1">{item.projectCount}</h5>
-                                                                    <p className="text-muted mb-0">Projects</p>
+                                                                    <h5 className="mb-1">{item.no_of_posts || 0}</h5>
+                                                                    <p className="text-muted mb-0">Posts</p>
                                                                 </Col>
                                                                 <Col xs={6}>
-                                                                    <h5 className="mb-1">{item.taskCount}</h5>
-                                                                    <p className="text-muted mb-0">Tasks</p>
+                                                                    <h5 className="mb-1">{item.no_of_followers || 0}</h5>
+                                                                    <p className="text-muted mb-0">Followers</p>
                                                                 </Col>
                                                             </Row>
                                                         </Col>
                                                         <Col lg={2} className="col">
                                                             <div className="text-end">
-                                                                <Link to="/pages-profile" className="btn btn-light view-btn">View Profile</Link>
+                                                                <Link to="#" onClick={() => { setIsOpen(!isOpen); setSideBar(item); }} className="btn btn-light view-btn">View Profile</Link>
                                                             </div>
                                                         </Col>
                                                     </Row>
                                                 </CardBody>
                                             </Card>
                                         </Col>
-                                    ))} */}
+                                    ))}
 
-                                    <Col lg={12}>
+                                    {/* <Col lg={12}>
                                         <div className="text-center mb-3">
                                             <Link to="#" className="text-success"><i className="mdi mdi-loading mdi-spin fs-20 align-middle me-2"></i> Load More </Link>
                                         </div>
-                                    </Col>
+                                    </Col> */}
                                 </Row>
 
                                 <div className="modal fade" id="addmembers" tabIndex="-1" aria-hidden="true">
                                     <div className="modal-dialog modal-dialog-centered">
-                                        <Modal isOpen={modal} toggle={toggle} centered>
+                                        <Modal isOpen={modal} toggle={toggle} centered size='lg'>
                                             <ModalBody>
                                                 <Form onSubmit={(e) => {
                                                     e.preventDefault();
@@ -353,96 +381,181 @@ const Users = () => {
                                                 }}>
                                                     <Row>
                                                         <Col lg={12}>
-
-                                                            <input type="hidden" id="memberid-input" className="form-control" defaultValue="" />
                                                             <div className="px-1 pt-1">
                                                                 <div className="modal-team-cover position-relative mb-0 mt-n4 mx-n4 rounded-top overflow-hidden">
-                                                                    <img src={smallImage9} alt="" id="cover-img" className="img-fluid" />
-
+                                                                    <img src={smallImage9} alt="" className="img-fluid" />
                                                                     <div className="d-flex position-absolute start-0 end-0 top-0 p-3">
                                                                         <div className="flex-grow-1">
-                                                                            <h5 className="modal-title text-white" id="createMemberLabel">{!isEdit ? "Add New Members" : "Edit Member"}</h5>
+                                                                            <h5 className="modal-title text-white">
+                                                                                {!isEdit ? "Add New User" : "Edit User"}
+                                                                            </h5>
                                                                         </div>
                                                                         <div className="flex-shrink-0">
-                                                                            <div className="d-flex gap-3 align-items-center">
-                                                                                <div>
-                                                                                    <label htmlFor="cover-image-input" className="mb-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Select Cover Image">
-                                                                                        <div className="avatar-xs">
-                                                                                            <div className="avatar-title bg-light border rounded-circle text-muted cursor-pointer">
-                                                                                                <i className="ri-image-fill"></i>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </label>
-                                                                                    <input className="form-control d-none" defaultValue="" id="cover-image-input" type="file" accept="image/png, image/gif, image/jpeg" />
-                                                                                </div>
-                                                                                <button type="button" className="btn-close btn-close-white" onClick={() => setModal(false)} id="createMemberBtn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-center mb-4 mt-n5 pt-2">
-                                                                <div className="position-relative d-inline-block">
-                                                                    <div className="position-absolute bottom-0 end-0">
-                                                                        <label htmlFor="member-image-input" className="mb-0" data-bs-toggle="tooltip" data-bs-placement="right" title="Select Member Image">
-                                                                            <div className="avatar-xs">
-                                                                                <div className="avatar-title bg-light border rounded-circle text-muted cursor-pointer">
-                                                                                    <i className="ri-image-fill"></i>
-                                                                                </div>
-                                                                            </div>
-                                                                        </label>
-                                                                        <input className="form-control d-none" defaultValue="" id="member-image-input" type="file" accept="image/png, image/gif, image/jpeg" />
-                                                                    </div>
-                                                                    <div className="avatar-lg">
-                                                                        <div className="avatar-title bg-light rounded-circle">
-                                                                            <img src={userdummyimg} alt=" " id="member-img" className="avatar-md rounded-circle h-auto" />
+                                                                            <button type="button" className="btn-close btn-close-white" onClick={toggle} aria-label="Close"></button>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
 
-                                                            <div className="mb-3">
-                                                                <Label htmlFor="teammembersName" className="form-label">Name</Label>
-                                                                <Input type="text" className="form-control" id="teammembersName" placeholder="Enter name"
-                                                                    name='name'
-                                                                    validate={{
-                                                                        required: { value: true },
-                                                                    }}
-                                                                    onChange={validation.handleChange}
-                                                                    onBlur={validation.handleBlur}
-                                                                    value={validation.values.name || ""}
-                                                                    invalid={
-                                                                        validation.touched.name && validation.errors.name ? true : false
-                                                                    }
-                                                                />
-                                                                {validation.touched.name && validation.errors.name ? (
-                                                                    <FormFeedback type="invalid">{validation.errors.name}</FormFeedback>
-                                                                ) : null}
+                                                            <div className="text-center mb-4 mt-n5 pt-2">
+                                                                <div className="position-relative d-inline-block">
+                                                                    <div className="avatar-lg">
+                                                                        <div className="avatar-title bg-light rounded-circle">
+                                                                            <img src={userdummyimg} alt="user" className="avatar-md rounded-circle h-auto" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </Col>
-                                                        <Col lg={12}>
-                                                            <div className="mb-3">
-                                                                <Label htmlFor="designation" className="form-label">Designation</Label>
-                                                                <Input type="text" className="form-control" id="designation" placeholder="Enter designation" name='designation'
-                                                                    validate={{
-                                                                        required: { value: true },
-                                                                    }}
-                                                                    onChange={validation.handleChange}
-                                                                    onBlur={validation.handleBlur}
-                                                                    value={validation.values.designation || ""}
-                                                                    invalid={
-                                                                        validation.touched.designation && validation.errors.designation ? true : false
-                                                                    }
-                                                                />
-                                                                {validation.touched.designation && validation.errors.designation ? (
-                                                                    <FormFeedback type="invalid">{validation.errors.designation}</FormFeedback>
-                                                                ) : null}
+                                                            <div className="row">
+                                                                <div className="col-md-6 mb-3">
+                                                                    <Label htmlFor="firstName" className="form-label">First Name</Label>
+                                                                    <Input
+                                                                        type="text"
+                                                                        className="form-control"
+                                                                        id="firstName"
+                                                                        placeholder="Enter first name"
+                                                                        name="firstName"
+                                                                        onChange={validation.handleChange}
+                                                                        onBlur={validation.handleBlur}
+                                                                        value={validation.values.firstName}
+                                                                        invalid={validation.touched.firstName && !!validation.errors.firstName}
+                                                                    />
+                                                                    <FormFeedback>{validation.errors.firstName}</FormFeedback>
+                                                                </div>
+                                                                <div className="col-md-6 mb-3">
+                                                                    <Label htmlFor="lastName" className="form-label">Last Name</Label>
+                                                                    <Input
+                                                                        type="text"
+                                                                        className="form-control"
+                                                                        id="lastName"
+                                                                        placeholder="Enter last name"
+                                                                        name="lastName"
+                                                                        onChange={validation.handleChange}
+                                                                        onBlur={validation.handleBlur}
+                                                                        value={validation.values.lastName}
+                                                                        invalid={validation.touched.lastName && !!validation.errors.lastName}
+                                                                    />
+                                                                    <FormFeedback>{validation.errors.lastName}</FormFeedback>
+                                                                </div>
                                                             </div>
-                                                        </Col>
-                                                        <Col lg={12}>
+                                                            <Row>
+                                                                <Col md={4}>
+                                                                    <div className="mb-3">
+                                                                        <Label htmlFor="username" className="form-label">Username</Label>
+                                                                        <Input
+                                                                            type="text"
+                                                                            className="form-control"
+                                                                            id="username"
+                                                                            placeholder="Enter username"
+                                                                            name="username"
+                                                                            onChange={validation.handleChange}
+                                                                            onBlur={validation.handleBlur}
+                                                                            value={validation.values.username}
+                                                                            invalid={validation.touched.username && !!validation.errors.username}
+                                                                        />
+                                                                        <FormFeedback>{validation.errors.username}</FormFeedback>
+                                                                    </div>
+
+                                                                </Col>
+                                                                <Col md={4}>
+
+                                                                    <div className="mb-3">
+                                                                        <Label htmlFor="email" className="form-label">Email</Label>
+                                                                        <Input
+                                                                            type="email"
+                                                                            className="form-control"
+                                                                            id="email"
+                                                                            placeholder="Enter email"
+                                                                            name="email"
+                                                                            onChange={validation.handleChange}
+                                                                            onBlur={validation.handleBlur}
+                                                                            value={validation.values.email}
+                                                                            invalid={validation.touched.email && !!validation.errors.email}
+                                                                        />
+                                                                        <FormFeedback>{validation.errors.email}</FormFeedback>
+                                                                    </div>
+                                                                </Col>
+
+                                                                <Col md={4}>
+
+                                                                    {!isEdit && (
+                                                                        <div className="mb-3">
+                                                                            <Label htmlFor="password" className="form-label">Password</Label>
+                                                                            <Input
+                                                                                type="password"
+                                                                                className="form-control"
+                                                                                id="password"
+                                                                                placeholder="Enter password"
+                                                                                name="password"
+                                                                                onChange={validation.handleChange}
+                                                                                onBlur={validation.handleBlur}
+                                                                                value={validation.values.password}
+                                                                                invalid={validation.touched.password && !!validation.errors.password}
+                                                                            />
+                                                                            <FormFeedback>{validation.errors.password}</FormFeedback>
+                                                                        </div>
+                                                                    )}
+                                                                </Col>
+
+                                                            </Row>
+
+                                                            <Row>
+                                                                <Col md={6}>
+                                                                    <div className="mb-3">
+                                                                        <Label htmlFor="phone" className="form-label">Phone</Label>
+                                                                        <Input
+                                                                            type="text"
+                                                                            className="form-control"
+                                                                            id="phone"
+                                                                            placeholder="Enter phone number"
+                                                                            name="phone"
+                                                                            onChange={validation.handleChange}
+                                                                            onBlur={validation.handleBlur}
+                                                                            value={validation.values.phone}
+                                                                            invalid={validation.touched.phone && !!validation.errors.phone}
+                                                                        />
+                                                                        <FormFeedback>{validation.errors.phone}</FormFeedback>
+                                                                    </div>
+                                                                </Col>
+                                                                <Col md={6}>
+
+                                                                    <div className="mb-3">
+                                                                        <Label htmlFor="title" className="form-label">Title</Label>
+                                                                        <Input
+                                                                            type="text"
+                                                                            className="form-control"
+                                                                            id="title"
+                                                                            placeholder="Enter title"
+                                                                            name="title"
+                                                                            onChange={validation.handleChange}
+                                                                            onBlur={validation.handleBlur}
+                                                                            value={validation.values.title}
+                                                                            invalid={validation.touched.title && !!validation.errors.title}
+                                                                        />
+                                                                        <FormFeedback>{validation.errors.title}</FormFeedback>
+                                                                    </div>
+                                                                </Col>
+                                                            </Row>
+
+                                                            <div className="mb-3 form-check" style={{ display: "none" }}>
+                                                                <Input
+                                                                    type="checkbox"
+                                                                    className="form-check-input"
+                                                                    id="isActive"
+                                                                    name="isActive"
+                                                                    onChange={validation.handleChange}
+                                                                    checked={validation.values.isActive}
+                                                                />
+                                                                <Label htmlFor="isActive" className="form-check-label">Active User</Label>
+                                                            </div>
+
+
+
                                                             <div className="hstack gap-2 justify-content-end">
-                                                                <button type="button" className="btn btn-light" onClick={() => setModal(false)}>Close</button>
-                                                                <button type="submit" className="btn btn-success" id="addNewMember">{!isEdit ? "Add Member" : "Save"}</button>
+                                                                <button type="button" className="btn btn-light" onClick={toggle}>Close</button>
+                                                                <button type="submit" className="btn btn-success">
+                                                                    {!isEdit ? "Add User" : "Save Changes"}
+                                                                </button>
                                                             </div>
                                                         </Col>
                                                     </Row>
@@ -462,33 +575,30 @@ const Users = () => {
                                 >
                                     <OffcanvasBody className="profile-offcanvas p-0">
                                         <div className="team-cover">
-                                            <img src={sideBar.backgroundImg || smallImage9} alt="" className="img-fluid" />
+                                            <img src={smallImage9 || smallImage9} alt="" className="img-fluid" />
                                         </div>
                                         <div className="p-3">
                                             <div className="team-settings">
                                                 <Row>
-                                                    <Col>
-                                                        <button type="button" className="btn btn-light btn-icon rounded-circle btn-sm favourite-btn "> <i className="ri-star-fill fs-14"></i> </button>
-                                                    </Col>
-                                                    <UncontrolledDropdown direction='start' className="col text-end">
-                                                        <DropdownToggle tag="a" id="dropdownMenuLink14" role="button">
-                                                            <i className="ri-more-fill fs-17"></i>
-                                                        </DropdownToggle>
-                                                        <DropdownMenu>
-                                                            <DropdownItem><i className="ri-star-line me-2 align-middle" />Favorites</DropdownItem>
-                                                            <DropdownItem><i className="ri-delete-bin-5-line me-2 align-middle" />Delete</DropdownItem>
-                                                        </DropdownMenu>
-                                                    </UncontrolledDropdown>
+
                                                 </Row>
                                             </div>
                                         </div>
                                         <div className="p-3 text-center">
-                                            <img src={sideBar.userImage || avatar2} alt="" className="avatar-lg img-thumbnail rounded-circle mx-auto" />
+                                            {sideBar.avatar != null ?
+                                                <img src={require(`../../../assets/images/users/${sideBar.avatar}`)} alt="" className="avatar-lg img-thumbnail rounded-circle mx-auto" />
+
+                                                :
+                                                <div className="avatar-title text-uppercase border rounded-circle bg-light text-primary">
+                                                    {/* {sideBar.firstName.charAt(0) + sideBar.lastName.split(" ").slice(-1).toString().charAt(0)} */}
+                                                </div>}
+
+
                                             <div className="mt-3">
-                                                <h5 className="fs-15 profile-name"><Link to="#" className="link-primary">{sideBar.name || "Nancy Martino"}</Link></h5>
-                                                <p className="text-muted profile-designation">{sideBar.designation || "Team Leader & HR"}</p>
+                                                <h5 className="fs-15 profile-name"><Link to="#" className="link-primary">{sideBar.firstName + " " + sideBar.lastName || "N/A"}</Link></h5>
+                                                <p className="text-muted profile-designation">{sideBar.title || "Team Member"}</p>
                                             </div>
-                                            <div className="hstack gap-2 justify-content-center mt-4">
+                                            {/* <div className="hstack gap-2 justify-content-center mt-4">
                                                 <div className="avatar-xs">
                                                     <Link to="#" className="avatar-title bg-secondary-subtle text-secondary rounded fs-16">
                                                         <i className="ri-facebook-fill"></i>
@@ -509,38 +619,55 @@ const Users = () => {
                                                         <i className="ri-dribbble-fill"></i>
                                                     </Link>
                                                 </div>
-                                            </div>
+                                            </div> */}
                                         </div>
                                         <Row className="g-0 text-center">
                                             <Col xs={6}>
                                                 <div className="p-3 border border-dashed border-start-0">
                                                     <h5 className="mb-1 profile-project">{sideBar.projectCount || "124"}</h5>
-                                                    <p className="text-muted mb-0">Projects</p>
+                                                    <p className="text-muted mb-0">Posts</p>
                                                 </div>
                                             </Col>
                                             <Col xs={6}>
                                                 <div className="p-3 border border-dashed border-start-0">
                                                     <h5 className="mb-1 profile-task">{sideBar.taskCount || "81"}</h5>
-                                                    <p className="text-muted mb-0">Tasks</p>
+                                                    <p className="text-muted mb-0">Followers</p>
                                                 </div>
                                             </Col>
                                         </Row>
                                         <div className="p-3">
                                             <h5 className="fs-15 mb-3">Personal Details</h5>
                                             <div className="mb-3">
-                                                <p className="text-muted text-uppercase fw-semibold fs-12 mb-2">Number</p>
-                                                <h6>+(256) 2451 8974</h6>
+                                                <p className="text-muted text-uppercase fw-semibold fs-12 mb-2">First Name</p>
+                                                <h6>{sideBar.firstName}</h6>
+                                            </div>
+
+                                            <div className="mb-3">
+                                                <p className="text-muted text-uppercase fw-semibold fs-12 mb-2">Last Name</p>
+                                                <h6>{sideBar.lastName}</h6>
+                                            </div>
+
+
+                                            <div className="mb-3">
+                                                <p className="text-muted text-uppercase fw-semibold fs-12 mb-2">User Name</p>
+                                                <h6>{sideBar.username}</h6>
+                                            </div>
+
+
+                                            <div className="mb-3">
+                                                <p className="text-muted text-uppercase fw-semibold fs-12 mb-2">Phone Number</p>
+                                                <h6>{sideBar.phone}</h6>
                                             </div>
                                             <div className="mb-3">
                                                 <p className="text-muted text-uppercase fw-semibold fs-12 mb-2">Email</p>
-                                                <h6>nancymartino@email.com</h6>
+                                                <h6>{sideBar.email}</h6>
                                             </div>
                                             <div>
                                                 <p className="text-muted text-uppercase fw-semibold fs-12 mb-2">Location</p>
-                                                <h6 className="mb-0">Carson City - USA</h6>
+                                                <h6 className="mb-0">Mogadishu - SOMALIA</h6>
                                             </div>
                                         </div>
-                                        <div className="p-3 border-top">
+                                        {/* <div className="p-3 border-top">
                                             <h5 className="fs-15 mb-4">File Manager</h5>
                                             <div className="d-flex mb-3">
                                                 <div className="flex-shrink-0 avatar-xs">
@@ -598,12 +725,12 @@ const Users = () => {
                                                     846 MB
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div> */}
                                     </OffcanvasBody>
-                                    <div className="offcanvas-foorter border p-3 hstack gap-3 text-center position-relative">
+                                    {/* <div className="offcanvas-foorter border p-3 hstack gap-3 text-center position-relative">
                                         <button className="btn btn-light w-100"><i className="ri-question-answer-fill align-bottom ms-1"></i> Send Message</button>
                                         <Link to="/pages-profile" className="btn btn-primary w-100"><i className="ri-user-3-fill align-bottom ms-1"></i> View Profile</Link>
-                                    </div>
+                                    </div> */}
                                 </Offcanvas>
                             </div>
                             <div className="py-4 mt-4 text-center" id="noresult" style={{ display: "none" }}>

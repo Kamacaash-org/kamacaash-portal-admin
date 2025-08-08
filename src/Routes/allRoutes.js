@@ -12,7 +12,7 @@ import CoverSignUp from "../pages/AuthenticationInner/Register/CoverSignUp";
 import BasicPasswReset from '../pages/AuthenticationInner/PasswordReset/BasicPasswReset';
 //pages
 import UniversityProfile from '../pages/settings/University_Profile';
-import users from '../pages/settings/Users'
+import Users from '../pages/settings/Users'
 
 
 
@@ -96,8 +96,8 @@ const publicRoutes = [
   { path: "/auth-404-cover", component: <Cover404 /> },
   { path: "/auth-404-alt", component: <Alt404 /> },
   { path: "/auth-500", component: <Error500 /> },
-  { path: "/pages-maintenance", component: <Maintenance /> },
-  { path: "/pages-coming-soon", component: <ComingSoon /> },
+  // { path: "/pages-maintenance", component: <Maintenance /> },
+  // { path: "/pages-coming-soon", component: <ComingSoon /> },
 
   // { path: "/landing", component: <OnePage /> },
   // { path: "/nft-landing", component: <NFTLanding /> },

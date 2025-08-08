@@ -21,4 +21,21 @@ export const isUserAuthenticated = () => {
 export const postLogin = data => api.create(url.POST_LOGIN, data);
 
 
-//
+
+export const getUsers = () => api.get(url.GET_USERS);
+
+// // add use
+export const addNewUser = user => api.create(url.ADD_USER, user);
+
+// update User
+export const updateUser = user => api.put(url.UPDATE_USER + '/' + user.id, user);
+
+// delete User
+export const deleteUser = user => api.delete(url.DELETE_USER + '/' + user._id);
+
+
+// university
+
+export const getUniversityInfo = () => api.get(url.GET_UNIVERSITY);
+export const updateUniversity = uni => api.put(url.UPDATE_UNIVERSITY + '/' + uni.slug, uni);
+
