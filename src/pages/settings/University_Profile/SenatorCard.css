@@ -1,0 +1,40 @@
+.senator-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.senator-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.avatar-wrapper {
+    position: relative;
+}
+
+.bio-container p {
+    line-height: 1.6;
+    transition: all 0.3s ease;
+}
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .senator-card .d-flex.align-items-center {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .senator-card .d-flex.align-items-center .ms-3 {
+        margin-left: 0 !important;
+        margin-top: 1rem;
+    }
+}
