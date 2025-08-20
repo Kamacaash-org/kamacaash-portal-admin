@@ -11,7 +11,9 @@ import BasicSignUp from '../pages/AuthenticationInner/Register/BasicSignUp';
 import CoverSignUp from "../pages/AuthenticationInner/Register/CoverSignUp";
 import BasicPasswReset from '../pages/AuthenticationInner/PasswordReset/BasicPasswReset';
 //pages
-import UniversityProfile from '../pages/settings/University_Profile';
+import UniversityProfile from '../pages/settings/University_Profile/index';
+import EditUniProfile from '../pages/settings/University_Profile/EditUniProfile';
+
 import Users from '../pages/settings/Users'
 
 
@@ -53,6 +55,8 @@ const authProtectedRoutes = [
 
   //Pages
   { path: "/setting-profile", component: <UniversityProfile /> },
+  { path: "/setting-edit-profile", component: <EditUniProfile /> },
+
   { path: "/setting-users", component: <Users /> },
 
 

@@ -4,8 +4,11 @@ import {
     Card, CardBody, CardHeader, Col, Container,
     Nav, NavItem, NavLink, Row, TabContent,
     TabPane, Badge, Media,
-    Table
+    Table,
+    Button
 } from 'reactstrap';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+
 import classnames from 'classnames';
 import "./SenatorCard.css";
 // Images
@@ -17,6 +20,12 @@ import senate3 from '../../../assets/images/users/avatar-3.jpg';
 import accreditation1 from '../../../assets/images/companies/img-1.png';
 import accreditation2 from '../../../assets/images/companies/img-2.png';
 import accreditation3 from '../../../assets/images/companies/img-3.png';
+import whysimadimg1 from '../../../assets/images/why-simad-img-one.webp';
+import whysimadimg2 from '../../../assets/images/why-simad-img-2.webp';
+
+import whysimadimg3 from '../../../assets/images/why-simad-img-3.webp';
+
+
 
 // Redux
 import { useSelector, useDispatch } from 'react-redux';
@@ -53,63 +62,69 @@ const UniversityProfile = () => {
         }
     };
 
-    // History & Awards Data
-    const historyData = [
+    const [whySimadData, setWhySimadData] = useState([
         {
-            year: 2025,
+            id: 1,
+            title: "Quality Education",
+            description: "SIMAD University offers internationally recognized programs with highly qualified faculty members.",
+            image: whysimadimg1
+        },
+        {
+            id: 2,
+            title: "Modern Facilities",
+            description: "Our campus features state-of-the-art laboratories, libraries, and learning spaces.",
+            image: whysimadimg2
+        },
+        {
+            id: 3,
+            title: "Career Opportunities",
+            description: "Strong industry connections provide excellent employment prospects for our graduates.",
+            image: whysimadimg3
+        },
+        {
+            id: 2,
+            title: "Modern Facilities",
+            description: "Our campus features state-of-the-art laboratories, libraries, and learning spaces.",
+            image: whysimadimg2
+        },
+        {
+            id: 1,
+            title: "Quality Education",
+            description: "SIMAD University offers internationally recognized programs with highly qualified faculty members.",
+            image: whysimadimg1
+        },
+        {
+            id: 2,
+            title: "Modern Facilities",
+            description: "Our campus features state-of-the-art laboratories, libraries, and learning spaces.",
+            image: whysimadimg2
+        },
+    ]);
+
+    const [historyData] = useState([
+        {
+            year: "1999",
             events: [
-                "Launched ICE Institute",
-                "Ranked top 61-70th in THE Sub Saharan Africa University Ranking 2023",
-                "Launched SIMAD iLab Executive Arena",
-                "Joined the International Federation of Library Associations and Institutions (IFLA)"
+                "SIMAD University was established",
+                "First graduation ceremony held"
             ]
         },
         {
-            year: 2024,
+            year: "2005",
             events: [
-                "Introduced AI and Data Science programs",
-                "Partnered with 5 international universities for student exchange",
-                "Won National Education Excellence Award",
-                "Hosted the first annual East Africa Research Conference"
+                "Received accreditation from the Ministry of Education",
+                "Introduced postgraduate programs"
             ]
         },
         {
-            year: 2023,
+            year: "2018",
             events: [
-                "Accredited by the African Higher Education Council",
-                "Opened new campus with state-of-the-art facilities",
-                "Launched online learning platform serving 5000+ students",
-                "Research grant received from Bill & Melinda Gates Foundation"
-            ]
-        },
-        {
-            year: 2022,
-            events: [
-                "Celebrated 5000+ graduates since establishment",
-                "Computer Science program received international accreditation",
-                "Established Center for Innovation and Entrepreneurship",
-                "Signed MoU with Google for digital skills training"
-            ]
-        },
-        {
-            year: 2021,
-            events: [
-                "Ranked as top private university in the country",
-                "Launched scholarship program for 1000 disadvantaged students",
-                "Hosted first virtual international conference",
-                "Business School received AACSB accreditation"
-            ]
-        },
-        {
-            year: 2020,
-            events: [
-                "Completed construction of new library with 50,000+ volumes",
-                "Introduced first PhD programs in three disciplines",
-                "Received award for community engagement and development",
-                "Established research partnership with MIT"
+                "Awarded Best University in Somalia",
+                "Launched new Faculty of Engineering"
             ]
         }
-    ];
+    ]);
+
 
     // Senate Members Data
     const senateMembers = [
@@ -118,7 +133,7 @@ const UniversityProfile = () => {
             name: "Dr. Ahmed Mohamed Hassan",
             position: "Chancellor",
             image: senate1,
-            message: "Education is the wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww most powerful weapon which you can use to change the world.",
+            message: "Education is the most powerful weapon which you can use to change the world.",
             bio: "Dr. Ahmed has over 25 years of experience in higher education leadership. He holds a PhD in Educational Management from Harvard University and has published numerous papers on innovative teaching methodologies in developing nations."
         },
         {
@@ -280,9 +295,19 @@ const UniversityProfile = () => {
                                         </NavItem>
                                         <NavItem className="fs-14">
                                             <NavLink
-                                                href="#activities"
+                                                href="#documents"
                                                 className={classnames({ active: activeTab === '2' })}
                                                 onClick={() => { toggleTab('2'); }}
+                                            >
+                                                <i className="ri-folder-4-line d-inline-block d-md-none"></i> <span
+                                                    className="d-none d-md-inline-block">Why Simad</span>
+                                            </NavLink>
+                                        </NavItem>
+                                        <NavItem className="fs-14">
+                                            <NavLink
+                                                href="#activities"
+                                                className={classnames({ active: activeTab === '3' })}
+                                                onClick={() => { toggleTab('3'); }}
                                             >
                                                 <i className="ri-list-unordered d-inline-block d-md-none"></i> <span
                                                     className="d-none d-md-inline-block">History & Awards</span>
@@ -291,8 +316,8 @@ const UniversityProfile = () => {
                                         <NavItem className="fs-14">
                                             <NavLink
                                                 href="#projects"
-                                                className={classnames({ active: activeTab === '3' })}
-                                                onClick={() => { toggleTab('3'); }}
+                                                className={classnames({ active: activeTab === '4' })}
+                                                onClick={() => { toggleTab('4'); }}
                                             >
                                                 <i className="ri-price-tag-line d-inline-block d-md-none"></i> <span
                                                     className="d-none d-md-inline-block">The Senate</span>
@@ -301,18 +326,21 @@ const UniversityProfile = () => {
                                         <NavItem className="fs-14">
                                             <NavLink
                                                 href="#documents"
-                                                className={classnames({ active: activeTab === '4' })}
-                                                onClick={() => { toggleTab('4'); }}
+                                                className={classnames({ active: activeTab === '5' })}
+                                                onClick={() => { toggleTab('5'); }}
                                             >
                                                 <i className="ri-folder-4-line d-inline-block d-md-none"></i> <span
                                                     className="d-none d-md-inline-block">Accreditation</span>
                                             </NavLink>
                                         </NavItem>
                                     </Nav>
-                                    <div className="flex-shrink-0">
-                                        <Link to="/pages-profile-settings" className="btn btn-success"><i
+
+                                    < div className="flex-shrink-0">
+
+                                        <Link to="/setting-edit-profile" className="btn btn-success"><i
                                             className="ri-edit-box-line align-bottom"></i> Edit Profile</Link>
                                     </div>
+
                                 </div>
 
                                 <TabContent activeTab={activeTab} className="pt-4">
@@ -465,9 +493,57 @@ const UniversityProfile = () => {
                                             </Col>
                                         </Row>
                                     </TabPane>
+                                    {/* Why SIMAD Tab */}
+                                    <TabPane tabId="2">
+                                        <Card className="shadow-lg border-0">
+                                            <CardHeader className="bg-gradient-primary text-white py-3 d-flex justify-content-between align-items-center">
+                                                <h5 className="card-title mb-0">
+                                                    <i className="fas fa-star me-2"></i>
+                                                    Why Choose SIMAD University?
+                                                </h5>
+
+                                            </CardHeader>
+                                            <CardBody className="p-4">
+
+                                                {/* Cards Display */}
+                                                <Row>
+                                                    {whySimadData.map((card) => (
+                                                        <Col key={card.id} lg={4} md={6} className="mb-4">
+                                                            <Card className="h-100 shadow-sm card-hover border-0">
+                                                                {card.image && (
+                                                                    <div className="card-img-container">
+                                                                        <img
+                                                                            src={card.image}
+                                                                            className="card-img-top"
+                                                                            alt={card.title}
+                                                                            style={{ height: '200px', objectFit: 'cover' }}
+                                                                        />
+                                                                        <div className="card-overlay"></div>
+                                                                    </div>
+                                                                )}
+                                                                <CardBody className="d-flex flex-column">
+                                                                    <h5 className="card-title text-primary">{card.title}</h5>
+                                                                    <p className="card-text flex-grow-1">{card.description}</p>
+
+                                                                </CardBody>
+                                                            </Card>
+                                                        </Col>
+                                                    ))}
+                                                </Row>
+
+                                                {whySimadData.length === 0 && (
+                                                    <div className="text-center py-5">
+                                                        <i className="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                                        <h5 className="text-muted">No data To be Displayed</h5>
+
+                                                    </div>
+                                                )}
+                                            </CardBody>
+                                        </Card>
+                                    </TabPane>
 
                                     {/* History & Awards Tab */}
-                                    <TabPane tabId="2">
+                                    <TabPane tabId="3">
                                         <Card>
                                             <CardHeader>
                                                 <h5 className="card-title mb-0">University Milestones & Achievements</h5>
@@ -499,7 +575,7 @@ const UniversityProfile = () => {
                                     </TabPane>
 
                                     {/* The Senate Tab */}
-                                    <TabPane tabId="3">
+                                    <TabPane tabId="4">
                                         <Row className="row-cols-1 row-cols-lg-2 g-4">
                                             {senateMembers.map((member, idx) => (
                                                 <Col key={idx}>
@@ -619,7 +695,7 @@ const UniversityProfile = () => {
                                     </TabPane>
 
                                     {/* Accreditation Tab */}
-                                    <TabPane tabId="4">
+                                    <TabPane tabId="5">
                                         <Row className="row-cols-1 row-cols-lg-2 g-4">
                                             {accreditations.map((item, idx) => (
                                                 <Col key={idx}>
@@ -706,7 +782,7 @@ const UniversityProfile = () => {
                     </Row>
                 </Container>
             </div>
-        </React.Fragment>
+        </React.Fragment >
     );
 };
 
