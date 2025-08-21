@@ -70,7 +70,7 @@ import JobReducer from "./jobs/reducer";
 import APIKeyReducer from "./apiKey/reducer";
 
 
-
+// src/slices/index.js
 import SettingsReducer from "./settings/reducer"
 
 const rootReducer = combineReducers({

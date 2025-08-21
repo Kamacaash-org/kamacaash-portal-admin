@@ -51,9 +51,9 @@ const UniversityProfile = () => {
     }, [dispatch]);
 
     useEffect(() => {
-        setUniversityInfo(uniData?.data?.universityInfo);
+        setUniversityInfo(uniData?.university);
     }, [uniData]);
-
+    console.log("unidata is:", uniData)
     const [activeTab, setActiveTab] = useState('1');
 
     const toggleTab = (tab) => {
@@ -449,9 +449,9 @@ const UniversityProfile = () => {
                                                         <h5 className="card-title mb-3">history</h5>
                                                         <p>{universityInfo?.description?.history}</p>
                                                         <h5 className="card-title mb-3">Guiding Principles</h5>
-                                                        <p>{universityInfo?.description?.achievements}</p>
+                                                        <p>{universityInfo?.description?.guiding_principles}</p>
                                                         <h5 className="card-title mb-3">Core Values</h5>
-                                                        <p>{universityInfo?.description?.achievements}</p>
+                                                        <p>{universityInfo?.description?.core_values}</p>
 
                                                         <br></br>
 

@@ -18,7 +18,7 @@ import { useSelector, useDispatch } from 'react-redux';
 //import action
 import {
     getUsersData as onGetUsersData,
-    adduser as onAddNewUser,
+    addUser as onAddNewUser,
     updateUser as onUpdateUser,
     deleteUser as onDeleteUser,
 } from "../../../slices/thunks";

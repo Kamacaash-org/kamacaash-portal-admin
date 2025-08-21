@@ -1,7 +1,7 @@
 //Include Both Helper File with needed methods
 // import { getFirebaseBackend } from "../../../helpers/firebase_helper";
 import {
-  postLogin
+  login
 } from "../../../helpers/backend_helper";
 
 import { loginSuccess, logoutUserSuccess, apiError, reset_login_flag } from './reducer';
@@ -9,7 +9,7 @@ import { loginSuccess, logoutUserSuccess, apiError, reset_login_flag } from './r
 export const loginUser = (user, history) => async (dispatch) => {
   try {
     let response;
-    response = postLogin({
+    response = login({
       username: user.username,
       password: user.password,
     });

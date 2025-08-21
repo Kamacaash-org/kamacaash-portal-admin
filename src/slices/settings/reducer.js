@@ -1,3 +1,4 @@
+// src/slices/settings/reducer.js
 import { createSlice } from "@reduxjs/toolkit";
 import { getUsersData, getUniversityInfo } from './thunk';
 export const initialState = {
