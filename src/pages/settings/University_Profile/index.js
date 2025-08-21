@@ -14,17 +14,6 @@ import "./SenatorCard.css";
 // Images
 import profileBg from '../../../assets/images/simad-pic.jpeg';
 import avatar1 from '../../../assets/images/logo-simad.png';
-import senate1 from '../../../assets/images/users/avatar-1.jpg';
-import senate2 from '../../../assets/images/users/avatar-2.jpg';
-import senate3 from '../../../assets/images/users/avatar-3.jpg';
-import accreditation1 from '../../../assets/images/companies/img-1.png';
-import accreditation2 from '../../../assets/images/companies/img-2.png';
-import accreditation3 from '../../../assets/images/companies/img-3.png';
-import whysimadimg1 from '../../../assets/images/why-simad-img-one.webp';
-import whysimadimg2 from '../../../assets/images/why-simad-img-2.webp';
-
-import whysimadimg3 from '../../../assets/images/why-simad-img-3.webp';
-
 
 
 // Redux
@@ -45,6 +34,13 @@ const UniversityProfile = () => {
 
     const uniData = useSelector(selectUniData);
     const [universityInfo, setUniversityInfo] = useState([]);
+    const [whySimadData, setWhySimadData] = useState([]);
+    const [historyData, setHistoryData] = useState([]);
+    const [senateMembers, setSenateMembers] = useState([]);
+    const [accreditations, setAccreditations] = useState([]);
+
+
+
 
     useEffect(() => {
         dispatch(onGetUniversityInfo());
@@ -52,8 +48,14 @@ const UniversityProfile = () => {
 
     useEffect(() => {
         setUniversityInfo(uniData?.university);
+        setWhySimadData(uniData?.whySimadItems || []);
+        setHistoryData(uniData?.historyItems || []);
+        setSenateMembers(uniData?.senateMembers || []);
+        setAccreditations(uniData?.accreditations || []);
+
+
     }, [uniData]);
-    console.log("unidata is:", uniData)
+    // console.log("unidata is:", whySimadData)
     const [activeTab, setActiveTab] = useState('1');
 
     const toggleTab = (tab) => {
@@ -62,169 +64,8 @@ const UniversityProfile = () => {
         }
     };
 
-    const [whySimadData, setWhySimadData] = useState([
-        {
-            id: 1,
-            title: "Quality Education",
-            description: "SIMAD University offers internationally recognized programs with highly qualified faculty members.",
-            image: whysimadimg1
-        },
-        {
-            id: 2,
-            title: "Modern Facilities",
-            description: "Our campus features state-of-the-art laboratories, libraries, and learning spaces.",
-            image: whysimadimg2
-        },
-        {
-            id: 3,
-            title: "Career Opportunities",
-            description: "Strong industry connections provide excellent employment prospects for our graduates.",
-            image: whysimadimg3
-        },
-        {
-            id: 2,
-            title: "Modern Facilities",
-            description: "Our campus features state-of-the-art laboratories, libraries, and learning spaces.",
-            image: whysimadimg2
-        },
-        {
-            id: 1,
-            title: "Quality Education",
-            description: "SIMAD University offers internationally recognized programs with highly qualified faculty members.",
-            image: whysimadimg1
-        },
-        {
-            id: 2,
-            title: "Modern Facilities",
-            description: "Our campus features state-of-the-art laboratories, libraries, and learning spaces.",
-            image: whysimadimg2
-        },
-    ]);
-
-    const [historyData] = useState([
-        {
-            year: "1999",
-            events: [
-                "SIMAD University was established",
-                "First graduation ceremony held"
-            ]
-        },
-        {
-            year: "2005",
-            events: [
-                "Received accreditation from the Ministry of Education",
-                "Introduced postgraduate programs"
-            ]
-        },
-        {
-            year: "2018",
-            events: [
-                "Awarded Best University in Somalia",
-                "Launched new Faculty of Engineering"
-            ]
-        }
-    ]);
 
 
-    // Senate Members Data
-    const senateMembers = [
-        {
-            id: 1,
-            name: "Dr. Ahmed Mohamed Hassan",
-            position: "Chancellor",
-            image: senate1,
-            message: "Education is the most powerful weapon which you can use to change the world.",
-            bio: "Dr. Ahmed has over 25 years of experience in higher education leadership. He holds a PhD in Educational Management from Harvard University and has published numerous papers on innovative teaching methodologies in developing nations."
-        },
-        {
-            id: 2,
-            name: "Prof. Fatima Abdi Ali",
-            position: "Vice Chancellor, Academics",
-            image: senate2,
-            message: "Quality education should be accessible to all, regardless of background or circumstance.",
-            bio: "Professor Fatima is a renowned scholar in Economics with a special focus on developmental economics in Africa. She previously served as Dean of the Faculty of Business Administration and has consulted for the World Bank on educational projects."
-        },
-        {
-            id: 3,
-            name: "Dr. Omar Abdullahi Mohamud",
-            position: "Vice Chancellor, Administration",
-            image: senate3,
-            message: "Effective administration creates the environment where academic excellence can flourish.",
-            bio: "Dr. Omar brings extensive experience in university administration, having previously served as Registrar for 8 years. He holds a Doctorate in Public Administration and has implemented several efficiency-improving systems across university operations."
-        },
-        {
-            id: 4,
-            name: "Dr. Aisha Mohamed Nur",
-            position: "Dean of Research",
-            image: senate1,
-            message: "Research that addresses local challenges with global relevance is our priority.",
-            bio: "Dr. Aisha leads the university's research initiatives with a focus on practical solutions to regional problems. She has secured over $5M in research grants and established partnerships with 12 international research institutions."
-        },
-        {
-            id: 3,
-            name: "Dr. Omar Abdullahi Mohamud",
-            position: "Vice Chancellor, Administration",
-            image: senate3,
-            message: "Effective administration creates the environment where academic excellence can flourish.",
-            bio: "Dr. Omar brings extensive experience in university administration, having previously served as Registrar for 8 years. He holds a Doctorate in Public Administration and has implemented several efficiency-improving systems across university operations."
-        },
-        {
-            id: 4,
-            name: "Dr. Aisha Mohamed Nur",
-            position: "Dean of Research",
-            image: senate1,
-            message: "Research that addresses local challenges with global relevance is our priority.",
-            bio: "Dr. Aisha leads the university's research initiatives with a focus on practical solutions to regional problems. She has secured over $5M in research grants and established partnerships with 12 international research institutions."
-        }
-    ];
-
-
-
-    // Accreditation Data
-    const accreditations = [
-        {
-            id: 1,
-            name: "Ministry of Higher Education",
-            logo: accreditation1,
-            message: "Fully accredited for all undergraduate and graduate programs with distinction in Business and Technology fields.",
-            validity: "Permanent"
-        },
-        {
-            id: 2,
-            name: "African Higher Education Council",
-            logo: accreditation2,
-            message: "Recognized as a Center of Excellence for Innovation and Entrepreneurship Education in East Africa.",
-            validity: "2022-2027"
-        },
-        {
-            id: 3,
-            name: "International Education Standards Board",
-            logo: accreditation3,
-            message: "Accreditation with commendation for quality assurance processes and graduate outcomes.",
-            validity: "2023-2028"
-        },
-        {
-            id: 4,
-            name: "Global Business School Network",
-            logo: accreditation1,
-            message: "Business programs accredited with special recognition for curriculum relevance to emerging markets.",
-            validity: "2024-2029"
-        },
-        {
-            id: 3,
-            name: "International Education Standards Board",
-            logo: accreditation3,
-            message: "Accreditation with commendation for quality assurance processes and graduate outcomes.",
-            validity: "2023-2028"
-        },
-        {
-            id: 4,
-            name: "Global Business School Network",
-            logo: accreditation1,
-            message: "Business programs accredited with special recognition for curriculum relevance to emerging markets.",
-            validity: "2024-2029"
-        }
-    ];
 
     return (
         <React.Fragment>
@@ -367,7 +208,14 @@ const UniversityProfile = () => {
                                                                     </tr>
                                                                     <tr>
                                                                         <th className="ps-0" scope="row">Founded</th>
-                                                                        <td className="text-muted">{universityInfo?.founded || "November 6, 1999"}</td>
+                                                                        <td className="text-muted">{universityInfo?.founded
+                                                                            ? new Date(universityInfo.founded).toLocaleDateString("en-US", {
+                                                                                year: "numeric",
+                                                                                month: "long",
+                                                                                day: "numeric"
+                                                                            })
+                                                                            : "November 6, 1999"}
+                                                                        </td>
                                                                     </tr>
                                                                     <tr>
                                                                         <th className="ps-0" scope="row">E-mail :</th>
@@ -442,16 +290,20 @@ const UniversityProfile = () => {
                                             <Col xxl={8}>
                                                 <Card>
                                                     <CardBody>
-                                                        <h5 className="card-title mb-3">mission</h5>
-                                                        <p>{universityInfo?.description?.mission}</p>
-                                                        <h5 className="card-title mb-3">vision</h5>
-                                                        <p>{universityInfo?.description?.vision}</p>
-                                                        <h5 className="card-title mb-3">history</h5>
-                                                        <p>{universityInfo?.description?.history}</p>
+                                                        <h5 className="card-title mb-3">Mission</h5>
+                                                        <div dangerouslySetInnerHTML={{ __html: universityInfo?.description?.mission }} />
+
+                                                        <h5 className="card-title mb-3">Vision</h5>
+                                                        <div dangerouslySetInnerHTML={{ __html: universityInfo?.description?.vision }} />
+
+                                                        <h5 className="card-title mb-3">History</h5>
+                                                        <div dangerouslySetInnerHTML={{ __html: universityInfo?.description?.history }} />
+
                                                         <h5 className="card-title mb-3">Guiding Principles</h5>
-                                                        <p>{universityInfo?.description?.guiding_principles}</p>
+                                                        <div dangerouslySetInnerHTML={{ __html: universityInfo?.description?.guiding_principles }} />
+
                                                         <h5 className="card-title mb-3">Core Values</h5>
-                                                        <p>{universityInfo?.description?.core_values}</p>
+                                                        <div dangerouslySetInnerHTML={{ __html: universityInfo?.description?.core_values }} />
 
                                                         <br></br>
 
@@ -513,7 +365,7 @@ const UniversityProfile = () => {
                                                                 {card.image && (
                                                                     <div className="card-img-container">
                                                                         <img
-                                                                            src={card.image}
+                                                                            src={require(`../../../assets/images/${card.image}`)}
                                                                             className="card-img-top"
                                                                             alt={card.title}
                                                                             style={{ height: '200px', objectFit: 'cover' }}
@@ -586,7 +438,7 @@ const UniversityProfile = () => {
                                                                 <div className="flex-shrink-0">
                                                                     <div className="avatar-wrapper position-relative">
                                                                         <img
-                                                                            src={member.image}
+                                                                            src={require(`../../../assets/images/${member.image}`)}
                                                                             alt={member.name}
                                                                             className="avatar-lg rounded shadow-sm"
                                                                         />
@@ -660,29 +512,7 @@ const UniversityProfile = () => {
                                                                             <i className="ri-group-line me-1"></i>Faculty
                                                                         </span>
                                                                     </div>
-                                                                    {/* <div className="hstack gap-2">
-                                                                        <button
-                                                                            type="button"
-                                                                            className="btn btn-icon btn-soft-primary btn-sm rounded-circle"
-                                                                            title="Connect on LinkedIn"
-                                                                        >
-                                                                            <i className="ri-linkedin-fill"></i>
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            className="btn btn-icon btn-soft-info btn-sm rounded-circle"
-                                                                            title="Send message"
-                                                                        >
-                                                                            <i className="ri-mail-line"></i>
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            className="btn btn-icon btn-soft-success btn-sm rounded-circle"
-                                                                            title="View profile"
-                                                                        >
-                                                                            <i className="ri-profile-line"></i>
-                                                                        </button>
-                                                                    </div> */}
+
                                                                 </div>
                                                             </div>
                                                         </CardBody>
@@ -703,7 +533,7 @@ const UniversityProfile = () => {
                                                         <CardBody className="d-flex flex-column"> {/* Use flex column layout */}
                                                             <div className="d-flex mb-3">
                                                                 <div className="flex-shrink-0">
-                                                                    <img src={item.logo} alt="" className="avatar-md" />
+                                                                    <img src={require(`../../../assets/images/${item.logo}`)} alt="" className="avatar-md" />
                                                                 </div>
                                                                 <div className="flex-grow-1 ms-3">
                                                                     <h5 className="card-title mb-1">{item.name}</h5>

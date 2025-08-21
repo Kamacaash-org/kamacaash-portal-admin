@@ -20,7 +20,7 @@ const CoverTwosVerify = () => {
             } else {
                 getInputElement(index).blur();
                 // Submit code
-                navigate('/dashboard-analytics')
+                navigate('/setting-profile')
 
                 console.log('submit code');
             }

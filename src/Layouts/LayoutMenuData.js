@@ -98,16 +98,16 @@ const Navdata = () => {
 
   // Static full-access menu for superadmin
   const menuItems = [
-    {
-      id: "dashboard",
-      label: "Dashboards",
-      icon: "ri-dashboard-line",
-      link: "/dashboard",
-      click: (e) => {
-        e.preventDefault();
-        setIscurrentState("Dashboards");
-      },
-    },
+    // {
+    //   id: "dashboard",
+    //   label: "Dashboards",
+    //   icon: "ri-dashboard-line",
+    //   link: "/dashboard",
+    //   click: (e) => {
+    //     e.preventDefault();
+    //     setIscurrentState("Dashboards");
+    //   },
+    // },
 
     // {
     //   id: "registrations",
