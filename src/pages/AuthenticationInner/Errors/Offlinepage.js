@@ -3,7 +3,7 @@ import { Button, Card, CardBody, Col, Container, Row } from 'reactstrap';
 
 
 const Offlinepage = () => {
-    document.title = "Offline Page | Velzon - React Admin & Dashboard Template";
+    document.title = "Offline Page";
     return (
         <React.Fragment>
             <div className="auth-page-wrapper auth-bg-cover py-5 d-flex justify-content-center align-items-center min-vh-100">

@@ -6,11 +6,11 @@ import { Col, Container, Row } from 'reactstrap';
 import error500 from "../../../assets/images/error500.png";
 
 const Error500 = () => {
-document.title ="500 Error | Velzon - React Admin & Dashboard Template";
+    document.title = "500 Error";
     return (
         <React.Fragment>
-            
-            
+
+
             <div className="auth-page-wrapper py-5 d-flex justify-content-center align-items-center min-vh-100">
                 <div className="auth-page-content overflow-hidden p-0">
                     <Container fluid={true}>
