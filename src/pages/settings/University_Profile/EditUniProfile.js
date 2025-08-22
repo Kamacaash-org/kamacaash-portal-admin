@@ -983,7 +983,7 @@ const UniversityProfileEdit = () => {
                                                                         )}
                                                                     </FormGroup>
 
-                                                                    <FormGroup>
+                                                                    <FormGroup >
                                                                         <Label for={`why-order-${index}`}>Display Order</Label>
                                                                         <Input
                                                                             type="number"
@@ -1076,7 +1076,7 @@ const UniversityProfileEdit = () => {
                                                                         ))}
                                                                     </div>
 
-                                                                    <FormGroup>
+                                                                    <FormGroup style={{ display: "none" }}>
                                                                         <Label for={`history-order-${historyIndex}`}>Display Order</Label>
                                                                         <Input
                                                                             type="number"

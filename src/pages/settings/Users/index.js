@@ -56,7 +56,7 @@ const Users = () => {
 
     useEffect(() => {
         // setUsers(usersData?.data?.users);
-        setUsersList(usersData?.data?.users);
+        setUsersList(usersData?.users || []);
     }, [usersData]);
 
 
@@ -104,7 +104,7 @@ const Users = () => {
 
     const handleDeleteUser = () => {
         if (user) {
-            dispatch(onDeleteUser(user));
+            dispatch(onDeleteUser(user._id));
             setDeleteModal(false);
         }
     };

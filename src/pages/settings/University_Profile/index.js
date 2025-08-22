@@ -7,7 +7,8 @@ import {
     Table,
     Button
 } from 'reactstrap';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+import 'animate.css';
+import { motion } from "framer-motion";
 
 import classnames from 'classnames';
 import "./SenatorCard.css";
@@ -41,6 +42,21 @@ const UniversityProfile = () => {
 
 
 
+    const selectLayoutState = (state) => state.Layout;
+    const selectLayoutProperties = createSelector(
+        selectLayoutState,
+        (layout) => ({
+            layoutThemeType: layout.layoutThemeType,
+            layoutModeType: layout.layoutModeType,
+        })
+    );
+    // Inside your component
+    const {
+        layoutModeType,
+        layoutThemeType,
+    } = useSelector(selectLayoutProperties);
+
+    // console.log("mode is:", layoutModeType)
 
     useEffect(() => {
         dispatch(onGetUniversityInfo());
@@ -227,7 +243,11 @@ const UniversityProfile = () => {
                                                                     </tr>
                                                                     <tr>
                                                                         <th className="ps-0" scope="row">Colors</th>
-                                                                        <td className="text-muted">{universityInfo?.colors || "Green, Blue"}</td>
+                                                                        <td className="text-muted">
+                                                                            {(universityInfo?.colors || ["Green", "Blue"]).join(", ")}
+                                                                        </td>
+
+
                                                                     </tr>
                                                                     <tr>
                                                                         <th className="ps-0" scope="row">Former names</th>
@@ -398,26 +418,40 @@ const UniversityProfile = () => {
                                     <TabPane tabId="3">
                                         <Card>
                                             <CardHeader>
-                                                <h5 className="card-title mb-0">University Milestones & Achievements</h5>
+                                                <h5 className="card-title mb-0"> University Milestones & Achievements</h5>
                                             </CardHeader>
                                             <CardBody>
-                                                <div className="vstack gap-4">
+                                                <div className="relative pl-10">
+                                                    {/* Timeline vertical line */}
+                                                    <div className="absolute left-5 top-0 h-full w-1 bg-gradient-to-b from-green-400 to-blue-500 rounded-full"></div>
+
                                                     {historyData.map((item, idx) => (
-                                                        <div key={idx} className="d-flex">
+                                                        <div
+                                                            key={idx}
+                                                            className="animate__animated animate__fadeInUp"
+                                                            style={{ animationDelay: `${idx * 0.1}s` }}
+                                                        >
+                                                            {/* Year badge */}
                                                             <div className="flex-shrink-0">
-                                                                <Badge color="success" pill className="p-2 px-3 fs-16">
+                                                                <span className="text-success fw-bold px-4 py-2">
                                                                     {item.year}
-                                                                </Badge>
+                                                                </span>
                                                             </div>
-                                                            <div className="flex-grow-1 ms-3">
-                                                                <ul className="list-unstyled mb-0">
-                                                                    {item.events.map((event, eventIdx) => (
-                                                                        <li key={eventIdx} className="mb-2 position-relative ps-3">
-                                                                            <i className="ri-arrow-right-s-line fs-18 text-success position-absolute start-0 top-1"></i>
-                                                                            {event}
+
+                                                            {/* Events card */}
+                                                            <div className=" p-4 rounded-2xl shadow-md w-full">
+                                                                <ul className="space-y-2 list-none">
+                                                                    {item.events.map((event, i) => (
+                                                                        <li
+                                                                            key={i}
+                                                                            className="flex items-start gap-2 text-gray-700"
+                                                                        >
+                                                                            {/* <span className="text-green-500 mt-1">✔✔</span> */}
+                                                                            <span className="fw-semibold">{event}</span>
                                                                         </li>
                                                                     ))}
                                                                 </ul>
+
                                                             </div>
                                                         </div>
                                                     ))}
@@ -425,6 +459,7 @@ const UniversityProfile = () => {
                                             </CardBody>
                                         </Card>
                                     </TabPane>
+
 
                                     {/* The Senate Tab */}
                                     <TabPane tabId="4">
@@ -465,7 +500,11 @@ const UniversityProfile = () => {
                                                                     <i className="ri-chat-quote-line me-2"></i>Message
                                                                 </h6>
                                                                 <div className="bg-light rounded p-3">
-                                                                    <p className="mb-0 fst-italic text-dark">"{member.message}"</p>
+                                                                    <p
+                                                                        className={`mb-0 fst-italic `}
+                                                                    >
+                                                                        "{member.message}"
+                                                                    </p>
                                                                 </div>
                                                             </div>
 

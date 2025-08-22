@@ -1,6 +1,7 @@
 // src/slices/settings/thunk.js
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "react-toastify";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { UserAPI, UniversityAPI } from "../../helpers/backend_helper";
 
 // Users

@@ -25,7 +25,7 @@ export const loginUser = (user, history) => async (dispatch) => {
       if (data.status === "success") {
         // console.log("ddddddddddd",)
         dispatch(loginSuccess(data));
-        history('/auth-twostep-cover')
+        history('/auth-twostep')
       } else {
         dispatch(apiError(finallogin));
       }

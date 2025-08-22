@@ -8,6 +8,7 @@
         background-color: var(--#{$prefix}light) !important;
         box-shadow: $box-shadow;
         font-size: $font-size-base;
+
         &:hover,
         &.active {
             border-color: transparent;
@@ -19,14 +20,17 @@
 .explore-box {
     border-radius: 9px;
     overflow: hidden;
+
     .explore-img {
         height: 280px;
         object-fit: cover;
     }
+
     .explore-place-bid-img {
         position: relative;
         overflow: hidden;
         z-index: 0;
+
         .bg-overlay {
             position: absolute;
             right: 0;
@@ -37,13 +41,13 @@
             opacity: 0;
             transition: all 0.5s ease;
         }
-    
+
         .place-bid-btn {
             top: 50%;
             position: absolute;
             left: 50%;
             transform: translate(-50%, -50%);
-    
+
             .btn {
                 opacity: 0;
                 bottom: -25px;
@@ -51,7 +55,7 @@
             }
         }
     }
-    
+
     &:hover {
         .explore-place-bid-img {
             .place-bid-btn {
@@ -60,12 +64,13 @@
                     bottom: 0;
                 }
             }
-    
+
             .bg-overlay {
                 opacity: 1;
             }
         }
     }
+
     .discount-time {
         position: absolute;
         bottom: 0;
@@ -80,10 +85,11 @@
 
 //
 .nft-hero {
-    background-image: url('../../images/nft/bg-home.jpg');
+    // background-image: url('../../images/nft/bg-home.jpg');
     background-size: cover;
     background-position: bottom;
     padding: 222px 0 150px 0;
+
     .bg-overlay {
         background-color: #05175f;
         opacity: 0.85;

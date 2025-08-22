@@ -9,12 +9,14 @@
 
 // Flatpickr Calendar
 
-.upcoming-scheduled{
+.upcoming-scheduled {
     position: relative;
+
     @media (max-width: 575.98px) {
         top: 35px !important;
     }
-    .flatpickr-months{
+
+    .flatpickr-months {
         position: absolute !important;
         top: -45px !important;
         left: auto !important;
@@ -22,50 +24,61 @@
         width: 200px;
         background-color: transparent;
 
-        .flatpickr-month{
+        .flatpickr-month {
             color: $gray-600 !important;
             fill: $gray-600 !important;
         }
-        .flatpickr-prev-month, .flatpickr-next-month{
+
+        .flatpickr-prev-month,
+        .flatpickr-next-month {
             display: none;
         }
     }
-    .flatpickr-calendar{
+
+    .flatpickr-calendar {
         box-shadow: none !important;
+
         .flatpickr-current-month {
             font-size: 13px;
             width: 100%;
             left: 0;
         }
+
         .flatpickr-monthDropdown-months {
             border: 1px solid var(--#{$prefix}border-color);
             border-radius: 4px;
             height: 26px;
         }
-        .flatpickr-weekdays{
+
+        .flatpickr-weekdays {
             background-color: var(--#{$prefix}light);
             border: none;
+
             span.flatpickr-weekday {
                 color: var(--#{$prefix}body-color);
                 background-color: var(--#{$prefix}light);
             }
         }
-        .flatpickr-day{
-            &.today{
+
+        .flatpickr-day {
+            &.today {
                 color: $white !important;
                 background-color: var(--#{$prefix}success);
                 border-color: var(--#{$prefix}success) !important;
-                &:hover{
+
+                &:hover {
                     color: var(--#{$prefix}success) !important;
                     background-color: rgba(var(--#{$prefix}success-rgb), 0.2) !important;
                 }
             }
-            &.selected{
+
+            &.selected {
                 background-color: var(--#{$prefix}success) !important;
                 border-color: var(--#{$prefix}success) !important;
                 color: $white;
             }
         }
+
         .numInputWrapper {
             width: 7.5ch;
             margin-left: 10px;
@@ -80,28 +93,34 @@
 .crm-widget {
     .col {
         border-right: 1px solid var(--#{$prefix}border-color);
+
         &:last-child {
             border: 0px;
         }
-        @media (min-width: 768px) and (max-width: 1399.98px) { 
+
+        @media (min-width: 768px) and (max-width: 1399.98px) {
             &:nth-child(3) {
                 border-right: 0px;
             }
-            &:last-child { 
+
+            &:last-child {
                 border-right: 1px solid var(--#{$prefix}border-color);
             }
-         }
+        }
+
         @media (max-width: 767.98px) {
             border-right: 0px;
             border-bottom: 1px solid var(--#{$prefix}border-color);
         }
     }
-}   
+}
 
 
-@media (min-width: 1400px) and (max-width: 1599.98px) { 
+@media (min-width: 1400px) and (max-width: 1599.98px) {
     .project-wrapper {
-        >.col-xxl-8, .col-xxl-4{
+
+        >.col-xxl-8,
+        .col-xxl-4 {
             width: 100%;
         }
     }
@@ -114,7 +133,7 @@
 //nft dashboard
 
 .bg-marketplace {
-    background-image: url(../../images/nft/marketplace.png);
+    // background-image: url(../../);
     background-size: cover;
 }
 
@@ -155,6 +174,7 @@
 }
 
 .marketplace-swiper {
+
     .swiper-button-next,
     .swiper-button-prev {
         top: 34px;
@@ -165,6 +185,7 @@
         border-radius: .3rem;
         right: 16px !important;
     }
+
     .swiper-button-prev {
         right: 58px !important;
         left: auto !important;
@@ -172,15 +193,17 @@
 }
 
 .dash-collection {
-    .content{
+    .content {
         background-color: rgba($white, 0.25);
         backdrop-filter: blur(5px);
     }
 }
 
-.dash-nft{
+.dash-nft {
     @media (max-width: 1441.98px) {
-        .col-xxl-9, .col-xxl-3 {
+
+        .col-xxl-9,
+        .col-xxl-3 {
             width: 100% !important;
             max-width: 100% !important;
         }

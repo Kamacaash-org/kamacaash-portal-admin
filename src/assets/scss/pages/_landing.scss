@@ -9,8 +9,8 @@
     }
 }
 
-.navbar-show{
-    .vertical-overlay{
+.navbar-show {
+    .vertical-overlay {
         display: block;
     }
 }
@@ -46,6 +46,7 @@
 .navbar-landing {
     padding: 10px 0px;
     transition: all 0.5s ease;
+
     @media (max-width: 991.98px) {
         background-color: var(--#{$prefix}secondary-bg);
         box-shadow: 0 1px 16px -2px rgba(56, 65, 74, 0.15);
@@ -82,16 +83,17 @@
 }
 
 //navbar-light
-.navbar-light{
+.navbar-light {
     .navbar-brand {
         .card-logo-dark {
             display: none;
         }
-    
+
         .card-logo-light {
             display: block;
         }
     }
+
     .navbar-nav {
         .nav-item {
             .nav-link {
@@ -99,6 +101,7 @@
             }
         }
     }
+
     &.is-sticky {
         .navbar-nav {
             .nav-item {
@@ -107,11 +110,12 @@
                 }
             }
         }
+
         .navbar-brand {
             .card-logo-dark {
                 display: block;
             }
-        
+
             .card-logo-light {
                 display: none;
             }
@@ -134,7 +138,7 @@
 }
 
 .bg-overlay-pattern {
-    background-image: url("../../images/landing/bg-pattern.png");
+    // background-image: url("../../images/landing/bg-pattern.png");
     background-color: transparent;
     background-position: center;
     background-size: cover;
@@ -251,13 +255,13 @@
     }
 
     //navbar-light
-    .navbar-light{
-        &.is-sticky { 
+    .navbar-light {
+        &.is-sticky {
             .navbar-brand {
                 .card-logo-dark {
                     display: none;
                 }
-        
+
                 .card-logo-light {
                     display: block;
                 }
