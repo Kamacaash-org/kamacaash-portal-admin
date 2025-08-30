@@ -973,7 +973,7 @@ const UniversityProfileEdit = () => {
                                                                                         src={require(`../../../assets/images/${item.image}`)}
                                                                                         alt="Current"
                                                                                         className="img-thumbnail"
-                                                                                        style={{ maxHeight: '100px' }}
+                                                                                        style={{ height: 'auto' }}
                                                                                         onError={(e) => {
                                                                                             e.target.style.display = 'none';
                                                                                         }}

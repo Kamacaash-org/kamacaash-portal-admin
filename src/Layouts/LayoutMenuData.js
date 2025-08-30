@@ -245,6 +245,60 @@ const Navdata = () => {
     //   ]
     // },
 
+
+
+    {
+      id: "setups",
+      label: "Setups",
+      icon: "ri-apps-2-line",
+      link: "/#",
+      stateVariables: menuStates["Setups"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, Setups: !prev.Setups }));
+        setIscurrentState("Setups");
+        updateIconSidebar(e);
+      },
+      subItems: [
+        {
+          id: "program-categories",
+          label: "program Categories",
+          link: "/setup/parogram-categories",
+          parentId: "setups",
+        },
+
+        {
+          id: "schools",
+          label: "Schools",
+          link: "/setup/schools",
+          parentId: "setups",
+        },
+
+        {
+          id: "departments",
+          label: "Departments",
+          link: "/setup/departments",
+          parentId: "setups",
+        },
+
+        {
+          id: "programs",
+          label: "Programs",
+          link: "/setup/programs",
+          parentId: "setups",
+        },
+
+        {
+          id: "staffs",
+          label: "Staffs",
+          link: "/setup/staffs",
+          parentId: "setups",
+        },
+
+
+      ],
+    },
+
     {
       id: "settings",
       label: "Settings",

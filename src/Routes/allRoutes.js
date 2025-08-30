@@ -10,6 +10,14 @@ import EditUniProfile from '../pages/settings/University_Profile/EditUniProfile'
 
 import Users from '../pages/settings/Users'
 
+import ProgramCategories from '../pages/Setup/programCategories';
+import Schools from '../pages/Setup/Schools'
+
+import Departments from '../pages/Setup/Departments';
+import Programs from '../pages/Setup/Programs';
+import Staffs from '../pages/Setup/Staffs';
+
+
 
 
 import TwosVerify from '../pages/AuthenticationInner/TwoStepVerification';
@@ -29,6 +37,20 @@ const authProtectedRoutes = [
   { path: "/setting-edit-profile", component: <EditUniProfile /> },
 
   { path: "/setting-users", component: <Users /> },
+
+
+  { path: "/setup/parogram-categories", component: <ProgramCategories /> },
+
+  { path: "/setup/schools", component: <Schools /> },
+
+  { path: "/setup/departments", component: <Departments /> },
+
+  { path: "/setup/programs", component: <Programs /> },
+
+  { path: "/setup/staffs", component: <Staffs /> },
+
+
+
 
 
   // this route should be at the end of all other routes
