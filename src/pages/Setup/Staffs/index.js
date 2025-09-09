@@ -1120,7 +1120,7 @@ const Staffs = () => {
                                                     </div>
                                                     <div className="d-flex flex-wrap gap-2">
                                                         {experienceItem.achievements.map((achievement, index) => (
-                                                            <Badge key={index} color="info" className="p-2 d-flex align-items-center">
+                                                            <Badge key={index} color="primary" className="p-2 d-flex align-items-center">
                                                                 {achievement}
                                                                 <Button color="link" size="sm" className="p-0 ms-1 text-light" onClick={() => removeAchievement(index)}>
                                                                     <i className="ri-close-line" />
