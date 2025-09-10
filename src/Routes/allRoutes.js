@@ -58,9 +58,12 @@ const authProtectedRoutes = [
   {
     path: "/",
     exact: true,
-    component: <Navigate to="/dashboard" />,
+    // do not forget to change for this
+    // component: <Navigate to="/dashboard" />,
+    component: <Navigate to="/setup/programs" />,
+
   },
-  { path: "*", component: <Navigate to="/not-found-404" /> },
+  // { path: "*", component: <Navigate to="/not-found-404" /> },
 ];
 
 const publicRoutes = [

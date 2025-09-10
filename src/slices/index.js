@@ -10,8 +10,9 @@ import ForgetPasswordReducer from "./auth/forgetpwd/reducer";
 import ProfileReducer from "./auth/profile/reducer";
 
 
-// src/slices/index.js
 import SettingsReducer from "./settings/reducer"
+
+import SetupReducer from "./setups/reducer"
 
 const rootReducer = combineReducers({
     Layout: LayoutReducer,
@@ -19,7 +20,9 @@ const rootReducer = combineReducers({
     Account: AccountReducer,
     ForgetPassword: ForgetPasswordReducer,
     Profile: ProfileReducer,
-    Settings: SettingsReducer
+    Settings: SettingsReducer,
+    Setups: SetupReducer
+
 
 });
 

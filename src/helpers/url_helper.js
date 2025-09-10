@@ -1,18 +1,21 @@
-// src/helpers/url_helper
-//REGISTER
-export const POST_FAKE_REGISTER = "/auth/signup";
-
+// ================================== SETTINGS URL ===================================================
 //USERs
 export const POST_LOGIN = "/users/login";
-export const GET_USERS = "/users";
-export const ADD_USER = "/users";
-export const UPDATE_USER = "/users";
-export const DELETE_USER = "/users";
-
-
-
+export const USERS = "/users";
 // University 
-export const GET_UNIVERSITY_INFO = "/about-university";
-export const UPDATE_UNIVERSITY_INFO = "/about-university";
+export const UNIVERSITY_INFO = "/about-university";
 
+// ================================== END OF SETTINGS URL ===================================================
 
+// ================================== SETUPS URL ===================================================
+// programs category 
+export const PROGRAMS_CATEGORY = "/program-categories";
+// schools
+export const SCHOOLS = "/schools";
+// departments
+export const DEPARTMENTS = "/departments";
+// programs
+export const PROGRAMS = "/programs";
+// staff
+export const STAFFS = "/staffs";
+// ================================== END OF SETUPS URL ===================================================

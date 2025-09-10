@@ -30,7 +30,6 @@ import { useFormik } from "formik";
 
 //User Images
 import userdummyimg from '../../../assets/images/users/user-dummy-img.jpg';
-import smallImage9 from '../../../assets/images/simad-pic.jpeg';
 
 const Users = () => {
     document.title = "Users | simad University";

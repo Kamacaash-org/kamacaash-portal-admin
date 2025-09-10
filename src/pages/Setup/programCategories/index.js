@@ -13,12 +13,31 @@ import 'react-toastify/dist/ReactToastify.css';
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import DeleteModal from "../../../Components/Common/DeleteModal";
 import Loader from "../../../Components/Common/Loader";
-import { api } from "../../../config";
+
+
+import { useDispatch, useSelector } from 'react-redux';
+import { createSelector } from 'reselect';
+
+//redux
+import {
+    getProgramsCategories as onGetProgramsCategories,
+    addProgramCategory as onAddProgramCategory,
+    updateProgramCategory as onUpdateProgramCategory,
+    deleteProgramCategory as onDeleteProgramCategory,
+} from "../../../slices/thunks";
 
 const ProgramCategories = () => {
     document.title = "Program Categories | simad University";
 
+    const dispatch = useDispatch();
+
+    const selectCategoriesData = createSelector(
+        (state) => state.Setups,
+        (pr_categoriesData) => pr_categoriesData.pr_categoriesData
+    );
     // State management
+    const categoriesData = useSelector(selectCategoriesData);
+
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -26,11 +45,10 @@ const ProgramCategories = () => {
     const [deleteModal, setDeleteModal] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
-
+    const [filteredCategories, setFilteredCategories] = useState([]);
     // Filters state
     const [filters, setFilters] = useState({
-        search: '',
-        status: ''
+        search: ''
     });
 
     // Form state
@@ -49,29 +67,32 @@ const ProgramCategories = () => {
         { value: "Inactive", label: "Inactive" }
     ];
 
-    // Fetch categories with filters
-    const fetchCategories = async () => {
+    // Fetch categories
+    const fetchCategories = useCallback(async () => {
         setLoading(true);
-        setError(null);
         try {
-            // Build query params
-            const params = new URLSearchParams();
-            if (filters.search) params.append('search', filters.search);
-            if (filters.status) params.append('isActive', filters.status === 'Active');
-
-            const response = await fetch(`${api.API_URL}/program-categories?${params.toString()}`);
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.message || 'Failed to fetch categories');
-
-            setCategories(data.data.categories || []);
+            await dispatch(onGetProgramsCategories());
         } catch (error) {
-            setError(error.message);
-            toast.error(`Error loading categories: ${error.message}`);
+            console.error("Error loading users:", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [dispatch]);
+
+    // Update users list when data changes
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    // useEffect(() => {
+    //     setCategories(categoriesData?.categories || []);
+    // }, [categoriesData]);
+
+    useEffect(() => {
+        const initialCategories = categoriesData?.categories || [];
+        setCategories(initialCategories);
+        setFilteredCategories(initialCategories); // Initialize filtered data with all categories
+    }, [categoriesData]);
 
     // Handle form input changes
     const handleInputChange = (e) => {
@@ -82,26 +103,17 @@ const ProgramCategories = () => {
         }));
     };
 
-    // Handle select changes
-    const handleSelectChange = (name, selectedOption) => {
-        setFormData(prev => ({
-            ...prev,
-            [name]: selectedOption?.value || ""
-        }));
-    };
 
     // Handle filter changes
     const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters(prev => ({ ...prev, [name]: value }));
-    };
+        const { value } = e.target;
+        setFilters(prevFilters => ({ ...prevFilters, search: value }));
 
-    // Handle select filter changes
-    const handleSelectFilterChange = (name, selectedOption) => {
-        setFilters(prev => ({
-            ...prev,
-            [name]: selectedOption?.value || ""
-        }));
+        // Filter the categories based on the search input
+        const filtered = categories.filter(category =>
+            category.name.toLowerCase().includes(value.toLowerCase())
+        );
+        setFilteredCategories(filtered);
     };
 
     // Validate form
@@ -133,23 +145,11 @@ const ProgramCategories = () => {
                 createdBy: authUser?.data?.user?.username || "Admin"
             };
 
-            const response = await fetch(`${api.API_URL}/program-categories`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(categoryData)
-            });
+            dispatch(onAddProgramCategory(categoryData));
 
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.message || 'Failed to create category');
-
-            toast.success("Category created successfully");
-            fetchCategories();
             setModal(false);
         } catch (error) {
-            toast.error(`Error creating category: ${error.message}`);
+            console.log(`Error creating category: ${error.message}`);
         }
     };
 
@@ -165,23 +165,11 @@ const ProgramCategories = () => {
                 updatedBy: authUser?.data?.user?.username || "Admin"
             };
 
-            const response = await fetch(`${api.API_URL}/program-categories/${selectedCategory._id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(categoryData)
-            });
+            dispatch(onUpdateProgramCategory(categoryData));
 
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.message || 'Failed to update category');
-
-            toast.success("Category updated successfully");
-            fetchCategories();
             setModal(false);
         } catch (error) {
-            toast.error(`Error updating category: ${error.message}`);
+            console.log(`Error updating category: ${error.message}`);
         }
     };
 
@@ -190,19 +178,12 @@ const ProgramCategories = () => {
         if (!selectedCategory) return;
 
         try {
-            const response = await fetch(`${api.API_URL}/program-categories/${selectedCategory._id}`, {
-                method: 'DELETE'
-            });
+            dispatch(onDeleteProgramCategory(selectedCategory._id));
 
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.message || 'Failed to delete category');
-
-            toast.success("Category deleted successfully");
             setDeleteModal(false);
             fetchCategories();
         } catch (error) {
-            toast.error(`Error deleting category: ${error.message}`);
+            console.log(`Error deleting category: ${error.message}`);
         }
     };
 
@@ -298,11 +279,6 @@ const ProgramCategories = () => {
         }
     ];
 
-    // Initial data load
-    useEffect(() => {
-        fetchCategories();
-    }, [filters]);
-
     return (
         <div className="page-content">
             <Container fluid>
@@ -324,22 +300,7 @@ const ProgramCategories = () => {
                                     />
                                 </FormGroup>
                             </Col>
-                            <Col md={3}>
-                                <FormGroup>
-                                    <Label>Status</Label>
-                                    <Select
-                                        options={statusOptions}
-                                        value={statusOptions.find(opt => opt.value === filters.status)}
-                                        onChange={(opt) => handleSelectFilterChange('status', opt)}
-                                        isClearable
-                                    />
-                                </FormGroup>
-                            </Col>
-                            <Col md={3} className="d-flex align-items-end mb-3">
-                                <Button color="primary" onClick={fetchCategories} disabled={loading}>
-                                    {loading ? 'Filtering...' : 'Apply Filters'}
-                                </Button>
-                            </Col>
+
                         </Row>
                     </CardBody>
                 </Card>
@@ -360,7 +321,7 @@ const ProgramCategories = () => {
                         ) : (
                             <DataTable
                                 columns={columns}
-                                data={categories}
+                                data={filteredCategories}
                                 pagination
                                 highlightOnHover
                                 responsive

@@ -9,3 +9,6 @@ export * from "./auth/profile/thunk";
 
 // Settings
 export * from "./settings/thunk"
+
+
+export * from "./setups/thunk"
