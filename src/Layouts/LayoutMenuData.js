@@ -122,7 +122,7 @@ const Navdata = () => {
         {
           id: "Businesses",
           label: "Businesses",
-          link: "/business-management/businesses",
+          link: "/buiness-management/businsesses",
           parentId: "BUSINESS_MANAGEMENT",
         },
 

@@ -5,6 +5,10 @@ export const POST_LOGIN = "/auth/login";
 // ==================================  URL ===================================================
 // 
 export const SURPLUS_CATEGORY = "/surplus-categories";
+export const BUSINESS = "/business";
+export const STAFFS = "/staffs";
+
+
 // // schools
 // export const SCHOOLS = "/schools";
 // // departments

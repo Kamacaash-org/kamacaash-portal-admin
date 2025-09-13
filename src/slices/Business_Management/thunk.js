@@ -1,4 +1,4 @@
-import { SurPlusCategoryAPI } from "../../helpers/backend_helper";
+import { SurPlusCategoryAPI,BusinessAPI,StaffsAPI } from "../../helpers/backend_helper";
 import { makeCRUDThunks } from "../../helpers/thunk_factory";
 
 export const {
@@ -8,19 +8,12 @@ export const {
     delete: deleteCategory
 } = makeCRUDThunks("business-management/surplusCategory", SurPlusCategoryAPI);
 
-// export const {
-//     list: getSchools,
-//     create: addSchool,
-//     update: updateSchool,
-//     delete: deleteSchool
-// } = makeCRUDThunks("setup/school", SchoolAPI);
-
-// export const {
-//     list: getDepartments,
-//     create: addDepartment,
-//     update: updateDepartment,
-//     delete: deleteDepartment
-// } = makeCRUDThunks("setup/department", DepartmentAPI);
+export const {
+    list: getBusiness,
+    create: addBusiness,
+    update: updateBusiness,
+    delete: deleteBusiness
+} = makeCRUDThunks("business-management/business", BusinessAPI);
 
 
 
@@ -32,10 +25,10 @@ export const {
 // } = makeCRUDThunks("setup/program", ProgramAPI);
 
 
-// export const {
-//     list: getStaffs,
-//     create: addStaff,
-//     update: updateStaff,
-//     delete: deleteStaff
-// } = makeCRUDThunks("setup/staff", StaffAPI);
+export const {
+    list: getStaffs,
+    create: addStaff,
+    update: updateStaff,
+    delete: deleteStaff
+} = makeCRUDThunks("setup/staff", StaffsAPI);
 

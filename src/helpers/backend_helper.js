@@ -30,6 +30,10 @@ export const login = (data) => api.create(url.POST_LOGIN, data);
 // // ==================================  URL ===================================================
 
 export const SurPlusCategoryAPI = makeCRUD(url.SURPLUS_CATEGORY);
+export const BusinessAPI = makeCRUD(url.BUSINESS);
+export const StaffsAPI = makeCRUD(url.STAFFS);
+
+
 // export const SchoolAPI = makeCRUD(url.SCHOOLS);
 // export const DepartmentAPI = makeCRUD(url.DEPARTMENTS);
 // export const ProgramAPI = makeCRUD(url.PROGRAMS);
