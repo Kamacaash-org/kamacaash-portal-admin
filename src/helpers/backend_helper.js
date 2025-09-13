@@ -27,31 +27,13 @@ const makeCRUD = (endpoint) => ({
 // Auth
 export const login = (data) => api.create(url.POST_LOGIN, data);
 
-// ================================== SETTINGS URL ===================================================
+// // ==================================  URL ===================================================
 
-//  User APIs
-export const UserAPI = {
-    list: () => api.get(url.USERS),
-    create: (user) => api.create(url.USERS, user),
-    update: (user) => api.update(`${url.USERS}/${user.id}`, user),
-    delete: (id) => api.delete(`${url.USERS}/${id}`)
-};
+export const SurPlusCategoryAPI = makeCRUD(url.SURPLUS_CATEGORY);
+// export const SchoolAPI = makeCRUD(url.SCHOOLS);
+// export const DepartmentAPI = makeCRUD(url.DEPARTMENTS);
+// export const ProgramAPI = makeCRUD(url.PROGRAMS);
+// export const StaffAPI = makeCRUD(url.STAFFS);
 
-//  University APIs
-export const UniversityAPI = {
-    get: () => api.get(url.UNIVERSITY_INFO),
-    update: (uni) => api.update(url.UNIVERSITY_INFO, uni)
-};
-
-// ================================== END OF SETTINGS URL ===================================================
-
-// // ================================== SETUPS URL ===================================================
-
-export const ProgramCategoryAPI = makeCRUD(url.PROGRAMS_CATEGORY);
-export const SchoolAPI = makeCRUD(url.SCHOOLS);
-export const DepartmentAPI = makeCRUD(url.DEPARTMENTS);
-export const ProgramAPI = makeCRUD(url.PROGRAMS);
-export const StaffAPI = makeCRUD(url.STAFFS);
-
-// // ================================== END OF SETUPS URL ===================================================
+// // ================================== END OF  URL ===================================================
 

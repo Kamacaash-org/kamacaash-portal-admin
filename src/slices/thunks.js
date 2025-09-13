@@ -7,8 +7,6 @@ export * from "./auth/register/thunk";
 export * from "./auth/forgetpwd/thunk";
 export * from "./auth/profile/thunk";
 
-// Settings
-export * from "./settings/thunk"
 
 
-export * from "./setups/thunk"
+export * from "./Business_Management/thunk"

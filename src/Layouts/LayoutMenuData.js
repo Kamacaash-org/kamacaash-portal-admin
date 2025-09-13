@@ -98,253 +98,60 @@ const Navdata = () => {
 
   // Static full-access menu for superadmin
   const menuItems = [
-    // {
-    //   id: "dashboard",
-    //   label: "Dashboards",
-    //   icon: "ri-dashboard-line",
-    //   link: "/dashboard",
-    //   click: (e) => {
-    //     e.preventDefault();
-    //     setIscurrentState("Dashboards");
-    //   },
-    // },
-
-    // {
-    //   id: "registrations",
-    //   label: "Registrations",
-    //   icon: "ri-team-line",
-    //   link: "/#",
-    //   stateVariables: menuStates["Registrations"] || false,
-    //   click: (e) => {
-    //     e.preventDefault();
-    //     setMenuStates((prev) => ({ ...prev, Registrations: !prev.Registrations }));
-    //     setIscurrentState("Registrations");
-    //     updateIconSidebar(e);
-    //   },
-    //   subItems: [
-    //     { id: "parents", label: "Parents", link: "/academics-parents", parentId: "registrations" },
-    //     { id: "students", label: "Students", link: "/academics-students", parentId: "registrations" },
-    //     { id: "teachers", label: "Teachers", link: "/academics-teachers", parentId: "registrations" },
-    //   ],
-    // },
-
-    // {
-    //   id: "academics",
-    //   label: "Academics",
-    //   icon: "ri-graduation-cap-line",
-    //   link: "/#",
-    //   stateVariables: menuStates["Academics"] || false,
-    //   click: (e) => {
-    //     e.preventDefault();
-    //     setMenuStates((prev) => ({ ...prev, Academics: !prev.Academics }));
-    //     setIscurrentState("Academics");
-    //     updateIconSidebar(e);
-    //   },
-    //   subItems: [
-    //     { id: "groups", label: "Groups", link: "/groups", parentId: "academics" },
-    //     { id: "attendance", label: "Attendance", link: "/group-attendance", parentId: "academics" },
-    //     { id: "lesson-tracking", label: "Lesson Tracking", link: "/group-lessons", parentId: "academics" },
-    //   ],
-    // },
-
-    // {
-    //   id: "finance",
-    //   label: "Finance",
-    //   icon: "ri-money-dollar-circle-line",
-    //   link: "/#",
-    //   stateVariables: menuStates["Finance"] || false,
-    //   click: function (e) {
-    //     e.preventDefault();
-    //     setMenuStates((prev) => ({ ...prev, Finance: !prev.Finance }));
-    //     setIscurrentState("Finance");
-    //     updateIconSidebar(e);
-    //   },
-    //   subItems: [
-
-    //     {
-    //       id: "fee-types",
-    //       label: "Fee Types",
-    //       link: "/finance/fee-type",
-    //       parentId: "finance",
-    //     },
-
-    //     {
-    //       id: "fee-generation",
-    //       label: "Fee Generation",
-    //       link: "/finance/fee-generation",
-    //       parentId: "finance",
-    //     },
-    //     {
-    //       id: "receipts",
-    //       label: "Receipts",
-    //       link: "/finance/receipts",
-    //       parentId: "finance",
-    //     },
-    //     {
-    //       id: "expenses",
-    //       label: "Expenses",
-    //       link: "/finance/expenses",
-    //       parentId: "finance",
-    //     },
-    //     {
-    //       id: "expense-types",
-    //       label: "Expense Types",
-    //       link: "/finance/expense-types",
-    //       parentId: "finance",
-    //     },
-
-    //   ]
-    // },
-
-    // {
-    //   id: "reports",
-    //   label: "Reports",
-    //   icon: "ri-bar-chart-line",
-    //   link: "/#",
-    //   stateVariables: menuStates["Reports"] || false,
-    //   click: function (e) {
-    //     e.preventDefault();
-    //     setMenuStates((prev) => ({ ...prev, Reports: !prev.Reports }));
-    //     setIscurrentState("Reports");
-    //     updateIconSidebar(e);
-    //   },
-    //   subItems: [
-
-    //     {
-    //       id: "attendance-report",
-    //       label: "Lesson Report",
-    //       link: "/reports/lesson",
-    //       parentId: "reports",
-    //     },
-    //     {
-    //       id: "lesson-report",
-    //       label: "Attendance Report",
-    //       link: "/reports/attendance",
-    //       parentId: "reports",
-    //     },
-
-    //     {
-    //       id: "students-without-lesson-report",
-    //       label: "Student without Lesson",
-    //       link: "/reports/students-without-lesson",
-    //       parentId: "reports",
-    //     },
-
-    //     {
-    //       id: "balance-sheet",
-    //       label: "Balance Sheet",
-    //       link: "/reports/balancesheet",
-    //       parentId: "reports",
-    //     },
-    //     {
-    //       id: "financial-report",
-    //       label: "Gen Financial Report",
-    //       link: "/general/finance/rpt",
-    //       parentId: "reports",
-    //     },
-    //   ]
-    // },
-
-
 
     {
-      id: "setups",
-      label: "Setups",
+      id: "BUSINESS_MANAGEMENT",
+      label: "BUSINESS MANAGEMENT",
       icon: "ri-apps-2-line",
       link: "/#",
-      stateVariables: menuStates["Setups"] || false,
+      stateVariables: menuStates["BUSINESS_MANAGEMENT"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, Setups: !prev.Setups }));
-        setIscurrentState("Setups");
+        setMenuStates((prev) => ({ ...prev, BUSINESS_MANAGEMENT: !prev.BUSINESS_MANAGEMENT }));
+        setIscurrentState("BUSINESS_MANAGEMENT");
         updateIconSidebar(e);
       },
       subItems: [
         {
-          id: "program-categories",
-          label: "program Categories",
-          link: "/setup/parogram-categories",
-          parentId: "setups",
+          id: "Businesses",
+          label: "Categories",
+          link: "/business-management/categories",
+          parentId: "BUSINESS_MANAGEMENT",
         },
 
         {
-          id: "schools",
-          label: "Schools",
-          link: "/setup/schools",
-          parentId: "setups",
+          id: "Businesses",
+          label: "Businesses",
+          link: "/business-management/businesses",
+          parentId: "BUSINESS_MANAGEMENT",
         },
 
-        {
-          id: "departments",
-          label: "Departments",
-          link: "/setup/departments",
-          parentId: "setups",
-        },
-
-        {
-          id: "programs",
-          label: "Programs",
-          link: "/setup/programs",
-          parentId: "setups",
-        },
-
-        {
-          id: "staffs",
-          label: "Staffs",
-          link: "/setup/staffs",
-          parentId: "setups",
-        },
 
 
       ],
     },
 
     {
-      id: "settings",
-      label: "Settings",
+      id: "USER_MANAGEMENT",
+      label: "USER MANAGEMENT",
       icon: "ri-apps-2-line",
       link: "/#",
-      stateVariables: menuStates["Settings"] || false,
+      stateVariables: menuStates["USER_MANAGEMENT"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, Settings: !prev.Settings }));
-        setIscurrentState("Settings");
+        setMenuStates((prev) => ({ ...prev, USER_MANAGEMENT: !prev.USER_MANAGEMENT }));
+        setIscurrentState("USER_MANAGEMENT");
         updateIconSidebar(e);
       },
       subItems: [
         {
-          id: "profile",
-          label: "University Profile",
-          link: "/setting-profile",
-          parentId: "settings",
+          id: "Staff_Accounts",
+          label: "Staff Accounts",
+          link: "/user-management/staff-accounts",
+          parentId: "USER_MANAGEMENT",
         },
 
-        {
-          id: "users",
-          label: "Users",
-          link: "/setting-users",
-          parentId: "settings",
-        },
-        {
-          id: "roles",
-          label: "Roles",
-          link: "/setting-roles",
-          parentId: "settings",
-        },
 
-        {
-          id: "menus",
-          label: "Menus",
-          link: "/setting-menus",
-          parentId: "settings",
-        },
-
-        {
-          id: "permissions",
-          label: "Permissions",
-          link: "/setting-permissions",
-          parentId: "settings",
-        },
 
 
       ],

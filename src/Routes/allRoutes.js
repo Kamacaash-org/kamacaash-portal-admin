@@ -5,18 +5,7 @@ import { Navigate } from "react-router-dom";
 // //AuthenticationInner pages
 import SignIn from '../pages/AuthenticationInner/Login';
 //pages
-import UniversityProfile from '../pages/settings/University_Profile/index';
-import EditUniProfile from '../pages/settings/University_Profile/EditUniProfile';
-
-import Users from '../pages/settings/Users'
-
-import ProgramCategories from '../pages/Setup/programCategories';
-import Schools from '../pages/Setup/Schools'
-
-import Departments from '../pages/Setup/Departments';
-import Programs from '../pages/Setup/Programs';
-import Staffs from '../pages/Setup/Staffs';
-
+import Categories from '../pages/Business_Management/Categories';
 
 
 
@@ -33,22 +22,8 @@ const authProtectedRoutes = [
 
 
   //Pages
-  { path: "/setting-profile", component: <UniversityProfile /> },
-  { path: "/setting-edit-profile", component: <EditUniProfile /> },
 
-  { path: "/setting-users", component: <Users /> },
-
-
-  { path: "/setup/parogram-categories", component: <ProgramCategories /> },
-
-  { path: "/setup/schools", component: <Schools /> },
-
-  { path: "/setup/departments", component: <Departments /> },
-
-  { path: "/setup/programs", component: <Programs /> },
-
-  { path: "/setup/staffs", component: <Staffs /> },
-
+  { path: "/business-management/categories", component: <Categories /> },
 
 
 
@@ -59,9 +34,7 @@ const authProtectedRoutes = [
     path: "/",
     exact: true,
     // do not forget to change for this
-    // component: <Navigate to="/dashboard" />,
-    component: <Navigate to="/setup/programs" />,
-
+    component: <Navigate to="/dashboard" />,
   },
   // { path: "*", component: <Navigate to="/not-found-404" /> },
 ];

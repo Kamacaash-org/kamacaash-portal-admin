@@ -120,7 +120,7 @@ const TwosVerify = () => {
                         <Row>
                             <Col lg={12}>
                                 <div className="text-center">
-                                    <p className="mb-0">&copy; {new Date().getFullYear()} Crafted with <i className="mdi mdi-heart text-danger"></i> by Simad ICT Devs</p>
+                                    <p className="mb-0">&copy; {new Date().getFullYear()} Crafted with <i className="mdi mdi-heart text-danger"></i> by Test ICT Devs</p>
                                 </div>
                             </Col>
                         </Row>
