@@ -30,7 +30,15 @@ export const login = (data) => api.create(url.POST_LOGIN, data);
 // // ==================================  URL ===================================================
 
 export const SurPlusCategoryAPI = makeCRUD(url.SURPLUS_CATEGORY);
-export const BusinessAPI = makeCRUD(url.BUSINESS);
+// Business API with extra endpoints
+export const BusinessAPI = {
+    ...makeCRUD(url.BUSINESS),
+
+    // extra endpoints
+    activate: (id) => api.update(`${url.BUSINESS}/${id}/activate`),
+    contract: (payload) => api.update(`${url.BUSINESS}/${payload.id}/contract`, payload)
+};
+
 export const StaffsAPI = makeCRUD(url.STAFFS);
 
 

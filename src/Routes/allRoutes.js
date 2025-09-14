@@ -8,6 +8,9 @@ import SignIn from '../pages/AuthenticationInner/Login';
 import Categories from '../pages/Business_Management/Categories';
 import Business from '../pages/Business_Management/Businesses';
 
+import Staff from '../pages/User_Management/Staffs';
+
+
 
 import TwosVerify from '../pages/AuthenticationInner/TwoStepVerification';
 import Cover404 from '../pages/AuthenticationInner/Errors/Cover404';
@@ -25,6 +28,8 @@ const authProtectedRoutes = [
 
   { path: "/business-management/categories", component: <Categories /> },
   { path: "/buiness-management/businsesses", component: <Business /> },
+  { path: "/user-management/staff-accounts", component: <Staff /> },
+
 
 
 

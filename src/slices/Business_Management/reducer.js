@@ -2,14 +2,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
     getCategories,
-    getBusiness,
-    getStaffs
+    getBusinessesData
 } from "./thunk";
 
 export const initialState = {
     categoriesData: [],
     businessesData: [],
-    staffsData: [],
 
     error: {},
 };
@@ -27,20 +25,14 @@ const BusinessManagementSlice = createSlice({
         });
 
 
-          builder.addCase(getBusiness.fulfilled, (state, action) => {
+        builder.addCase(getBusinessesData.fulfilled, (state, action) => {
             state.businessesData = action.payload;
         });
-        builder.addCase(getBusiness.rejected, (state, action) => {
+        builder.addCase(getBusinessesData.rejected, (state, action) => {
             state.error = action.payload?.error || null;
         });
 
 
-           builder.addCase(getStaffs.fulfilled, (state, action) => {
-            state.staffsData = action.payload;
-        });
-        builder.addCase(getStaffs.rejected, (state, action) => {
-            state.error = action.payload?.error || null;
-        });
 
     }
 });

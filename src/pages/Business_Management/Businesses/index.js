@@ -6,8 +6,9 @@ import {
     Col, Container, Row,
     Form, Input, Label, FormGroup,
     Modal, ModalBody, ModalFooter, ModalHeader,
-    Button, Badge, FormFeedback
+    Button, Badge, FormFeedback, TabContent, TabPane, Nav, NavItem, NavLink
 } from "reactstrap";
+import classnames from 'classnames';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
@@ -18,12 +19,13 @@ import { createSelector } from 'reselect';
 
 //redux
 import {
-    getBusiness as onGetBusinessesData,
+    getBusinessesData as onGetBusinessesData,
     addBusiness as onAddNewBusiness,
     updateBusiness as onUpdateBusiness,
     deleteBusiness as onDeleteBusiness,
-    // activateBusiness as onActivateBusiness,
-    // signContract as onSignContract,
+    activateBusiness as onActivateBusiness,
+    signContract as onSignContract,
+    getStaffs as onGetStaffData
 } from "../../../slices/thunks";
 
 // Formik
@@ -31,7 +33,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 
 const Businesses = () => {
-    document.title = "Businesses | simad University";
+    document.title = "Businesses | Test 001";
 
     const dispatch = useDispatch();
 
@@ -40,14 +42,25 @@ const Businesses = () => {
         (businessesData) => businessesData.businessesData
     );
 
+    const selectStaffData = createSelector(
+        (state) => state.UserManagement,
+        (staffData) => staffData.staffData
+    );
+
     const businessesData = useSelector(selectBusinessesData);
+    const staffData = useSelector(selectStaffData);
     const [businessesList, setBusinessesList] = useState([]);
+    const [staffList, setStaffList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState(false);
     const [contractModal, setContractModal] = useState(false);
+    const [viewModal, setViewModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedBusiness, setSelectedBusiness] = useState(null);
+    const [activeTab, setActiveTab] = useState('1');
+    const [uploading, setUploading] = useState(false);
+    const [fileUploadError, setFileUploadError] = useState(null);
 
     // Filters state
     const [filters, setFilters] = useState({
@@ -85,6 +98,9 @@ const Businesses = () => {
         commissionRate: 10
     });
 
+    // File state (separate from Formik)
+    const [selectedFile, setSelectedFile] = useState(null);
+
     // Options for selects
     const statusOptions = [
         { value: "", label: "All Statuses" },
@@ -117,19 +133,41 @@ const Businesses = () => {
         }
     }, [dispatch]);
 
+    // Fetch staff data
+    const fetchStaff = useCallback(async () => {
+        try {
+            await dispatch(onGetStaffData());
+        } catch (error) {
+            console.error("Error loading staff:", error);
+        }
+    }, [dispatch]);
+
     // Update businesses list when data changes
     useEffect(() => {
         fetchBusinesses();
-    }, [fetchBusinesses]);
+        fetchStaff();
+    }, [fetchBusinesses, fetchStaff]);
 
     useEffect(() => {
         setBusinessesList(businessesData?.businesses || []);
     }, [businessesData]);
 
+    useEffect(() => {
+        setStaffList(staffData?.staff || []);
+    }, [staffData]);
+
+    // Prepare staff options for dropdown
+    const staffOptions = staffList
+        .filter(staff => staff.isActive)
+        .map(staff => ({
+            value: staff._id,
+            label: `${staff.firstName} ${staff.lastName} (${staff.email})`
+        }));
+
     // Handle form input changes
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        
+
         if (name.includes('address.')) {
             const addressField = name.split('.')[1];
             setFormData(prev => ({
@@ -154,6 +192,25 @@ const Businesses = () => {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+    };
+
+    // Handle file selection
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        setSelectedFile(file);
+        setFileUploadError(null);
+
+        // Validate file
+        if (file) {
+            if (file.type !== 'application/pdf') {
+                setFileUploadError('Only PDF files are allowed');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                setFileUploadError('File size must be less than 10MB');
+                return;
+            }
+        }
     };
 
     // Handle select changes
@@ -251,19 +308,62 @@ const Businesses = () => {
         setModal(true);
     };
 
+    // Open view modal
+    const handleView = (business) => {
+        setSelectedBusiness(business);
+        setViewModal(true);
+    };
+
     // Open contract modal
     const handleContract = (business) => {
         setSelectedBusiness(business);
         setContractFormData({
             isSigned: business.contract?.isSigned || false,
-            signedDate: business.contract?.signedDate ? 
-                new Date(business.contract.signedDate).toISOString().split('T')[0] : 
+            signedDate: business.contract?.signedDate ?
+                new Date(business.contract.signedDate).toISOString().split('T')[0] :
                 new Date().toISOString().split('T')[0],
             agreementPdf: business.contract?.agreementPdf || "",
             payoutSchedule: business.contract?.payoutSchedule || "WEEKLY",
             commissionRate: business.contract?.commissionRate || 10
         });
+        setSelectedFile(null);
+        setFileUploadError(null);
         setContractModal(true);
+    };
+
+    // Handle PDF upload
+    const handlePdfUpload = async (file) => {
+        setUploading(true);
+        setFileUploadError(null);
+        try {
+            const formData = new FormData();
+            formData.append('contract', file);
+
+            const response = await fetch('http://localhost:4000/api/v1/upload/contract', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Upload failed');
+            }
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Upload failed');
+            }
+
+            return data.data?.file?.filePath;
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            setFileUploadError(error.message);
+            throw error;
+        } finally {
+            setUploading(false);
+        }
     };
 
     // Delete Business
@@ -281,7 +381,7 @@ const Businesses = () => {
 
     // Activate Business
     const handleActivateBusiness = (business) => {
-        // dispatch(onActivateBusiness(business._id));
+        dispatch(onActivateBusiness(business._id));
     };
 
     // Form validation
@@ -353,22 +453,36 @@ const Businesses = () => {
                 .min(0, "Commission rate must be at least 0%")
                 .max(100, "Commission rate cannot exceed 100%")
                 .required("Commission rate is required"),
-            agreementPdf: Yup.string().when('isSigned', (isSigned, schema) => {
-                return isSigned ? schema.required("Agreement PDF is required when contract is signed") : schema
-            })
         }),
-        onSubmit: (values) => {
-            if (selectedBusiness) {
-                const contractData = {
-                    ...values,
-                    isSigned: true // Always set to true when submitting
-                };
-                // dispatch(onSignContract({
-                //     id: selectedBusiness._id,
-                //     ...contractData
-                // }));
+        onSubmit: async (values) => {
+            try {
+                let agreementPdfPath = values.agreementPdf;
+
+                // Upload new file if provided
+                if (selectedFile) {
+                    agreementPdfPath = await handlePdfUpload(selectedFile);
+                }
+
+                if (!agreementPdfPath && values.isSigned) {
+                    throw new Error("Agreement PDF is required when signing contract");
+                }
+
+                if (selectedBusiness) {
+                    const contractData = {
+                        id: selectedBusiness._id,
+                        ...values,
+                        agreementPdf: agreementPdfPath,
+                        isSigned: true,
+                        signedDate: new Date(values.signedDate).toISOString()
+                    };
+
+                    dispatch(onSignContract(contractData));
+                }
+                setContractModal(false);
+            } catch (error) {
+                console.error('Failed to save contract:', error);
+                alert(`Failed to save contract: ${error.message}`);
             }
-            setContractModal(false);
         },
     });
 
@@ -376,28 +490,23 @@ const Businesses = () => {
     const columns = [
         {
             name: '#',
-            cell: (row, index) => index + 1,
-            width: '60px'
+            cell: (row, index) => index + 1
         },
         {
             name: 'Business Name',
             selector: row => row.businessName,
-            sortable: true
         },
         {
             name: 'Owner',
             selector: row => row.ownerName,
-            sortable: true
         },
         {
             name: 'Email',
             selector: row => row.email,
-            sortable: true
         },
         {
             name: 'Phone',
             selector: row => row.phoneNumber,
-            sortable: true
         },
         {
             name: 'Contract Status',
@@ -406,8 +515,6 @@ const Businesses = () => {
                     {row.contract?.isSigned ? 'Signed' : 'Unsigned'}
                 </Badge>
             ),
-            sortable: true,
-            width: '120px'
         },
         {
             name: 'Status',
@@ -416,14 +523,15 @@ const Businesses = () => {
                     {row.isActive ? 'Active' : 'Inactive'}
                 </Badge>
             ),
-            sortable: true,
-            width: '100px'
         },
         {
             name: 'Actions',
             cell: row => (
                 <div className="d-flex gap-2">
-                    <Button color="soft-info" size="sm" onClick={() => handleContract(row)}>
+                    <Button color="soft-info" size="sm" onClick={() => handleView(row)}>
+                        <i className="ri-eye-line" />
+                    </Button>
+                    <Button color="soft-primary" size="sm" onClick={() => handleContract(row)}>
                         <i className="ri-file-text-line" />
                     </Button>
                     <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)}>
@@ -443,9 +551,15 @@ const Businesses = () => {
                     </Button>
                 </div>
             ),
-            width: '200px'
+            width: '230px'
         }
     ];
+
+    const toggleTab = (tab) => {
+        if (activeTab !== tab) {
+            setActiveTab(tab);
+        }
+    };
 
     return (
         <div className="page-content">
@@ -596,6 +710,20 @@ const Businesses = () => {
                                 </Row>
 
                                 <FormGroup>
+                                    <Label>Primary Staff Account <span className="text-danger">*</span></Label>
+                                    <Select
+                                        options={staffOptions}
+                                        value={staffOptions.find(opt => opt.value === validation.values.primaryStaffAccount)}
+                                        onChange={(opt) => handleSelectChange('primaryStaffAccount', opt)}
+                                        isClearable
+                                        placeholder="Select staff member"
+                                    />
+                                    <FormFeedback>
+                                        {validation.touched.primaryStaffAccount && validation.errors.primaryStaffAccount}
+                                    </FormFeedback>
+                                </FormGroup>
+
+                                <FormGroup>
                                     <Label>Description</Label>
                                     <Input
                                         type="textarea"
@@ -670,18 +798,6 @@ const Businesses = () => {
                                         </FormGroup>
                                     </Col>
                                 </Row>
-
-                                <FormGroup>
-                                    <Label>Primary Staff Account ID <span className="text-danger">*</span></Label>
-                                    <Input
-                                        name="primaryStaffAccount"
-                                        value={validation.values.primaryStaffAccount}
-                                        onChange={validation.handleChange}
-                                        onBlur={validation.handleBlur}
-                                        invalid={validation.touched.primaryStaffAccount && !!validation.errors.primaryStaffAccount}
-                                    />
-                                    <FormFeedback>{validation.errors.primaryStaffAccount}</FormFeedback>
-                                </FormGroup>
 
                                 <FormGroup check className="mt-3">
                                     <Input
@@ -767,21 +883,48 @@ const Businesses = () => {
                                             <FormFeedback>{contractValidation.errors.signedDate}</FormFeedback>
                                         </FormGroup>
                                     </Col>
-                                    <Col md={6}>
-                                        <FormGroup>
-                                            <Label>Agreement PDF URL <span className="text-danger">*</span></Label>
-                                            <Input
-                                                name="agreementPdf"
-                                                placeholder="Enter PDF URL"
-                                                value={contractValidation.values.agreementPdf}
-                                                onChange={contractValidation.handleChange}
-                                                onBlur={contractValidation.handleBlur}
-                                                invalid={contractValidation.touched.agreementPdf && !!contractValidation.errors.agreementPdf}
-                                            />
-                                            <FormFeedback>{contractValidation.errors.agreementPdf}</FormFeedback>
-                                        </FormGroup>
-                                    </Col>
                                 </Row>
+
+                                <FormGroup>
+                                    <Label>Agreement PDF <span className="text-danger">*</span></Label>
+                                    <Input
+                                        type="file"
+                                        name="agreementFile"
+                                        accept=".pdf"
+                                        onChange={handleFileSelect}
+                                    />
+                                    <small className="form-text text-muted">
+                                        Upload a PDF contract document (Max: 10MB)
+                                    </small>
+
+                                    {fileUploadError && (
+                                        <div className="text-danger mt-1">
+                                            <small>{fileUploadError}</small>
+                                        </div>
+                                    )}
+
+                                    {uploading && (
+                                        <div className="text-info mt-1">
+                                            <small>Uploading file...</small>
+                                        </div>
+                                    )}
+
+                                    {contractValidation.values.agreementPdf && (
+                                        <div className="mt-2">
+                                            <Label>Current Contract:</Label>
+                                            <div>
+                                                <Button
+                                                    color="link"
+                                                    size="sm"
+                                                    onClick={() => window.open(contractValidation.values.agreementPdf, '_blank')}
+                                                >
+                                                    <i className="ri-file-pdf-line me-1" />
+                                                    View Current Contract
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </FormGroup>
 
                                 <FormGroup check className="mt-3">
                                     <Input
@@ -802,11 +945,166 @@ const Businesses = () => {
                         <Button color="light" onClick={() => setContractModal(false)}>
                             Cancel
                         </Button>
-                        <Button color="primary" type="submit" disabled={loading}>
-                            {loading ? 'Saving...' : 'Save Contract'}
+                        <Button color="primary" type="submit" disabled={uploading || loading}>
+                            {uploading ? 'Uploading...' : loading ? 'Saving...' : 'Save Contract'}
                         </Button>
                     </ModalFooter>
                 </Form>
+            </Modal>
+
+            {/* View Business Modal */}
+            <Modal isOpen={viewModal} toggle={() => setViewModal(false)} size="xl">
+                <ModalHeader toggle={() => setViewModal(false)}>
+                    Business Details - {selectedBusiness?.businessName}
+                </ModalHeader>
+                <ModalBody>
+                    {selectedBusiness && (
+                        <>
+                            <Nav tabs>
+                                <NavItem>
+                                    <NavLink
+                                        className={classnames({ active: activeTab === '1' })}
+                                        onClick={() => toggleTab('1')}
+                                    >
+                                        Business Info
+                                    </NavLink>
+                                </NavItem>
+                                <NavItem>
+                                    <NavLink
+                                        className={classnames({ active: activeTab === '2' })}
+                                        onClick={() => toggleTab('2')}
+                                    >
+                                        Contract Details
+                                    </NavLink>
+                                </NavItem>
+                                <NavItem>
+                                    <NavLink
+                                        className={classnames({ active: activeTab === '3' })}
+                                        onClick={() => toggleTab('3')}
+                                    >
+                                        Analytics
+                                    </NavLink>
+                                </NavItem>
+                            </Nav>
+
+                            <TabContent activeTab={activeTab} className="p-3">
+                                <TabPane tabId="1">
+                                    <Row>
+                                        <Col md={6}>
+                                            <h6>Basic Information</h6>
+                                            <p><strong>Business Name:</strong> {selectedBusiness.businessName}</p>
+                                            <p><strong>Owner:</strong> {selectedBusiness.ownerName}</p>
+                                            <p><strong>Email:</strong> {selectedBusiness.email}</p>
+                                            <p><strong>Phone:</strong> {selectedBusiness.phoneNumber}</p>
+                                            <p><strong>Status:</strong>
+                                                <Badge color={selectedBusiness.isActive ? 'success' : 'danger'} className="ms-2">
+                                                    {selectedBusiness.isActive ? 'Active' : 'Inactive'}
+                                                </Badge>
+                                            </p>
+                                        </Col>
+                                        <Col md={6}>
+                                            <h6>Address</h6>
+                                            <p>
+                                                {selectedBusiness.address?.street}<br />
+                                                {selectedBusiness.address?.city}, {selectedBusiness.address?.state}<br />
+                                                {selectedBusiness.address?.country} {selectedBusiness.address?.postcode}
+                                            </p>
+                                        </Col>
+                                    </Row>
+                                    {selectedBusiness.description && (
+                                        <>
+                                            <h6>Description</h6>
+                                            <p>{selectedBusiness.description}</p>
+                                        </>
+                                    )}
+                                </TabPane>
+
+                                <TabPane tabId="2">
+                                    {selectedBusiness.contract ? (
+                                        <>
+                                            <Row>
+                                                <Col md={6}>
+                                                    <p><strong>Contract Status:</strong>
+                                                        <Badge color={selectedBusiness.contract.isSigned ? 'success' : 'warning'} className="ms-2">
+                                                            {selectedBusiness.contract.isSigned ? 'Signed' : 'Unsigned'}
+                                                        </Badge>
+                                                    </p>
+                                                    {selectedBusiness.contract.signedDate && (
+                                                        <p><strong>Signed Date:</strong> {new Date(selectedBusiness.contract.signedDate).toLocaleDateString()}</p>
+                                                    )}
+                                                    <p><strong>Payout Schedule:</strong> {selectedBusiness.contract.payoutSchedule}</p>
+                                                    <p><strong>Commission Rate:</strong> {selectedBusiness.contract.commissionRate}%</p>
+                                                </Col>
+                                                <Col md={6}>
+                                                    {selectedBusiness.contract.agreementPdf && (
+                                                        <>
+                                                            <h6>Contract Document</h6>
+                                                            <Button
+                                                                color="primary"
+                                                                onClick={() => window.open(selectedBusiness.contract.agreementPdf, '_blank')}
+                                                            >
+                                                                <i className="ri-file-pdf-line me-1" />
+                                                                View Contract PDF
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </Col>
+                                            </Row>
+                                        </>
+                                    ) : (
+                                        <p>No contract information available.</p>
+                                    )}
+                                </TabPane>
+
+                                <TabPane tabId="3">
+                                    {selectedBusiness.analytics ? (
+                                        <Row>
+                                            <Col md={3}>
+                                                <Card className="text-center">
+                                                    <CardBody>
+                                                        <h3>{selectedBusiness.analytics.totalOrders || 0}</h3>
+                                                        <p className="text-muted mb-0">Total Orders</p>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                            <Col md={3}>
+                                                <Card className="text-center">
+                                                    <CardBody>
+                                                        <h3>${selectedBusiness.analytics.totalEarnings || 0}</h3>
+                                                        <p className="text-muted mb-0">Total Earnings</p>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                            <Col md={3}>
+                                                <Card className="text-center">
+                                                    <CardBody>
+                                                        <h3>${selectedBusiness.analytics.totalPayout || 0}</h3>
+                                                        <p className="text-muted mb-0">Total Payout</p>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                            <Col md={3}>
+                                                <Card className="text-center">
+                                                    <CardBody>
+                                                        <h3>{selectedBusiness.analytics.totalFoodSaved || 0}</h3>
+                                                        <p className="text-muted mb-0">Food Saved (kg)</p>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                        </Row>
+                                    ) : (
+                                        <p>No analytics data available.</p>
+                                    )}
+                                </TabPane>
+                            </TabContent>
+                        </>
+                    )}
+                </ModalBody>
+                <ModalFooter>
+                    <Button color="light" onClick={() => setViewModal(false)}>
+                        Close
+                    </Button>
+                </ModalFooter>
             </Modal>
 
             {/* Delete Confirmation Modal */}

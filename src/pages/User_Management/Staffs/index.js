@@ -1,0 +1,604 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import DataTable from "react-data-table-component";
+import Select from "react-select";
+import {
+    Card, CardHeader, CardBody,
+    Col, Container, Row,
+    Form, Input, Label, FormGroup,
+    Modal, ModalBody, ModalFooter, ModalHeader,
+    Button, Badge, FormFeedback
+} from "reactstrap";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import BreadCrumb from "../../../Components/Common/BreadCrumb";
+import DeleteModal from "../../../Components/Common/DeleteModal";
+import Loader from "../../../Components/Common/Loader";
+import { useDispatch, useSelector } from 'react-redux';
+import { createSelector } from 'reselect';
+
+//redux
+import {
+    getStaffs as onGetStaffsData,
+    addStaff as onAddNewStaff,
+    updateStaff as onUpdateStaff,
+    deleteStaff as onDeleteStaff,
+} from "../../../slices/thunks";
+
+// Formik
+import * as Yup from "yup";
+import { useFormik } from "formik";
+
+const Staff = () => {
+    document.title = "Staff | Test 001";
+
+    const dispatch = useDispatch();
+
+    const selectStaffData = createSelector(
+        (state) => state.UserManagement,
+        (staffData) => staffData.staffData
+    );
+
+    const staffData = useSelector(selectStaffData);
+    const [staffList, setStaffList] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [modal, setModal] = useState(false);
+    const [deleteModal, setDeleteModal] = useState(false);
+    const [isEdit, setIsEdit] = useState(false);
+    const [selectedStaff, setSelectedStaff] = useState(null);
+
+    // Filters state
+    const [filters, setFilters] = useState({
+        search: '',
+        status: '',
+        role: ''
+    });
+
+    // Form state
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phoneNumber: "",
+        username: "",
+        password: "",
+        title: "",
+        role: "STAFF",
+        isActive: true
+    });
+
+    // Options for selects
+    const statusOptions = [
+        { value: "", label: "All Statuses" },
+        { value: "Active", label: "Active" },
+        { value: "Inactive", label: "Inactive" }
+    ];
+
+    const roleOptions = [
+        { value: "", label: "All Roles" },
+        { value: "SUPER_ADMIN", label: "Admin" },
+        { value: "BUSINESS_OWNER", label: "Business Owner" }
+    ];
+
+    // Fetch staff with filters
+    const fetchStaff = useCallback(async () => {
+        setLoading(true);
+        try {
+            await dispatch(onGetStaffsData());
+        } catch (error) {
+            console.error("Error loading staff:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [dispatch]);
+
+    // Update staff list when data changes
+    useEffect(() => {
+        fetchStaff();
+    }, [fetchStaff]);
+
+    useEffect(() => {
+        setStaffList(staffData?.staff || []);
+    }, [staffData]);
+
+    // Handle form input changes
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    // Handle select changes
+    const handleSelectChange = (name, selectedOption) => {
+        setFormData(prev => ({
+            ...prev,
+            [name]: selectedOption?.value || ""
+        }));
+    };
+
+    // Handle filter changes
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Handle select filter changes
+    const handleSelectFilterChange = (name, selectedOption) => {
+        setFilters(prev => ({
+            ...prev,
+            [name]: selectedOption?.value || ""
+        }));
+    };
+
+    // Filter staff based on filters
+    const filteredStaff = staffList.filter(staff => {
+        return (
+            (filters.search === '' ||
+                staff.username.toLowerCase().includes(filters.search.toLowerCase()) ||
+                staff.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
+                staff.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
+                staff.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+                staff.phoneNumber?.toLowerCase().includes(filters.search.toLowerCase())) &&
+            (filters.status === '' ||
+                (filters.status === 'Active' ? staff.isActive : !staff.isActive)) &&
+            (filters.role === '' || staff.role === filters.role)
+        );
+    });
+
+    // Open modal for edit
+    const handleEdit = (staff) => {
+        setSelectedStaff(staff);
+        setFormData({
+            firstName: staff.firstName || "",
+            lastName: staff.lastName || "",
+            email: staff.email || "",
+            phoneNumber: staff.phoneNumber || "",
+            username: staff.username || "",
+            password: "", // Don't pre-fill password for security
+            title: staff.title || "",
+            role: staff.role || "STAFF",
+            isActive: staff.isActive || true
+        });
+        setIsEdit(true);
+        setModal(true);
+    };
+
+    // Open modal for create
+    const handleCreate = () => {
+        setSelectedStaff(null);
+        setFormData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            phoneNumber: "",
+            username: "",
+            password: "",
+            title: "",
+            role: "STAFF",
+            isActive: true
+        });
+        setIsEdit(false);
+        setModal(true);
+    };
+
+    // Delete Staff
+    const onClickDelete = (staff) => {
+        setSelectedStaff(staff);
+        setDeleteModal(true);
+    };
+
+    const handleDeleteStaff = () => {
+        if (selectedStaff) {
+            dispatch(onDeleteStaff(selectedStaff._id));
+            setDeleteModal(false);
+        }
+    };
+
+    // Form validation
+    const validation = useFormik({
+        enableReinitialize: true,
+        initialValues: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phoneNumber: formData.phoneNumber,
+            username: formData.username,
+            password: formData.password,
+            title: formData.title,
+            role: formData.role,
+            isActive: formData.isActive
+        },
+        validationSchema: Yup.object({
+            firstName: Yup.string()
+                .required("First name is required")
+                .trim(),
+            lastName: Yup.string()
+                .required("Last name is required")
+                .trim(),
+            email: Yup.string()
+                .email("Invalid email format")
+                .required("Email is required")
+                .trim()
+                .lowercase(),
+            phoneNumber: Yup.string()
+                .required("Phone number is required")
+                .trim(),
+            username: Yup.string()
+                .required("Username is required")
+                .trim()
+                .lowercase(),
+            password: Yup.string()
+                .when('isEdit', (isEdit, schema) => {
+                    return isEdit ?
+                        schema.min(8, "Password must be at least 8 characters").notRequired() :
+                        schema.min(8, "Password must be at least 8 characters").required("Password is required");
+                }),
+            title: Yup.string().trim(),
+            role: Yup.string().required("Role is required"),
+            isActive: Yup.boolean()
+        }),
+        onSubmit: (values) => {
+            if (isEdit) {
+                const updateStaffData = {
+                    id: selectedStaff ? selectedStaff._id : 0,
+                    ...values,
+                    // Don't update password if not changed
+                    password: values.password || undefined
+                };
+                dispatch(onUpdateStaff(updateStaffData));
+            } else {
+                const newStaffData = {
+                    ...values
+                };
+                dispatch(onAddNewStaff(newStaffData));
+            }
+            setModal(false);
+        },
+    });
+
+    // Table columns
+    const columns = [
+        {
+            name: '#',
+            cell: (row, index) => index + 1,
+            width: '60px'
+        },
+        {
+            name: 'Username',
+            selector: row => row.username,
+            sortable: true
+        },
+        {
+            name: 'Full Name',
+            selector: row => `${row.firstName} ${row.lastName}`,
+            sortable: true
+        },
+        {
+            name: 'Email',
+            selector: row => row.email,
+            sortable: true
+        },
+        {
+            name: 'Phone',
+            selector: row => row.phoneNumber || '-',
+            sortable: true
+        },
+        {
+            name: 'Role',
+            selector: row => row.role,
+            sortable: true,
+            cell: row => (
+                <Badge
+                    color={
+                        row.role === 'ADMIN' ? 'danger' :
+                            row.role === 'BUSINESS_OWNER' ? 'info' :
+                                row.role === 'STAFF' ? 'primary' : 'secondary'
+                    }
+                >
+                    {row.role}
+                </Badge>
+            )
+        },
+        {
+            name: 'Status',
+            cell: row => (
+                <Badge color={row.isActive ? 'success' : 'danger'}>
+                    {row.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+            ),
+            sortable: true,
+            width: '100px'
+        },
+        {
+            name: 'Actions',
+            cell: row => (
+                <div className="d-flex gap-2">
+                    <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)}>
+                        <i className="ri-pencil-line" />
+                    </Button>
+                    <Button color="soft-danger" size="sm" onClick={() => onClickDelete(row)}>
+                        <i className="ri-delete-bin-line" />
+                    </Button>
+                </div>
+            ),
+            width: '120px'
+        }
+    ];
+
+    return (
+        <div className="page-content">
+            <Container fluid>
+                <BreadCrumb title="Staff" pageTitle="User Management" />
+
+                {/* Filter Controls */}
+                <Card className="mb-3">
+                    <CardBody>
+                        <Row>
+                            <Col md={4}>
+                                <FormGroup>
+                                    <Label>Search</Label>
+                                    <Input
+                                        type="text"
+                                        name="search"
+                                        placeholder="Search by username, name, email or phone"
+                                        value={filters.search}
+                                        onChange={handleFilterChange}
+                                    />
+                                </FormGroup>
+                            </Col>
+                            <Col md={3}>
+                                <FormGroup>
+                                    <Label>Status</Label>
+                                    <Select
+                                        options={statusOptions}
+                                        value={statusOptions.find(opt => opt.value === filters.status)}
+                                        onChange={(opt) => handleSelectFilterChange('status', opt)}
+                                        isClearable
+                                    />
+                                </FormGroup>
+                            </Col>
+                            <Col md={3}>
+                                <FormGroup>
+                                    <Label>Role</Label>
+                                    <Select
+                                        options={roleOptions}
+                                        value={roleOptions.find(opt => opt.value === filters.role)}
+                                        onChange={(opt) => handleSelectFilterChange('role', opt)}
+                                        isClearable
+                                    />
+                                </FormGroup>
+                            </Col>
+                            <Col md={2} className="d-flex align-items-end mb-3">
+                                <Button color="primary" onClick={fetchStaff} disabled={loading}>
+                                    {loading ? 'Filtering...' : 'Apply Filters'}
+                                </Button>
+                            </Col>
+                        </Row>
+                    </CardBody>
+                </Card>
+
+                {/* Data Table */}
+                <Card>
+                    <CardHeader className="d-flex justify-content-between align-items-center">
+                        <h5 className="mb-0">Staff List</h5>
+                        <Button color="primary" onClick={handleCreate}>
+                            <i className="ri-add-line me-1" /> Add Staff
+                        </Button>
+                    </CardHeader>
+                    <CardBody>
+                        {loading ? (
+                            <Loader />
+                        ) : (
+                            <DataTable
+                                columns={columns}
+                                data={filteredStaff}
+                                pagination
+                                highlightOnHover
+                                responsive
+                                noDataComponent="No staff members found matching your criteria"
+                            />
+                        )}
+                    </CardBody>
+                </Card>
+            </Container>
+
+            {/* Add/Edit Modal */}
+            <Modal isOpen={modal} toggle={() => setModal(false)} size="lg">
+                <ModalHeader toggle={() => setModal(false)}>
+                    {isEdit ? 'Edit Staff Member' : 'Add New Staff Member'}
+                </ModalHeader>
+                <Form onSubmit={(e) => {
+                    e.preventDefault();
+                    validation.handleSubmit();
+                }}>
+                    <ModalBody>
+                        <Row>
+                            <Col lg={12}>
+                                <Row>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>First Name <span className="text-danger">*</span></Label>
+                                            <Input
+                                                name="firstName"
+                                                value={validation.values.firstName}
+                                                onChange={validation.handleChange}
+                                                onBlur={validation.handleBlur}
+                                                invalid={validation.touched.firstName && !!validation.errors.firstName}
+                                            />
+                                            <FormFeedback>{validation.errors.firstName}</FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>Last Name <span className="text-danger">*</span></Label>
+                                            <Input
+                                                name="lastName"
+                                                value={validation.values.lastName}
+                                                onChange={validation.handleChange}
+                                                onBlur={validation.handleBlur}
+                                                invalid={validation.touched.lastName && !!validation.errors.lastName}
+                                            />
+                                            <FormFeedback>{validation.errors.lastName}</FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                </Row>
+
+                                <Row>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>Email <span className="text-danger">*</span></Label>
+                                            <Input
+                                                type="email"
+                                                name="email"
+                                                value={validation.values.email}
+                                                onChange={validation.handleChange}
+                                                onBlur={validation.handleBlur}
+                                                invalid={validation.touched.email && !!validation.errors.email}
+                                            />
+                                            <FormFeedback>{validation.errors.email}</FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>Phone Number <span className="text-danger">*</span></Label>
+                                            <Input
+                                                name="phoneNumber"
+                                                value={validation.values.phoneNumber}
+                                                onChange={validation.handleChange}
+                                                onBlur={validation.handleBlur}
+                                                invalid={validation.touched.phoneNumber && !!validation.errors.phoneNumber}
+                                            />
+                                            <FormFeedback>{validation.errors.phoneNumber}</FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                </Row>
+
+                                <Row>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>Username <span className="text-danger">*</span></Label>
+                                            <Input
+                                                name="username"
+                                                value={validation.values.username}
+                                                onChange={validation.handleChange}
+                                                onBlur={validation.handleBlur}
+                                                invalid={validation.touched.username && !!validation.errors.username}
+                                            />
+                                            <FormFeedback>{validation.errors.username}</FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>Role <span className="text-danger">*</span></Label>
+                                            <Select
+                                                options={roleOptions.filter(opt => opt.value !== "")}
+                                                value={roleOptions.find(opt => opt.value === validation.values.role)}
+                                                onChange={(opt) => handleSelectChange('role', opt)}
+                                                isClearable
+                                                placeholder="Select role"
+                                            />
+                                            <FormFeedback>
+                                                {validation.touched.role && validation.errors.role}
+                                            </FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                </Row>
+
+                                {!isEdit && (
+                                    <Row>
+                                        <Col md={6}>
+                                            <FormGroup>
+                                                <Label>Password <span className="text-danger">*</span></Label>
+                                                <Input
+                                                    type="password"
+                                                    name="password"
+                                                    value={validation.values.password}
+                                                    onChange={validation.handleChange}
+                                                    onBlur={validation.handleBlur}
+                                                    invalid={validation.touched.password && !!validation.errors.password}
+                                                />
+                                                <FormFeedback>{validation.errors.password}</FormFeedback>
+                                            </FormGroup>
+                                        </Col>
+                                    </Row>
+                                )}
+
+                                {isEdit && (
+                                    <Row>
+                                        <Col md={6}>
+                                            <FormGroup>
+                                                <Label>Password (Leave blank to keep current)</Label>
+                                                <Input
+                                                    type="password"
+                                                    name="password"
+                                                    value={validation.values.password}
+                                                    onChange={validation.handleChange}
+                                                    onBlur={validation.handleBlur}
+                                                    invalid={validation.touched.password && !!validation.errors.password}
+                                                    placeholder="Enter new password to change"
+                                                />
+                                                <FormFeedback>{validation.errors.password}</FormFeedback>
+                                            </FormGroup>
+                                        </Col>
+                                    </Row>
+                                )}
+
+                                <Row>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>Title/Position</Label>
+                                            <Input
+                                                name="title"
+                                                value={validation.values.title}
+                                                onChange={validation.handleChange}
+                                                onBlur={validation.handleBlur}
+                                                invalid={validation.touched.title && !!validation.errors.title}
+                                            />
+                                            <FormFeedback>{validation.errors.title}</FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                </Row>
+
+                                <FormGroup check className="mt-3">
+                                    <Input
+                                        type="checkbox"
+                                        name="isActive"
+                                        checked={validation.values.isActive}
+                                        onChange={validation.handleChange}
+                                        id="isActive"
+                                    />
+                                    <Label for="isActive" check>
+                                        Active Staff Member
+                                    </Label>
+                                </FormGroup>
+                            </Col>
+                        </Row>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button color="light" onClick={() => setModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button color="primary" type="submit" disabled={loading}>
+                            {loading ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </ModalFooter>
+                </Form>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteModal
+                show={deleteModal}
+                onDeleteClick={handleDeleteStaff}
+                onCloseClick={() => setDeleteModal(false)}
+                confirmationText="Are you sure you want to delete this staff member? This action cannot be undone."
+            />
+
+            <ToastContainer />
+
+        </div>
+
+    );
+};
+
+export default Staff;

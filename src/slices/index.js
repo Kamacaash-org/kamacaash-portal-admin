@@ -10,7 +10,9 @@ import ForgetPasswordReducer from "./auth/forgetpwd/reducer";
 import ProfileReducer from "./auth/profile/reducer";
 
 
-import BusinessManagementReducer from "./Business_Management/reducer"
+import BusinessManagementReducer from "./Business_Management/reducer";
+import UserManagementReducer from "./User_Management/reducer";
+
 
 const rootReducer = combineReducers({
     Layout: LayoutReducer,
@@ -18,7 +20,8 @@ const rootReducer = combineReducers({
     Account: AccountReducer,
     ForgetPassword: ForgetPasswordReducer,
     Profile: ProfileReducer,
-    BusinessManagement: BusinessManagementReducer
+    BusinessManagement: BusinessManagementReducer,
+    UserManagement: UserManagementReducer,
 
 });
 
