@@ -53,19 +53,6 @@ const Staff = () => {
         role: ''
     });
 
-    // Form state
-    const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phoneNumber: "",
-        username: "",
-        password: "",
-        title: "",
-        role: "STAFF",
-        isActive: true
-    });
-
     // Options for selects
     const statusOptions = [
         { value: "", label: "All Statuses" },
@@ -76,7 +63,8 @@ const Staff = () => {
     const roleOptions = [
         { value: "", label: "All Roles" },
         { value: "SUPER_ADMIN", label: "Admin" },
-        { value: "BUSINESS_OWNER", label: "Business Owner" }
+        { value: "BUSINESS_OWNER", label: "Business Owner" },
+        { value: "STAFF", label: "Staff" }
     ];
 
     // Fetch staff with filters
@@ -99,23 +87,6 @@ const Staff = () => {
     useEffect(() => {
         setStaffList(staffData?.staff || []);
     }, [staffData]);
-
-    // Handle form input changes
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
-
-    // Handle select changes
-    const handleSelectChange = (name, selectedOption) => {
-        setFormData(prev => ({
-            ...prev,
-            [name]: selectedOption?.value || ""
-        }));
-    };
 
     // Handle filter changes
     const handleFilterChange = (e) => {
@@ -149,17 +120,6 @@ const Staff = () => {
     // Open modal for edit
     const handleEdit = (staff) => {
         setSelectedStaff(staff);
-        setFormData({
-            firstName: staff.firstName || "",
-            lastName: staff.lastName || "",
-            email: staff.email || "",
-            phoneNumber: staff.phoneNumber || "",
-            username: staff.username || "",
-            password: "", // Don't pre-fill password for security
-            title: staff.title || "",
-            role: staff.role || "STAFF",
-            isActive: staff.isActive || true
-        });
         setIsEdit(true);
         setModal(true);
     };
@@ -167,17 +127,6 @@ const Staff = () => {
     // Open modal for create
     const handleCreate = () => {
         setSelectedStaff(null);
-        setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            phoneNumber: "",
-            username: "",
-            password: "",
-            title: "",
-            role: "STAFF",
-            isActive: true
-        });
         setIsEdit(false);
         setModal(true);
     };
@@ -196,66 +145,82 @@ const Staff = () => {
     };
 
     // Form validation
-    const validation = useFormik({
-        enableReinitialize: true,
-        initialValues: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phoneNumber: formData.phoneNumber,
-            username: formData.username,
-            password: formData.password,
-            title: formData.title,
-            role: formData.role,
-            isActive: formData.isActive
-        },
-        validationSchema: Yup.object({
-            firstName: Yup.string()
-                .required("First name is required")
-                .trim(),
-            lastName: Yup.string()
-                .required("Last name is required")
-                .trim(),
-            email: Yup.string()
-                .email("Invalid email format")
-                .required("Email is required")
-                .trim()
-                .lowercase(),
-            phoneNumber: Yup.string()
-                .required("Phone number is required")
-                .trim(),
-            username: Yup.string()
-                .required("Username is required")
-                .trim()
-                .lowercase(),
-            password: Yup.string()
-                .when('isEdit', (isEdit, schema) => {
-                    return isEdit ?
-                        schema.min(8, "Password must be at least 8 characters").notRequired() :
-                        schema.min(8, "Password must be at least 8 characters").required("Password is required");
-                }),
-            title: Yup.string().trim(),
-            role: Yup.string().required("Role is required"),
-            isActive: Yup.boolean()
-        }),
-        onSubmit: (values) => {
-            if (isEdit) {
-                const updateStaffData = {
-                    id: selectedStaff ? selectedStaff._id : 0,
-                    ...values,
-                    // Don't update password if not changed
-                    password: values.password || undefined
-                };
-                dispatch(onUpdateStaff(updateStaffData));
-            } else {
-                const newStaffData = {
-                    ...values
-                };
-                dispatch(onAddNewStaff(newStaffData));
-            }
-            setModal(false);
-        },
-    });
+  // Form validation
+const validation = useFormik({
+  enableReinitialize: true,
+  initialValues: {
+    firstName: selectedStaff?.firstName || "",
+    lastName: selectedStaff?.lastName || "",
+    email: selectedStaff?.email || "",
+    phoneNumber: selectedStaff?.phoneNumber || "",
+    username: selectedStaff?.username || "",
+    password: "",
+    title: selectedStaff?.title || "",
+    role: selectedStaff?.role || "STAFF",
+    isActive: selectedStaff?.isActive ?? true
+  },
+  validationSchema: Yup.object({
+    firstName: Yup.string()
+      .required("First name is required")
+      .trim(),
+    lastName: Yup.string()
+      .required("Last name is required")
+      .trim(),
+    email: Yup.string()
+      .email("Invalid email format")
+      .required("Email is required")
+      .trim()
+      .lowercase(),
+    phoneNumber: Yup.string()
+      .required("Phone number is required")
+      .trim(),
+    username: Yup.string()
+      .required("Username is required")
+      .trim()
+      .lowercase(),
+    password: Yup.string()
+      .test(
+        'password-required',
+        'Password is required',
+        (value) => {
+          // For new staff, password is required
+          if (!isEdit) {
+            return !!value && value.length >= 6;
+          }
+          // For editing, password is optional but if provided must be at least 6 chars
+          return !value || value.length >= 6;
+        }
+      )
+      .test(
+        'password-length',
+        'Password must be at least 6 characters',
+        (value) => {
+          // Only validate length if password is provided
+          return !value || value.length >= 6;
+        }
+      ),
+    title: Yup.string().trim(),
+    role: Yup.string().required("Role is required"),
+    isActive: Yup.boolean()
+  }),
+  onSubmit: (values) => {
+    if (isEdit) {
+      const updateStaffData = {
+        _id: selectedStaff ? selectedStaff._id : 0,
+        ...values,
+        // Don't update password if not changed
+        password: values.password || undefined
+      };
+      dispatch(onUpdateStaff(updateStaffData));
+    } else {
+      const newStaffData = {
+        ...values
+      };
+      dispatch(onAddNewStaff(newStaffData));
+    }
+    setModal(false);
+  },
+});
 
     // Table columns
     const columns = [
@@ -291,7 +256,7 @@ const Staff = () => {
             cell: row => (
                 <Badge
                     color={
-                        row.role === 'ADMIN' ? 'danger' :
+                        row.role === 'SUPER_ADMIN' ? 'danger' :
                             row.role === 'BUSINESS_OWNER' ? 'info' :
                                 row.role === 'STAFF' ? 'primary' : 'secondary'
                     }
@@ -408,10 +373,7 @@ const Staff = () => {
                 <ModalHeader toggle={() => setModal(false)}>
                     {isEdit ? 'Edit Staff Member' : 'Add New Staff Member'}
                 </ModalHeader>
-                <Form onSubmit={(e) => {
-                    e.preventDefault();
-                    validation.handleSubmit();
-                }}>
+                <Form onSubmit={validation.handleSubmit}>
                     <ModalBody>
                         <Row>
                             <Col lg={12}>
@@ -494,13 +456,15 @@ const Staff = () => {
                                             <Select
                                                 options={roleOptions.filter(opt => opt.value !== "")}
                                                 value={roleOptions.find(opt => opt.value === validation.values.role)}
-                                                onChange={(opt) => handleSelectChange('role', opt)}
+                                                onChange={(opt) => validation.setFieldValue('role', opt?.value || "")}
                                                 isClearable
                                                 placeholder="Select role"
                                             />
-                                            <FormFeedback>
-                                                {validation.touched.role && validation.errors.role}
-                                            </FormFeedback>
+                                            {validation.touched.role && validation.errors.role && (
+                                                <div className="text-danger" style={{ fontSize: '0.875em', marginTop: '0.25rem' }}>
+                                                    {validation.errors.role}
+                                                </div>
+                                            )}
                                         </FormGroup>
                                     </Col>
                                 </Row>
@@ -524,7 +488,7 @@ const Staff = () => {
                                     </Row>
                                 )}
 
-                                {isEdit && (
+                                {/* {isEdit && (
                                     <Row>
                                         <Col md={6}>
                                             <FormGroup>
@@ -542,7 +506,7 @@ const Staff = () => {
                                             </FormGroup>
                                         </Col>
                                     </Row>
-                                )}
+                                )} */}
 
                                 <Row>
                                     <Col md={6}>
@@ -595,9 +559,7 @@ const Staff = () => {
             />
 
             <ToastContainer />
-
         </div>
-
     );
 };
 

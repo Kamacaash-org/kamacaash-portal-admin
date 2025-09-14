@@ -69,26 +69,6 @@ const Businesses = () => {
         contractStatus: ''
     });
 
-    // Form state
-    const [formData, setFormData] = useState({
-        ownerName: "",
-        businessName: "",
-        phoneNumber: "",
-        email: "",
-        address: {
-            street: "",
-            city: "",
-            state: "",
-            country: "SOMALIA",
-            postcode: ""
-        },
-        description: "",
-        logo: "",
-        bannerImage: "",
-        primaryStaffAccount: "",
-        isActive: true
-    });
-
     // Contract form state
     const [contractFormData, setContractFormData] = useState({
         isSigned: false,
@@ -164,27 +144,6 @@ const Businesses = () => {
             label: `${staff.firstName} ${staff.lastName} (${staff.email})`
         }));
 
-    // Handle form input changes
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-
-        if (name.includes('address.')) {
-            const addressField = name.split('.')[1];
-            setFormData(prev => ({
-                ...prev,
-                address: {
-                    ...prev.address,
-                    [addressField]: value
-                }
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value
-            }));
-        }
-    };
-
     // Handle contract form changes
     const handleContractInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -211,14 +170,6 @@ const Businesses = () => {
                 return;
             }
         }
-    };
-
-    // Handle select changes
-    const handleSelectChange = (name, selectedOption) => {
-        setFormData(prev => ({
-            ...prev,
-            [name]: selectedOption?.value || ""
-        }));
     };
 
     // Handle contract select changes
@@ -261,24 +212,6 @@ const Businesses = () => {
     // Open modal for edit
     const handleEdit = (business) => {
         setSelectedBusiness(business);
-        setFormData({
-            ownerName: business.ownerName || "",
-            businessName: business.businessName || "",
-            phoneNumber: business.phoneNumber || "",
-            email: business.email || "",
-            address: business.address || {
-                street: "",
-                city: "",
-                state: "",
-                country: "SOMALIA",
-                postcode: ""
-            },
-            description: business.description || "",
-            logo: business.logo || "",
-            bannerImage: business.bannerImage || "",
-            primaryStaffAccount: business.primaryStaffAccount || "",
-            isActive: business.isActive || true
-        });
         setIsEdit(true);
         setModal(true);
     };
@@ -286,24 +219,6 @@ const Businesses = () => {
     // Open modal for create
     const handleCreate = () => {
         setSelectedBusiness(null);
-        setFormData({
-            ownerName: "",
-            businessName: "",
-            phoneNumber: "",
-            email: "",
-            address: {
-                street: "",
-                city: "",
-                state: "",
-                country: "SOMALIA",
-                postcode: ""
-            },
-            description: "",
-            logo: "",
-            bannerImage: "",
-            primaryStaffAccount: "",
-            isActive: true
-        });
         setIsEdit(false);
         setModal(true);
     };
@@ -388,16 +303,22 @@ const Businesses = () => {
     const validation = useFormik({
         enableReinitialize: true,
         initialValues: {
-            ownerName: formData.ownerName,
-            businessName: formData.businessName,
-            phoneNumber: formData.phoneNumber,
-            email: formData.email,
-            address: formData.address,
-            description: formData.description,
-            logo: formData.logo,
-            bannerImage: formData.bannerImage,
-            primaryStaffAccount: formData.primaryStaffAccount,
-            isActive: formData.isActive
+            ownerName: selectedBusiness?.ownerName || "",
+            businessName: selectedBusiness?.businessName || "",
+            phoneNumber: selectedBusiness?.phoneNumber || "",
+            email: selectedBusiness?.email || "",
+            address: selectedBusiness?.address || {
+                street: "",
+                city: "",
+                state: "",
+                country: "SOMALIA",
+                postcode: ""
+            },
+            description: selectedBusiness?.description || "",
+            logo: selectedBusiness?.logo || "",
+            bannerImage: selectedBusiness?.bannerImage || "",
+            primaryStaffAccount: selectedBusiness?.primaryStaffAccount || "",
+            isActive: selectedBusiness?.isActive ?? true
         },
         validationSchema: Yup.object({
             ownerName: Yup.string()
@@ -643,10 +564,7 @@ const Businesses = () => {
                 <ModalHeader toggle={() => setModal(false)}>
                     {isEdit ? 'Edit Business' : 'Add New Business'}
                 </ModalHeader>
-                <Form onSubmit={(e) => {
-                    e.preventDefault();
-                    validation.handleSubmit();
-                }}>
+                <Form onSubmit={validation.handleSubmit}>
                     <ModalBody>
                         <Row>
                             <Col lg={12}>
@@ -714,13 +632,15 @@ const Businesses = () => {
                                     <Select
                                         options={staffOptions}
                                         value={staffOptions.find(opt => opt.value === validation.values.primaryStaffAccount)}
-                                        onChange={(opt) => handleSelectChange('primaryStaffAccount', opt)}
+                                        onChange={(opt) => validation.setFieldValue('primaryStaffAccount', opt?.value || "")}
                                         isClearable
                                         placeholder="Select staff member"
                                     />
-                                    <FormFeedback>
-                                        {validation.touched.primaryStaffAccount && validation.errors.primaryStaffAccount}
-                                    </FormFeedback>
+                                    {validation.touched.primaryStaffAccount && validation.errors.primaryStaffAccount && (
+                                        <div className="text-danger" style={{ fontSize: '0.875em', marginTop: '0.25rem' }}>
+                                            {validation.errors.primaryStaffAccount}
+                                        </div>
+                                    )}
                                 </FormGroup>
 
                                 <FormGroup>

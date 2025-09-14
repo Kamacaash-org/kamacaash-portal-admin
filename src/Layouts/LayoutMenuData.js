@@ -101,7 +101,7 @@ const Navdata = () => {
 
     {
       id: "BUSINESS_MANAGEMENT",
-      label: "BUSINESS MANAGEMENT",
+      label: "Business Mngmnt",
       icon: "ri-apps-2-line",
       link: "/#",
       stateVariables: menuStates["BUSINESS_MANAGEMENT"] || false,
@@ -133,7 +133,7 @@ const Navdata = () => {
 
     {
       id: "USER_MANAGEMENT",
-      label: "USER MANAGEMENT",
+      label: "User Mngmnt",
       icon: "ri-apps-2-line",
       link: "/#",
       stateVariables: menuStates["USER_MANAGEMENT"] || false,
