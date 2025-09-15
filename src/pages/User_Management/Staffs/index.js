@@ -63,8 +63,7 @@ const Staff = () => {
     const roleOptions = [
         { value: "", label: "All Roles" },
         { value: "SUPER_ADMIN", label: "Admin" },
-        { value: "BUSINESS_OWNER", label: "Business Owner" },
-        { value: "STAFF", label: "Staff" }
+        { value: "BUSINESS_OWNER", label: "Business Owner" }
     ];
 
     // Fetch staff with filters
@@ -145,120 +144,113 @@ const Staff = () => {
     };
 
     // Form validation
-  // Form validation
-const validation = useFormik({
-  enableReinitialize: true,
-  initialValues: {
-    firstName: selectedStaff?.firstName || "",
-    lastName: selectedStaff?.lastName || "",
-    email: selectedStaff?.email || "",
-    phoneNumber: selectedStaff?.phoneNumber || "",
-    username: selectedStaff?.username || "",
-    password: "",
-    title: selectedStaff?.title || "",
-    role: selectedStaff?.role || "STAFF",
-    isActive: selectedStaff?.isActive ?? true
-  },
-  validationSchema: Yup.object({
-    firstName: Yup.string()
-      .required("First name is required")
-      .trim(),
-    lastName: Yup.string()
-      .required("Last name is required")
-      .trim(),
-    email: Yup.string()
-      .email("Invalid email format")
-      .required("Email is required")
-      .trim()
-      .lowercase(),
-    phoneNumber: Yup.string()
-      .required("Phone number is required")
-      .trim(),
-    username: Yup.string()
-      .required("Username is required")
-      .trim()
-      .lowercase(),
-    password: Yup.string()
-      .test(
-        'password-required',
-        'Password is required',
-        (value) => {
-          // For new staff, password is required
-          if (!isEdit) {
-            return !!value && value.length >= 6;
-          }
-          // For editing, password is optional but if provided must be at least 6 chars
-          return !value || value.length >= 6;
-        }
-      )
-      .test(
-        'password-length',
-        'Password must be at least 6 characters',
-        (value) => {
-          // Only validate length if password is provided
-          return !value || value.length >= 6;
-        }
-      ),
-    title: Yup.string().trim(),
-    role: Yup.string().required("Role is required"),
-    isActive: Yup.boolean()
-  }),
-  onSubmit: (values) => {
-    if (isEdit) {
-      const updateStaffData = {
-        _id: selectedStaff ? selectedStaff._id : 0,
-        ...values,
-        // Don't update password if not changed
-        password: values.password || undefined
-      };
-      dispatch(onUpdateStaff(updateStaffData));
-    } else {
-      const newStaffData = {
-        ...values
-      };
-      dispatch(onAddNewStaff(newStaffData));
-    }
-    setModal(false);
-  },
-});
+    // Form validation
+    const validation = useFormik({
+        enableReinitialize: true,
+        initialValues: {
+            firstName: selectedStaff?.firstName || "",
+            lastName: selectedStaff?.lastName || "",
+            email: selectedStaff?.email || "",
+            phoneNumber: selectedStaff?.phoneNumber || "",
+            username: selectedStaff?.username || "",
+            password: "",
+            title: selectedStaff?.title || "",
+            role: selectedStaff?.role || "STAFF",
+            isActive: selectedStaff?.isActive ?? true
+        },
+        validationSchema: Yup.object({
+            firstName: Yup.string()
+                .required("First name is required")
+                .trim(),
+            lastName: Yup.string()
+                .required("Last name is required")
+                .trim(),
+            email: Yup.string()
+                .email("Invalid email format")
+                .required("Email is required")
+                .trim()
+                .lowercase(),
+            phoneNumber: Yup.string()
+                .required("Phone number is required")
+                .trim(),
+            username: Yup.string()
+                .required("Username is required")
+                .trim()
+                .lowercase(),
+            password: Yup.string()
+                .test(
+                    'password-required',
+                    'Password is required',
+                    (value) => {
+                        // For new staff, password is required
+                        if (!isEdit) {
+                            return !!value && value.length >= 6;
+                        }
+                        // For editing, password is optional but if provided must be at least 6 chars
+                        return !value || value.length >= 6;
+                    }
+                )
+                .test(
+                    'password-length',
+                    'Password must be at least 6 characters',
+                    (value) => {
+                        // Only validate length if password is provided
+                        return !value || value.length >= 6;
+                    }
+                ),
+            title: Yup.string().trim(),
+            role: Yup.string().required("Role is required"),
+            isActive: Yup.boolean()
+        }),
+        onSubmit: (values) => {
+            if (isEdit) {
+                const updateStaffData = {
+                    _id: selectedStaff ? selectedStaff._id : 0,
+                    ...values,
+                    // Don't update password if not changed
+                    password: values.password || undefined
+                };
+                dispatch(onUpdateStaff(updateStaffData));
+            } else {
+                const newStaffData = {
+                    ...values
+                };
+                dispatch(onAddNewStaff(newStaffData));
+            }
+            setModal(false);
+        },
+    });
 
     // Table columns
     const columns = [
         {
             name: '#',
             cell: (row, index) => index + 1,
-            width: '60px'
         },
         {
             name: 'Username',
             selector: row => row.username,
-            sortable: true
         },
         {
             name: 'Full Name',
             selector: row => `${row.firstName} ${row.lastName}`,
-            sortable: true
         },
         {
             name: 'Email',
             selector: row => row.email,
-            sortable: true
         },
         {
             name: 'Phone',
             selector: row => row.phoneNumber || '-',
-            sortable: true
         },
         {
             name: 'Role',
             selector: row => row.role,
-            sortable: true,
             cell: row => (
                 <Badge
                     color={
-                        row.role === 'SUPER_ADMIN' ? 'danger' :
-                            row.role === 'BUSINESS_OWNER' ? 'info' :
-                                row.role === 'STAFF' ? 'primary' : 'secondary'
+                        row.role === 'SUPER_ADMIN' ? 'info' :
+                            row.role === 'BUSINESS_OWNER' ? 'warning' : 'secondary'
                     }
                 >
                     {row.role}
@@ -272,8 +264,6 @@ const validation = useFormik({
                     {row.isActive ? 'Active' : 'Inactive'}
                 </Badge>
             ),
-            sortable: true,
-            width: '100px'
         },
         {
             name: 'Actions',
@@ -287,7 +277,6 @@ const validation = useFormik({
                     </Button>
                 </div>
             ),
-            width: '120px'
         }
     ];
 

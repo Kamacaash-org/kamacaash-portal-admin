@@ -42,10 +42,13 @@ export const BusinessAPI = {
 export const StaffsAPI = makeCRUD(url.STAFFS);
 
 
-// export const SchoolAPI = makeCRUD(url.SCHOOLS);
-// export const DepartmentAPI = makeCRUD(url.DEPARTMENTS);
-// export const ProgramAPI = makeCRUD(url.PROGRAMS);
-// export const StaffAPI = makeCRUD(url.STAFFS);
+export const Surplus_PackageAPI = {
+    ...makeCRUD(url.SURPLUS_PACKAGE),
+
+    // extra endpoints
+    activate: (id) => api.update(`${url.SURPLUS_PACKAGE}/${id}/activate`)
+};
+
 
 // // ================================== END OF  URL ===================================================
 

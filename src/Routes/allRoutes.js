@@ -9,7 +9,7 @@ import Categories from '../pages/Business_Management/Categories';
 import Business from '../pages/Business_Management/Businesses';
 
 import Staff from '../pages/User_Management/Staffs';
-
+import Packages from '../pages/Content_Management/SurplusPackages'
 
 
 import TwosVerify from '../pages/AuthenticationInner/TwoStepVerification';
@@ -29,6 +29,8 @@ const authProtectedRoutes = [
   { path: "/business-management/categories", component: <Categories /> },
   { path: "/buiness-management/businsesses", component: <Business /> },
   { path: "/user-management/staff-accounts", component: <Staff /> },
+  { path: "/content-management/packages", component: <Packages /> },
+
 
 
 

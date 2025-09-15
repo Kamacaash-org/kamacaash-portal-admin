@@ -6,8 +6,8 @@ export const POST_LOGIN = "/auth/login";
 // 
 export const SURPLUS_CATEGORY = "/surplus-categories";
 export const BUSINESS = "/business";
-
 export const STAFFS = "/staffs";
+export const SURPLUS_PACKAGE = "/surplus-packages";
 
 
 // // schools

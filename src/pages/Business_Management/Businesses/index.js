@@ -254,7 +254,7 @@ const Businesses = () => {
             const formData = new FormData();
             formData.append('contract', file);
 
-            const response = await fetch('http://localhost:4000/api/v1/upload/contract', {
+            const response = await fetch('http://localhost:4000/api/v1/upload/upload-contract', {
                 method: 'POST',
                 body: formData,
             });
@@ -317,7 +317,7 @@ const Businesses = () => {
             description: selectedBusiness?.description || "",
             logo: selectedBusiness?.logo || "",
             bannerImage: selectedBusiness?.bannerImage || "",
-            primaryStaffAccount: selectedBusiness?.primaryStaffAccount || "",
+            primaryStaffAccount: selectedBusiness?.primaryStaffAccount?._id || "",
             isActive: selectedBusiness?.isActive ?? true
         },
         validationSchema: Yup.object({
@@ -349,7 +349,7 @@ const Businesses = () => {
         onSubmit: (values) => {
             if (isEdit) {
                 const updateBusinessData = {
-                    id: selectedBusiness ? selectedBusiness._id : 0,
+                    _id: selectedBusiness ? selectedBusiness._id : 0,
                     ...values
                 };
                 dispatch(onUpdateBusiness(updateBusinessData));
@@ -916,6 +916,8 @@ const Businesses = () => {
                                             <p><strong>Owner:</strong> {selectedBusiness.ownerName}</p>
                                             <p><strong>Email:</strong> {selectedBusiness.email}</p>
                                             <p><strong>Phone:</strong> {selectedBusiness.phoneNumber}</p>
+                                            <p><strong>Primary Staff Name:</strong> {selectedBusiness?.primaryStaffAccount?.firstName + ' ' + selectedBusiness?.primaryStaffAccount?.lastName}</p>
+
                                             <p><strong>Status:</strong>
                                                 <Badge color={selectedBusiness.isActive ? 'success' : 'danger'} className="ms-2">
                                                     {selectedBusiness.isActive ? 'Active' : 'Inactive'}

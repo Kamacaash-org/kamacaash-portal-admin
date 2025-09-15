@@ -12,7 +12,7 @@ import ProfileReducer from "./auth/profile/reducer";
 
 import BusinessManagementReducer from "./Business_Management/reducer";
 import UserManagementReducer from "./User_Management/reducer";
-
+import ContentManagementReducer from "./Content_Management/reducer"
 
 const rootReducer = combineReducers({
     Layout: LayoutReducer,
@@ -22,7 +22,7 @@ const rootReducer = combineReducers({
     Profile: ProfileReducer,
     BusinessManagement: BusinessManagementReducer,
     UserManagement: UserManagementReducer,
-
+    ContentManagement: ContentManagementReducer
 });
 
 export default rootReducer;

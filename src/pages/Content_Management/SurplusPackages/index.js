@@ -23,8 +23,7 @@ import {
     updateSurplusPackage as onUpdateSurplusPackage,
     deleteSurplusPackage as onDeleteSurplusPackage,
     activateSurplusPackage as onActivateSurplusPackage,
-    getBusinessesData as onGetBusinessesData,
-    getSurplusCategories as onGetCategoriesData
+    getBusinessesData as onGetBusinessesData
 } from "../../../slices/thunks";
 
 // Formik
@@ -37,7 +36,7 @@ const SurplusPackages = () => {
     const dispatch = useDispatch();
 
     const selectPackagesData = createSelector(
-        (state) => state.Surplus,
+        (state) => state.ContentManagement,
         (packagesData) => packagesData.packagesData
     );
 
@@ -46,44 +45,27 @@ const SurplusPackages = () => {
         (businessesData) => businessesData.businessesData
     );
 
-    const selectCategoriesData = createSelector(
-        (state) => state.Surplus,
-        (categoriesData) => categoriesData.categoriesData
-    );
-
     const packagesData = useSelector(selectPackagesData);
     const businessesData = useSelector(selectBusinessesData);
-    const categoriesData = useSelector(selectCategoriesData);
     const [packagesList, setPackagesList] = useState([]);
     const [businessesList, setBusinessesList] = useState([]);
-    const [categoriesList, setCategoriesList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState(false);
+    const [viewModal, setViewModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [fileUploadError, setFileUploadError] = useState(null);
+
+    // Static business ID (replace with your actual static business ID)
+    const staticBusinessId = "68c71567e482ac5308aef13c";
 
     // Filters state
     const [filters, setFilters] = useState({
         search: '',
         status: '',
-        businessId: '',
-        categoryId: ''
-    });
-
-    // Form state
-    const [formData, setFormData] = useState({
-        businessId: "",
-        categoryId: "",
-        title: "",
-        description: "",
-        items: [""],
-        originalPrice: 0,
-        offerPrice: 0,
-        quantityAvailable: 0,
-        pickupStart: "",
-        pickupEnd: "",
-        isActive: true
+        businessId: ''
     });
 
     // Options for selects
@@ -105,12 +87,11 @@ const SurplusPackages = () => {
         }
     }, [dispatch]);
 
-    // Fetch businesses and categories
-    const fetchBusinessesAndCategories = useCallback(async () => {
+    // Fetch businesses
+    const fetchBusinesses = useCallback(async () => {
         try {
             await Promise.all([
-                dispatch(onGetBusinessesData()),
-                dispatch(onGetCategoriesData())
+                dispatch(onGetBusinessesData())
             ]);
         } catch (error) {
             console.error("Error loading data:", error);
@@ -120,8 +101,8 @@ const SurplusPackages = () => {
     // Update data when changes
     useEffect(() => {
         fetchPackages();
-        fetchBusinessesAndCategories();
-    }, [fetchPackages, fetchBusinessesAndCategories]);
+        fetchBusinesses();
+    }, [fetchPackages, fetchBusinesses]);
 
     useEffect(() => {
         setPackagesList(packagesData?.packages || []);
@@ -131,10 +112,6 @@ const SurplusPackages = () => {
         setBusinessesList(businessesData?.businesses || []);
     }, [businessesData]);
 
-    useEffect(() => {
-        setCategoriesList(categoriesData?.categories || []);
-    }, [categoriesData]);
-
     // Prepare business options for dropdown
     const businessOptions = businessesList
         .filter(business => business.isActive)
@@ -143,56 +120,39 @@ const SurplusPackages = () => {
             label: business.businessName
         }));
 
-    // Prepare category options for dropdown
-    const categoryOptions = categoriesList
-        .filter(category => category.isActive)
-        .map(category => ({
-            value: category._id,
-            label: category.name
-        }));
+    // Handle image upload
+    const handlePackageImgUpload = async (file) => {
+        setUploading(true);
+        setFileUploadError(null);
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
 
-    // Handle form input changes
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
+            const response = await fetch('http://localhost:4000/api/v1/upload/upload-image', {
+                method: 'POST',
+                body: formData,
+            });
 
-    // Handle array input changes (items)
-    const handleItemChange = (index, value) => {
-        const newItems = [...formData.items];
-        newItems[index] = value;
-        setFormData(prev => ({
-            ...prev,
-            items: newItems
-        }));
-    };
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Upload failed');
+            }
 
-    // Add new item field
-    const addItemField = () => {
-        setFormData(prev => ({
-            ...prev,
-            items: [...prev.items, ""]
-        }));
-    };
+            const data = await response.json();
 
-    // Remove item field
-    const removeItemField = (index) => {
-        const newItems = formData.items.filter((_, i) => i !== index);
-        setFormData(prev => ({
-            ...prev,
-            items: newItems
-        }));
-    };
+            if (!data.success) {
+                throw new Error(data.message || 'Upload failed');
+            }
 
-    // Handle select changes
-    const handleSelectChange = (name, selectedOption) => {
-        setFormData(prev => ({
-            ...prev,
-            [name]: selectedOption?.value || ""
-        }));
+            return data.data?.image?.filePath || data.data?.imageUrl;
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            setFileUploadError(error.message);
+            throw error;
+        } finally {
+            setUploading(false);
+        }
     };
 
     // Handle filter changes
@@ -217,27 +177,19 @@ const SurplusPackages = () => {
                 pkg.description?.toLowerCase().includes(filters.search.toLowerCase())) &&
             (filters.status === '' ||
                 (filters.status === 'Active' ? pkg.isActive : !pkg.isActive)) &&
-            (filters.businessId === '' || pkg.businessId === filters.businessId) &&
-            (filters.categoryId === '' || pkg.categoryId === filters.categoryId)
+            (filters.businessId === '' || pkg.businessId === filters.businessId)
         );
     });
+
+    // Open modal for view details
+    const handleView = (pkg) => {
+        setSelectedPackage(pkg);
+        setViewModal(true);
+    };
 
     // Open modal for edit
     const handleEdit = (pkg) => {
         setSelectedPackage(pkg);
-        setFormData({
-            businessId: pkg.businessId || "",
-            categoryId: pkg.categoryId || "",
-            title: pkg.title || "",
-            description: pkg.description || "",
-            items: pkg.items && pkg.items.length > 0 ? pkg.items : [""],
-            originalPrice: pkg.originalPrice || 0,
-            offerPrice: pkg.offerPrice || 0,
-            quantityAvailable: pkg.quantityAvailable || 0,
-            pickupStart: pkg.pickupStart ? new Date(pkg.pickupStart).toISOString().split('T')[0] : "",
-            pickupEnd: pkg.pickupEnd ? new Date(pkg.pickupEnd).toISOString().split('T')[0] : "",
-            isActive: pkg.isActive || true
-        });
         setIsEdit(true);
         setModal(true);
     };
@@ -245,19 +197,6 @@ const SurplusPackages = () => {
     // Open modal for create
     const handleCreate = () => {
         setSelectedPackage(null);
-        setFormData({
-            businessId: "",
-            categoryId: "",
-            title: "",
-            description: "",
-            items: [""],
-            originalPrice: 0,
-            offerPrice: 0,
-            quantityAvailable: 0,
-            pickupStart: "",
-            pickupEnd: "",
-            isActive: true
-        });
         setIsEdit(false);
         setModal(true);
     };
@@ -280,25 +219,32 @@ const SurplusPackages = () => {
         dispatch(onActivateSurplusPackage(pkg._id));
     };
 
+    // formats JS Date for <input type="datetime-local">
+    const formatForDateTimeLocal = (date) => {
+        const d = new Date(date);
+        // adjust for timezone offset so it shows correctly in local time
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+    }
+
+
     // Form validation
     const validation = useFormik({
         enableReinitialize: true,
         initialValues: {
-            businessId: formData.businessId,
-            categoryId: formData.categoryId,
-            title: formData.title,
-            description: formData.description,
-            items: formData.items,
-            originalPrice: formData.originalPrice,
-            offerPrice: formData.offerPrice,
-            quantityAvailable: formData.quantityAvailable,
-            pickupStart: formData.pickupStart,
-            pickupEnd: formData.pickupEnd,
-            isActive: formData.isActive
+            businessId: staticBusinessId, // Use static business ID
+            packageImg: selectedPackage?.packageImg || "",
+            title: selectedPackage?.title || "",
+            description: selectedPackage?.description || "",
+            items: selectedPackage?.items && selectedPackage.items.length > 0 ? selectedPackage.items : [""],
+            originalPrice: selectedPackage?.originalPrice || 0,
+            offerPrice: selectedPackage?.offerPrice || 0,
+            quantityAvailable: selectedPackage?.quantityAvailable || 0,
+            pickupStart: selectedPackage?.pickupStart ? formatForDateTimeLocal(selectedPackage.pickupStart) : "",
+            pickupEnd: selectedPackage?.pickupEnd ? formatForDateTimeLocal(selectedPackage.pickupEnd) : "",
+            isActive: selectedPackage?.isActive ?? true
         },
         validationSchema: Yup.object({
-            businessId: Yup.string().required("Business is required"),
-            categoryId: Yup.string().required("Category is required"),
             title: Yup.string().required("Title is required").trim(),
             description: Yup.string().trim(),
             items: Yup.array().of(Yup.string().trim()),
@@ -323,10 +269,10 @@ const SurplusPackages = () => {
                 .min(Yup.ref('pickupStart'), "Pickup end must be after pickup start"),
             isActive: Yup.boolean()
         }),
-        onSubmit: (values) => {
+        onSubmit: async (values) => {
             if (isEdit) {
                 const updatePackageData = {
-                    id: selectedPackage ? selectedPackage._id : 0,
+                    _id: selectedPackage ? selectedPackage._id : 0,
                     ...values
                 };
                 dispatch(onUpdateSurplusPackage(updatePackageData));
@@ -340,28 +286,87 @@ const SurplusPackages = () => {
         },
     });
 
+    // Handle image file selection
+    const handleImageChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            try {
+                const imageUrl = await handlePackageImgUpload(file);
+                validation.setFieldValue('packageImg', imageUrl);
+            } catch (error) {
+                console.error('Error uploading image:', error);
+            }
+        }
+    };
+
+    // Handle array input changes (items)
+    const handleItemChange = (index, value) => {
+        const newItems = [...validation.values.items];
+        newItems[index] = value;
+        validation.setFieldValue('items', newItems);
+    };
+
+    // Add new item field
+    const addItemField = () => {
+        validation.setFieldValue('items', [...validation.values.items, ""]);
+    };
+
+    // Remove item field
+    const removeItemField = (index) => {
+        const newItems = validation.values.items.filter((_, i) => i !== index);
+        validation.setFieldValue('items', newItems);
+    };
+
+    // Format date with time for display
+    const formatDateTime = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     // Table columns
     const columns = [
         {
             name: '#',
-            cell: (row, index) => index + 1,
-            width: '60px'
+            cell: (row, index) => index + 1
+        },
+        {
+            name: 'Image',
+            cell: row => (
+                row.packageImg ? (
+                    <img
+                        src={`http://localhost:4000${row.packageImg}`}
+                        alt={''}
+                        style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                    />
+                ) : (
+                    <div style={{
+                        width: '50px',
+                        height: '50px',
+                        backgroundColor: '#f8f9fa',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '4px'
+                    }}>
+                        <i className="ri-image-line" style={{ fontSize: '20px', color: '#6c757d' }}></i>
+                    </div>
+                )
+            )
         },
         {
             name: 'Title',
             selector: row => row.title,
-            sortable: true,
             wrap: true
         },
         {
             name: 'Business',
-            selector: row => row.businessId?.businessName || 'N/A',
-            sortable: true
-        },
-        {
-            name: 'Category',
-            selector: row => row.categoryId?.name || 'N/A',
-            sortable: true
+            selector: row => row.businessId?.businessName || 'N/A'
         },
         {
             name: 'Price',
@@ -374,23 +379,20 @@ const SurplusPackages = () => {
                         ${row.offerPrice}
                     </span>
                 </div>
-            ),
-            sortable: true
+            )
         },
         {
             name: 'Quantity',
             selector: row => row.quantityAvailable,
-            sortable: true,
-            width: '100px'
         },
         {
-            name: 'Pickup Date',
+            name: 'Pickup Date/Time',
             cell: row => (
                 <div>
-                    {new Date(row.pickupStart).toLocaleDateString()} - {new Date(row.pickupEnd).toLocaleDateString()}
+                    <div>{formatDateTime(row.pickupStart)}</div>
+                    <div>to {formatDateTime(row.pickupEnd)}</div>
                 </div>
             ),
-            sortable: true
         },
         {
             name: 'Status',
@@ -399,13 +401,14 @@ const SurplusPackages = () => {
                     {row.isActive ? 'Active' : 'Inactive'}
                 </Badge>
             ),
-            sortable: true,
-            width: '100px'
         },
         {
             name: 'Actions',
             cell: row => (
                 <div className="d-flex gap-2">
+                    <Button color="soft-info" size="sm" onClick={() => handleView(row)}>
+                        <i className="ri-eye-line" />
+                    </Button>
                     <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)}>
                         <i className="ri-pencil-line" />
                     </Button>
@@ -422,8 +425,7 @@ const SurplusPackages = () => {
                         <i className="ri-delete-bin-line" />
                     </Button>
                 </div>
-            ),
-            width: '180px'
+            )
         }
     ];
 
@@ -459,35 +461,6 @@ const SurplusPackages = () => {
                                     />
                                 </FormGroup>
                             </Col>
-                            <Col md={3}>
-                                <FormGroup>
-                                    <Label>Business</Label>
-                                    <Select
-                                        options={businessOptions}
-                                        value={businessOptions.find(opt => opt.value === filters.businessId)}
-                                        onChange={(opt) => handleSelectFilterChange('businessId', opt)}
-                                        isClearable
-                                        placeholder="Filter by business"
-                                    />
-                                </FormGroup>
-                            </Col>
-                            <Col md={2}>
-                                <FormGroup>
-                                    <Label>Category</Label>
-                                    <Select
-                                        options={categoryOptions}
-                                        value={categoryOptions.find(opt => opt.value === filters.categoryId)}
-                                        onChange={(opt) => handleSelectFilterChange('categoryId', opt)}
-                                        isClearable
-                                        placeholder="Filter by category"
-                                    />
-                                </FormGroup>
-                            </Col>
-                            <Col md={2} className="d-flex align-items-end mb-3">
-                                <Button color="primary" onClick={fetchPackages} disabled={loading}>
-                                    {loading ? 'Filtering...' : 'Apply Filters'}
-                                </Button>
-                            </Col>
                         </Row>
                     </CardBody>
                 </Card>
@@ -522,45 +495,30 @@ const SurplusPackages = () => {
                 <ModalHeader toggle={() => setModal(false)}>
                     {isEdit ? 'Edit Surplus Package' : 'Add New Surplus Package'}
                 </ModalHeader>
-                <Form onSubmit={(e) => {
-                    e.preventDefault();
-                    validation.handleSubmit();
-                }}>
+                <Form onSubmit={validation.handleSubmit}>
                     <ModalBody>
                         <Row>
                             <Col lg={12}>
-                                <Row>
-                                    <Col md={6}>
-                                        <FormGroup>
-                                            <Label>Business <span className="text-danger">*</span></Label>
-                                            <Select
-                                                options={businessOptions}
-                                                value={businessOptions.find(opt => opt.value === validation.values.businessId)}
-                                                onChange={(opt) => handleSelectChange('businessId', opt)}
-                                                isClearable
-                                                placeholder="Select business"
+                                <FormGroup>
+                                    <Label>Package Image</Label>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        disabled={uploading}
+                                    />
+                                    {uploading && <small className="text-muted">Uploading image...</small>}
+                                    {fileUploadError && <small className="text-danger">{fileUploadError}</small>}
+                                    {validation.values.packageImg && (
+                                        <div className="mt-2">
+                                            <img
+                                                src={`http://localhost:4000${validation.values.packageImg}`}
+                                                alt="Preview"
+                                                style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                                             />
-                                            <FormFeedback>
-                                                {validation.touched.businessId && validation.errors.businessId}
-                                            </FormFeedback>
-                                        </FormGroup>
-                                    </Col>
-                                    <Col md={6}>
-                                        <FormGroup>
-                                            <Label>Category <span className="text-danger">*</span></Label>
-                                            <Select
-                                                options={categoryOptions}
-                                                value={categoryOptions.find(opt => opt.value === validation.values.categoryId)}
-                                                onChange={(opt) => handleSelectChange('categoryId', opt)}
-                                                isClearable
-                                                placeholder="Select category"
-                                            />
-                                            <FormFeedback>
-                                                {validation.touched.categoryId && validation.errors.categoryId}
-                                            </FormFeedback>
-                                        </FormGroup>
-                                    </Col>
-                                </Row>
+                                        </div>
+                                    )}
+                                </FormGroup>
 
                                 <FormGroup>
                                     <Label>Title <span className="text-danger">*</span></Label>
@@ -719,6 +677,95 @@ const SurplusPackages = () => {
                         </Button>
                     </ModalFooter>
                 </Form>
+            </Modal>
+
+            {/* View Details Modal */}
+            <Modal isOpen={viewModal} toggle={() => setViewModal(false)} size="lg">
+                <ModalHeader toggle={() => setViewModal(false)}>
+                    Package Details
+                </ModalHeader>
+                <ModalBody>
+                    {selectedPackage && (
+                        <Row>
+                            <Col md={4} className="mb-3">
+                                {selectedPackage.packageImg ? (
+                                    <img
+                                        src={`http://localhost:4000${selectedPackage.packageImg}`}
+                                        alt={selectedPackage.title}
+                                        style={{ width: '100%', borderRadius: '8px' }}
+                                    />
+                                ) : (
+                                    <div style={{
+                                        width: '100%',
+                                        height: '200px',
+                                        backgroundColor: '#f8f9fa',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: '8px'
+                                    }}>
+                                        <i className="ri-image-line" style={{ fontSize: '40px', color: '#6c757d' }}></i>
+                                    </div>
+                                )}
+                            </Col>
+                            <Col md={8}>
+                                <h4>{selectedPackage.title}</h4>
+                                <p className="text-muted">{selectedPackage.description}</p>
+
+                                <h6 className="mt-4">Items Included:</h6>
+                                <ul>
+                                    {selectedPackage.items && selectedPackage.items.map((item, index) => (
+                                        <li key={index}>{item}</li>
+                                    ))}
+                                </ul>
+
+                                <Row className="mt-3">
+                                    <Col md={6}>
+                                        <strong>Original Price:</strong> ${selectedPackage.originalPrice}
+                                    </Col>
+                                    <Col md={6}>
+                                        <strong>Offer Price:</strong> ${selectedPackage.offerPrice}
+                                    </Col>
+                                </Row>
+
+                                <Row className="mt-2">
+                                    <Col md={6}>
+                                        <strong>Quantity Available:</strong> {selectedPackage.quantityAvailable}
+                                    </Col>
+                                    <Col md={6}>
+                                        <strong>Status:</strong>
+                                        <Badge color={selectedPackage.isActive ? 'success' : 'danger'} className="ms-2">
+                                            {selectedPackage.isActive ? 'Active' : 'Inactive'}
+                                        </Badge>
+                                    </Col>
+                                </Row>
+
+                                <Row className="mt-2">
+                                    <Col md={6}>
+                                        <strong>Pickup Start:</strong> {formatDateTime(selectedPackage.pickupStart)}
+                                    </Col>
+                                    <Col md={6}>
+                                        <strong>Pickup End:</strong> {formatDateTime(selectedPackage.pickupEnd)}
+                                    </Col>
+                                </Row>
+
+                                <Row className="mt-2">
+                                    <Col md={6}>
+                                        <strong>Business:</strong> {selectedPackage.businessId?.businessName || 'N/A'}
+                                    </Col>
+                                    <Col md={6}>
+                                        <strong>Total Orders:</strong> {selectedPackage.totalOrders || 0}
+                                    </Col>
+                                </Row>
+                            </Col>
+                        </Row>
+                    )}
+                </ModalBody>
+                <ModalFooter>
+                    <Button color="light" onClick={() => setViewModal(false)}>
+                        Close
+                    </Button>
+                </ModalFooter>
             </Modal>
 
             {/* Delete Confirmation Modal */}

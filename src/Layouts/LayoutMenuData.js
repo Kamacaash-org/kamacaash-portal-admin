@@ -99,63 +99,63 @@ const Navdata = () => {
   // Static full-access menu for superadmin
   const menuItems = [
 
-    {
-      id: "BUSINESS_MANAGEMENT",
-      label: "Business Mngmnt",
-      icon: "ri-apps-2-line",
-      link: "/#",
-      stateVariables: menuStates["BUSINESS_MANAGEMENT"] || false,
-      click: function (e) {
-        e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, BUSINESS_MANAGEMENT: !prev.BUSINESS_MANAGEMENT }));
-        setIscurrentState("BUSINESS_MANAGEMENT");
-        updateIconSidebar(e);
-      },
-      subItems: [
-        {
-          id: "Businesses",
-          label: "Categories",
-          link: "/business-management/categories",
-          parentId: "BUSINESS_MANAGEMENT",
-        },
+    // {
+    //   id: "BUSINESS_MANAGEMENT",
+    //   label: "Business Mngmnt",
+    //   icon: "ri-apps-2-line",
+    //   link: "/#",
+    //   stateVariables: menuStates["BUSINESS_MANAGEMENT"] || false,
+    //   click: function (e) {
+    //     e.preventDefault();
+    //     setMenuStates((prev) => ({ ...prev, BUSINESS_MANAGEMENT: !prev.BUSINESS_MANAGEMENT }));
+    //     setIscurrentState("BUSINESS_MANAGEMENT");
+    //     updateIconSidebar(e);
+    //   },
+    //   subItems: [
+    //     {
+    //       id: "Businesses",
+    //       label: "Categories",
+    //       link: "/business-management/categories",
+    //       parentId: "BUSINESS_MANAGEMENT",
+    //     },
 
-        {
-          id: "Businesses",
-          label: "Businesses",
-          link: "/buiness-management/businsesses",
-          parentId: "BUSINESS_MANAGEMENT",
-        },
-
-
-
-      ],
-    },
-
-    {
-      id: "USER_MANAGEMENT",
-      label: "User Mngmnt",
-      icon: "ri-apps-2-line",
-      link: "/#",
-      stateVariables: menuStates["USER_MANAGEMENT"] || false,
-      click: function (e) {
-        e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, USER_MANAGEMENT: !prev.USER_MANAGEMENT }));
-        setIscurrentState("USER_MANAGEMENT");
-        updateIconSidebar(e);
-      },
-      subItems: [
-        {
-          id: "Staff_Accounts",
-          label: "Staff Accounts",
-          link: "/user-management/staff-accounts",
-          parentId: "USER_MANAGEMENT",
-        },
+    //     {
+    //       id: "Businesses",
+    //       label: "Businesses",
+    //       link: "/buiness-management/businsesses",
+    //       parentId: "BUSINESS_MANAGEMENT",
+    //     },
 
 
 
+    //   ],
+    // },
 
-      ],
-    },
+    // {
+    //   id: "USER_MANAGEMENT",
+    //   label: "User Mngmnt",
+    //   icon: "ri-apps-2-line",
+    //   link: "/#",
+    //   stateVariables: menuStates["USER_MANAGEMENT"] || false,
+    //   click: function (e) {
+    //     e.preventDefault();
+    //     setMenuStates((prev) => ({ ...prev, USER_MANAGEMENT: !prev.USER_MANAGEMENT }));
+    //     setIscurrentState("USER_MANAGEMENT");
+    //     updateIconSidebar(e);
+    //   },
+    //   subItems: [
+    //     {
+    //       id: "Staff_Accounts",
+    //       label: "Staff Accounts",
+    //       link: "/user-management/staff-accounts",
+    //       parentId: "USER_MANAGEMENT",
+    //     },
+
+
+
+
+    //   ],
+    // },
 
   ];
 
