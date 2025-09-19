@@ -127,10 +127,36 @@ const Navdata = () => {
         },
 
 
+      ],
+    },
+
+     {
+      id: "CONTENT_MANAGEMENT",
+      label: "Content Mngmnt",
+      icon: "ri-apps-2-line",
+      link: "/#",
+      stateVariables: menuStates["CONTENT_MANAGEMENT"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, CONTENT_MANAGEMENT: !prev.CONTENT_MANAGEMENT }));
+        setIscurrentState("CONTENT_MANAGEMENT");
+        updateIconSidebar(e);
+      },
+      subItems: [
+        {
+          id: "surplusPackages",
+          label: "surplusPackages",
+          link: "/content-management/packages",
+          parentId: "BUSINESS_MANAGEMENT",
+        },
+
+      
+
 
       ],
     },
 
+    
     {
       id: "USER_MANAGEMENT",
       label: "User Mngmnt",
