@@ -1,7 +1,7 @@
 :root {
 
     // card
-    --#{$prefix}card-logo-dark:                                     block;
+    --#{$prefix}card-logo-kamacash:                                     block;
     --#{$prefix}card-logo-light:                                    none;
 
     //vertical menu
@@ -76,7 +76,7 @@
             --#{$prefix}boxed-body-bg:                                  #{$boxed-body-bg-dark};
         }
         // card
-        --#{$prefix}card-logo-dark:                                 none;
+        --#{$prefix}card-logo-kamacash:                                 none;
         --#{$prefix}card-logo-light:                                block;
         
         //footer

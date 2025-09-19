@@ -17,7 +17,7 @@ import {
 } from "../../Components/constants/layout";
 
 export const initialState = {
-  layoutType: layoutTypes.VERTICAL,
+  layoutType: layoutTypes.HORIZONTAL,
   layoutThemeType: layoutTheme.DEFAULT,
   layoutThemeColorType: layoutThemeColor.DEFAULT,
   leftSidebarType: leftSidebarTypes.DARK,

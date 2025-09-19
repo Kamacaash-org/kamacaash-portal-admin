@@ -201,7 +201,7 @@
                     display: inline-block;
                 }
 
-                span.logo-sm {
+                span.logo-kamacash {
                     display: none;
                 }
             }
@@ -210,7 +210,7 @@
 
 
     &:is([data-sidebar="dark"], [data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {
-        .logo-dark {
+        .logo-kamacash {
             display: none;
         }
 
@@ -254,7 +254,7 @@
                     display: inline-block;
                 }
 
-                span.logo-sm {
+                span.logo-kamacash {
                     display: none;
                 }
             }

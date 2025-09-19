@@ -147,7 +147,7 @@
             display: none;
         }
 
-        span.logo-sm {
+        span.logo-kamacash {
             display: inline-block;
         }
     }
@@ -240,7 +240,7 @@
 }
 
 [data-topbar="dark"] {
-    .logo-dark {
+    .logo-kamacash {
         display: none;
     }
 
@@ -251,7 +251,7 @@
 
 [data-bs-theme="dark"] {
     &[data-topbar="light"] {
-        .logo-dark {
+        .logo-kamacash {
             display: none;
         }
 
@@ -308,7 +308,7 @@
                     width: auto;
                     text-align: left;
 
-                    .logo-sm {
+                    .logo-kamacash {
                         display: none;
                     }
 
@@ -321,7 +321,7 @@
 
         &[data-topbar="dark"] {
             .horizontal-logo {
-                .logo-dark {
+                .logo-kamacash {
                     display: none;
                 }
 

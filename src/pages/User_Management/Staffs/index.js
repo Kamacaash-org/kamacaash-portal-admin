@@ -29,7 +29,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 
 const Staff = () => {
-    document.title = "Staff | Test 001";
+    document.title = "Staff | Kamacash";
 
     const dispatch = useDispatch();
 

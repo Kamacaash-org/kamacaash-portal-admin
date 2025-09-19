@@ -31,7 +31,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 
 const SurplusPackages = () => {
-    document.title = "Surplus Packages | Test 001";
+    document.title = "Surplus Packages | Kamacash";
 
     const dispatch = useDispatch();
 

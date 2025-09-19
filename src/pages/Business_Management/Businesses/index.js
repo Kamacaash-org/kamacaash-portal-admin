@@ -33,7 +33,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 
 const Businesses = () => {
-    document.title = "Businesses | Test 001";
+    document.title = "Businesses | Kamacash";
 
     const dispatch = useDispatch();
 
@@ -560,7 +560,7 @@ const Businesses = () => {
             </Container>
 
             {/* Add/Edit Business Modal */}
-            <Modal isOpen={modal} toggle={() => setModal(false)} size="lg">
+            <Modal isOpen={modal} toggle={() => setModal(false)} size="xl">
                 <ModalHeader toggle={() => setModal(false)}>
                     {isEdit ? 'Edit Business' : 'Add New Business'}
                 </ModalHeader>
@@ -598,7 +598,7 @@ const Businesses = () => {
                                 </Row>
 
                                 <Row>
-                                    <Col md={6}>
+                                    <Col md={4}>
                                         <FormGroup>
                                             <Label>Email <span className="text-danger">*</span></Label>
                                             <Input
@@ -612,7 +612,7 @@ const Businesses = () => {
                                             <FormFeedback>{validation.errors.email}</FormFeedback>
                                         </FormGroup>
                                     </Col>
-                                    <Col md={6}>
+                                    <Col md={4}>
                                         <FormGroup>
                                             <Label>Phone Number <span className="text-danger">*</span></Label>
                                             <Input
@@ -625,10 +625,9 @@ const Businesses = () => {
                                             <FormFeedback>{validation.errors.phoneNumber}</FormFeedback>
                                         </FormGroup>
                                     </Col>
-                                </Row>
 
-                                <FormGroup>
-                                    <Label>Primary Staff Account <span className="text-danger">*</span></Label>
+                                    <Col md={4}>
+                                       <Label>Primary Staff Account <span className="text-danger">*</span></Label>
                                     <Select
                                         options={staffOptions}
                                         value={staffOptions.find(opt => opt.value === validation.values.primaryStaffAccount)}
@@ -641,7 +640,10 @@ const Businesses = () => {
                                             {validation.errors.primaryStaffAccount}
                                         </div>
                                     )}
-                                </FormGroup>
+                                    
+                                    </Col>
+                                </Row>
+ 
 
                                 <FormGroup>
                                     <Label>Description</Label>

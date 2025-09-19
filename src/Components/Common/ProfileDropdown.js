@@ -5,7 +5,7 @@ import { createSelector } from 'reselect';
 import { useSelector } from 'react-redux';
 
 //import images
-import avatar1 from "../../assets/images/logo-simad.png";
+import avatar1 from "../../assets/images/logo-kamacash.png";
 
 const ProfileDropdown = () => {
 
