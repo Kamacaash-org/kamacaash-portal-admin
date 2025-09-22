@@ -59,7 +59,7 @@ const SurplusPackages = () => {
     const [fileUploadError, setFileUploadError] = useState(null);
 
     // Static business ID (replace with your actual static business ID)
-    const staticBusinessId = "68c71567e482ac5308aef13c";
+    const staticBusinessId = "68cd6ba65a95fca195540d40";
 
     // Filters state
     const [filters, setFilters] = useState({
@@ -128,7 +128,7 @@ const SurplusPackages = () => {
             const formData = new FormData();
             formData.append('image', file);
 
-            const response = await fetch('http://localhost:4000/api/v1/upload/upload-image', {
+            const response = await fetch('http://localhost:4000/api/v1/admin/upload/upload-image', {
                 method: 'POST',
                 body: formData,
             });
@@ -491,7 +491,7 @@ const SurplusPackages = () => {
             </Container>
 
             {/* Add/Edit Modal */}
-            <Modal isOpen={modal} toggle={() => setModal(false)} size="lg">
+            <Modal isOpen={modal} toggle={() => setModal(false)} size="xl">
                 <ModalHeader toggle={() => setModal(false)}>
                     {isEdit ? 'Edit Surplus Package' : 'Add New Surplus Package'}
                 </ModalHeader>
