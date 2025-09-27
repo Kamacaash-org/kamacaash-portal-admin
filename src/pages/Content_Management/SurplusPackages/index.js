@@ -16,6 +16,14 @@ import Loader from "../../../Components/Common/Loader";
 import { useDispatch, useSelector } from 'react-redux';
 import { createSelector } from 'reselect';
 
+
+// Import FilePond for file uploads
+import { FilePond, registerPlugin } from 'react-filepond';
+import 'filepond/dist/filepond.min.css';
+import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+
 //redux
 import {
     getSurplusPackages as onGetSurplusPackagesData,
@@ -29,6 +37,9 @@ import {
 // Formik
 import * as Yup from "yup";
 import { useFormik } from "formik";
+
+// Register the plugins
+registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
 
 const SurplusPackages = () => {
     document.title = "Surplus Packages | Kamacash";
@@ -55,8 +66,8 @@ const SurplusPackages = () => {
     const [deleteModal, setDeleteModal] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [fileUploadError, setFileUploadError] = useState(null);
+
+    const [file, setFile] = useState(null);
 
     // Static business ID (replace with your actual static business ID)
     const staticBusinessId = "68cd6ba65a95fca195540d40";
@@ -112,48 +123,6 @@ const SurplusPackages = () => {
         setBusinessesList(businessesData?.businesses || []);
     }, [businessesData]);
 
-    // Prepare business options for dropdown
-    const businessOptions = businessesList
-        .filter(business => business.isActive)
-        .map(business => ({
-            value: business._id,
-            label: business.businessName
-        }));
-
-    // Handle image upload
-    const handlePackageImgUpload = async (file) => {
-        setUploading(true);
-        setFileUploadError(null);
-        try {
-            const formData = new FormData();
-            formData.append('image', file);
-
-            const response = await fetch('http://localhost:4000/api/v1/admin/upload/upload-image', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Upload failed');
-            }
-
-            const data = await response.json();
-
-            if (!data.success) {
-                throw new Error(data.message || 'Upload failed');
-            }
-
-            return data.data?.image?.filePath || data.data?.imageUrl;
-
-        } catch (error) {
-            console.error('Upload failed:', error);
-            setFileUploadError(error.message);
-            throw error;
-        } finally {
-            setUploading(false);
-        }
-    };
 
     // Handle filter changes
     const handleFilterChange = (e) => {
@@ -233,7 +202,8 @@ const SurplusPackages = () => {
         enableReinitialize: true,
         initialValues: {
             businessId: staticBusinessId, // Use static business ID
-            packageImg: selectedPackage?.packageImg || "",
+            packageImg: typeof selectedPackage?.packageImg === "string" ? selectedPackage.packageImg : "",
+
             title: selectedPackage?.title || "",
             description: selectedPackage?.description || "",
             items: selectedPackage?.items && selectedPackage.items.length > 0 ? selectedPackage.items : [""],
@@ -244,60 +214,49 @@ const SurplusPackages = () => {
             pickupEnd: selectedPackage?.pickupEnd ? formatForDateTimeLocal(selectedPackage.pickupEnd) : "",
             isActive: selectedPackage?.isActive ?? true
         },
-        validationSchema: Yup.object({
-            title: Yup.string().required("Title is required").trim(),
-            description: Yup.string().trim(),
-            items: Yup.array().of(Yup.string().trim()),
-            originalPrice: Yup.number()
-                .required("Original price is required")
-                .min(0, "Price must be positive"),
-            offerPrice: Yup.number()
-                .required("Offer price is required")
-                .min(0, "Price must be positive")
-                .test('offer-less-than-original', 'Offer price must be less than original price', function (value) {
-                    const { originalPrice } = this.parent;
-                    return value <= originalPrice;
-                }),
-            quantityAvailable: Yup.number()
-                .required("Quantity is required")
-                .min(0, "Quantity must be positive"),
-            pickupStart: Yup.date()
-                .required("Pickup start date is required")
-                .min(new Date(), "Pickup start must be in the future"),
-            pickupEnd: Yup.date()
-                .required("Pickup end date is required")
-                .min(Yup.ref('pickupStart'), "Pickup end must be after pickup start"),
-            isActive: Yup.boolean()
-        }),
-        onSubmit: async (values) => {
-            if (isEdit) {
-                const updatePackageData = {
-                    _id: selectedPackage ? selectedPackage._id : 0,
-                    ...values
-                };
-                dispatch(onUpdateSurplusPackage(updatePackageData));
-            } else {
-                const newPackageData = {
-                    ...values
-                };
-                dispatch(onAddNewSurplusPackage(newPackageData));
-            }
-            setModal(false);
-        },
-    });
 
-    // Handle image file selection
-    const handleImageChange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
+        onSubmit: async (values) => {
             try {
-                const imageUrl = await handlePackageImgUpload(file);
-                validation.setFieldValue('packageImg', imageUrl);
-            } catch (error) {
-                console.error('Error uploading image:', error);
+                const formData = new FormData();
+
+
+                if (file) {
+                    formData.append("packageImg", file);
+
+                } else if (typeof values.packageImg === "string" && values.packageImg.trim() !== "") {     // Keep existing image URL only if it’s already a string
+                    formData.append("packageImg", values.packageImg);
+                }
+
+                // Append the rest of the fields
+                Object.keys(values).forEach((key) => {
+                    if (key !== "packageImg") {
+                        if (Array.isArray(values[key])) {
+                            values[key].forEach((item, i) =>
+                                formData.append(`items[${i}]`, item)
+                            );
+                        } else {
+                            formData.append(key, values[key]);
+                        }
+                    }
+                });
+
+                if (isEdit) {
+                    formData.append("_id", selectedPackage ? selectedPackage._id : "");
+
+                    dispatch(onUpdateSurplusPackage(formData));
+                } else {
+                    console.log("fgsdgdfg", formData)
+                    dispatch(onAddNewSurplusPackage(formData));
+                }
+
+                setModal(false);
+                setFile(null);
+            } catch (err) {
+                console.error("Form submit error:", err);
             }
         }
-    };
+
+    });
 
     // Handle array input changes (items)
     const handleItemChange = (index, value) => {
@@ -340,7 +299,7 @@ const SurplusPackages = () => {
             cell: row => (
                 row.packageImg ? (
                     <img
-                        src={`http://localhost:4000${row.packageImg}`}
+                        src={row.packageImg}
                         alt={''}
                         style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
                     />
@@ -501,24 +460,33 @@ const SurplusPackages = () => {
                             <Col lg={12}>
                                 <FormGroup>
                                     <Label>Package Image</Label>
-                                    <Input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageChange}
-                                        disabled={uploading}
+                                    <FilePond
+                                        files={file ? [file] : []}
+                                        onupdatefiles={(fileItems) => {
+                                            setFile(fileItems.length > 0 ? fileItems[0].file : null);
+                                        }}
+                                        allowMultiple={false}
+                                        allowPaste={false}
+                                        name="packageImg"
+                                        labelIdle='Drag & Drop your image or <span class="filepond--label-action">Browse</span>'
+                                        acceptedFileTypes={['image/*']}
+                                        maxFileSize="5MB"
                                     />
-                                    {uploading && <small className="text-muted">Uploading image...</small>}
-                                    {fileUploadError && <small className="text-danger">{fileUploadError}</small>}
-                                    {validation.values.packageImg && (
+                                    {validation.values.packageImg && !file && (
                                         <div className="mt-2">
-                                            <img
-                                                src={`http://localhost:4000${validation.values.packageImg}`}
-                                                alt="Preview"
-                                                style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                                            />
+                                            <small className="text-muted">Current image:</small>
+                                            <div className="mt-1">
+                                                <img
+                                                    src={validation.values.packageImg}
+                                                    alt="Current"
+                                                    className="img-thumbnail"
+                                                    style={{ maxHeight: '150px' }}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </FormGroup>
+
 
                                 <FormGroup>
                                     <Label>Title <span className="text-danger">*</span></Label>
@@ -690,7 +658,7 @@ const SurplusPackages = () => {
                             <Col md={4} className="mb-3">
                                 {selectedPackage.packageImg ? (
                                     <img
-                                        src={`http://localhost:4000${selectedPackage.packageImg}`}
+                                        src={selectedPackage.packageImg}
                                         alt={selectedPackage.title}
                                         style={{ width: '100%', borderRadius: '8px' }}
                                     />
