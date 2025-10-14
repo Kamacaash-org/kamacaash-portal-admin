@@ -76,9 +76,11 @@
 
                 &.active {
                     color: var(--#{$prefix}topnav-item-active-color);
+
                     &:after {
                         color: var(--#{$prefix}topnav-item-active-color);
-                    }   
+                    }
+
                     .icon-dual {
                         color: var(--#{$prefix}topnav-item-active-color);
                         fill: rgba(var(--#{$prefix}primary-rgb), 0.10);
@@ -262,21 +264,21 @@
 }
 
 // rtl
-[dir="rtl"]{
+[dir="rtl"] {
     &[data-layout=horizontal] {
         .navbar-menu {
-            .navbar-nav>.nav-item>.nav-link[data-bs-toggle=collapse]{
-                &:after{
+            .navbar-nav>.nav-item>.nav-link[data-bs-toggle=collapse] {
+                &:after {
                     transform: rotate(-90deg) !important;
                 }
             }
         }
 
-        .navbar-nav{
+        .navbar-nav {
             .nav-item {
-                .nav-link[data-bs-toggle=collapse]{
-                    &:after{
-                        transform: rotate(-180deg)!important;
+                .nav-link[data-bs-toggle=collapse] {
+                    &:after {
+                        transform: rotate(-180deg) !important;
                     }
                 }
             }

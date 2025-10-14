@@ -20,7 +20,7 @@ export const initialState = {
   layoutType: layoutTypes.VERTICAL,
   layoutThemeType: layoutTheme.DEFAULT,
   layoutThemeColorType: layoutThemeColor.DEFAULT,
-  leftSidebarType: leftSidebarTypes.DARK,
+  leftSidebarType: leftSidebarTypes.LIGHT,
   layoutModeType: layoutModeTypes.LIGHTMODE,
   layoutWidthType: layoutWidthTypes.FLUID,
   layoutPositionType: layoutPositionTypes.FIXED,

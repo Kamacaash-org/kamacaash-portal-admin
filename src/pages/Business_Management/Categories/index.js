@@ -190,7 +190,7 @@ const SurplusCategories = () => {
         onSubmit: (values) => {
             if (isEdit) {
                 const updateCategoryData = {
-                    id: selectedCategory ? selectedCategory._id : 0,
+                    _id: selectedCategory ? selectedCategory._id : 0,
                     ...values
                 };
                 dispatch(onUpdateCategory(updateCategoryData));
@@ -209,17 +209,17 @@ const SurplusCategories = () => {
         {
             name: '#',
             cell: (row, index) => index + 1,
-            width: '60px'
+
         },
         {
             name: 'Name',
             selector: row => row.name,
-            sortable: true
+
         },
         {
             name: 'Description',
             selector: row => row.description || '-',
-            sortable: true,
+
             wrap: true
         },
         {
@@ -231,8 +231,6 @@ const SurplusCategories = () => {
         {
             name: 'Sort Order',
             selector: row => row.sortOrder,
-            sortable: true,
-            width: '120px'
         },
         {
             name: 'Status',
@@ -241,8 +239,6 @@ const SurplusCategories = () => {
                     {row.isActive ? 'Active' : 'Inactive'}
                 </Badge>
             ),
-            sortable: true,
-            width: '120px'
         },
         {
             name: 'Actions',
@@ -256,7 +252,6 @@ const SurplusCategories = () => {
                     </Button>
                 </div>
             ),
-            width: '120px'
         }
     ];
 

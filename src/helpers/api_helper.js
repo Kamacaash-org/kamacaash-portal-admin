@@ -12,7 +12,7 @@ if (token) axios.defaults.headers.common["Authorization"] = "Bearer " + token;
 
 axios.interceptors.response.use(
   (response) => {
-    // Always wrap response in unified format
+    // Always wrap successful responses in a unified format
     return {
       success: true,
       statusCode: response.status,
@@ -21,14 +21,23 @@ axios.interceptors.response.use(
     };
   },
   (error) => {
-    let message;
     const status = error.response?.status || 500;
+    const backendMessage = error.response?.data?.message;
+
+    let message;
 
     switch (status) {
-      case 401: message = "Invalid credentials"; break;
-      case 404: message = "Data not found"; break;
-      case 500: message = "Internal Server Error"; break;
-      default: message = error.response?.data?.message || error.message;
+      case 401:
+        message = backendMessage || "Invalid credentials";
+        break;
+      case 404:
+        message = backendMessage || "Data not found";
+        break;
+      case 500:
+        message = backendMessage || "Something went wrong on the server";
+        break;
+      default:
+        message = backendMessage || error.message || "An error occurred";
     }
 
     return Promise.reject({
