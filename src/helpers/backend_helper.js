@@ -31,13 +31,15 @@ export const SurPlusCategoryAPI = makeCRUD(url.SURPLUS_CATEGORY);
 // Business API with extra endpoints
 export const BusinessAPI = {
     list: () => api.get(url.BUSINESS),
-    createOrUpdate: (payload) => api.create(url.BUSINESS, payload),
+    createOrUpdate: (payload) =>
+        axios.post(url.BUSINESS, payload, { headers: { 'Content-Type': undefined } }),
+
     // extra endpoints
     archive: (id) => api.patch(`${url.BUSINESS}/${id}/archive`),
-    toggleStatus: (id) => api.patch(`${url.BUSINESS}/${id}/toggle-status`),
+    toggleStatus: (payload) => api.patch(`${url.BUSINESS}/${payload.id}/toggle-status`, payload),
     approve: (id) => api.patch(`${url.BUSINESS}/${id}/approve`),
     reject: (id) => api.patch(`${url.BUSINESS}/${id}/reject`),
-    signContract: (payload) => api.create(`${url.BUSINESS}/sign-contract`, payload),
+    signContract: (payload) => axios.post(`${url.BUSINESS}/sign-contract`, payload, { headers: { 'Content-Type': undefined } }),
 };
 
 export const StaffsAPI = makeCRUD(url.STAFFS);

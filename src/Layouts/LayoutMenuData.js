@@ -119,6 +119,8 @@ const Navdata = () => {
           parentId: "BUSINESS_MANAGEMENT",
         },
 
+
+
         {
           id: "Businesses",
           label: "Businesses",
@@ -126,11 +128,27 @@ const Navdata = () => {
           parentId: "BUSINESS_MANAGEMENT",
         },
 
+        {
+          id: "uploadContract",
+          label: "Upload Contract",
+          link: "/business-management/upload-contract",
+          parentId: "BUSINESS_MANAGEMENT",
+        },
+
+
+
+        {
+          id: "approveCusiness",
+          label: "approve business",
+          link: "/business-management/approve-business",
+          parentId: "BUSINESS_MANAGEMENT",
+        },
+
 
       ],
     },
 
-     {
+    {
       id: "CONTENT_MANAGEMENT",
       label: "Content Mngmnt",
       icon: "ri-apps-2-line",
@@ -150,13 +168,13 @@ const Navdata = () => {
           parentId: "BUSINESS_MANAGEMENT",
         },
 
-      
+
 
 
       ],
     },
 
-    
+
     {
       id: "USER_MANAGEMENT",
       label: "User Mngmnt",

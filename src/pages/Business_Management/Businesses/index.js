@@ -33,13 +33,18 @@ import {
     getBusinessesData as onGetBusinesses,
     archiveBusiness as onDeleteBusiness,
     createOrUpdateBusiness as onCreateOrUpdateBusiness,
-    toggleStatusBusiness as onToggleBusinessActiveStatus
+    toggleStatusBusiness as onToggleBusinessActiveStatus,
+    getCategories as onGetCategories
 } from "../../../slices/thunks";
 
 // Selectors
 const selectBusinessesData = createSelector(
     (state) => state.BusinessManagement,
     (businessesData) => businessesData.businessesData.businesses || []
+);
+const selectCategoriesData = createSelector(
+    (state) => state.BusinessManagement,
+    (categoriesData) => categoriesData.categoriesData.categories || []
 );
 
 const resizeObserverErr = window.ResizeObserver;
@@ -60,6 +65,8 @@ const BusinessesPage = () => {
 
     const dispatch = useDispatch();
     const businessesData = useSelector(selectBusinessesData);
+    const categoriesData = useSelector(selectCategoriesData);
+
 
     // State management
     const [businesses, setBusinesses] = useState([]);
@@ -72,8 +79,6 @@ const BusinessesPage = () => {
     const [selectedBusiness, setSelectedBusiness] = useState(null);
     const [filteredBusinesses, setFilteredBusinesses] = useState([]);
     const [activeTab, setActiveTab] = useState('1');
-    const [formAlert, setFormAlert] = useState({ show: false, message: '', type: '' });
-
     // Filters state
     const [filters, setFilters] = useState({
         search: '',
@@ -142,22 +147,12 @@ const BusinessesPage = () => {
         setLoading(true);
         try {
             await dispatch(onGetBusinesses());
-            // In a real app, you would fetch categories from API
-            setCategories([
-                { value: '1', label: 'Supermarket' },
-                { value: '2', label: 'Restaurant' },
-                { value: '3', label: 'Retail Store' },
-                { value: '4', label: 'Service Provider' },
-                { value: '5', label: 'Manufacturer' }
-            ]);
+            await dispatch(onGetCategories());
+
+      
         } catch (error) {
             console.error("Error loading businesses:", error);
-            toast.error("Failed to load businesses");
-            setFormAlert({
-                show: true,
-                message: 'Failed to load businesses. Please try again.',
-                type: 'danger'
-            });
+        
         } finally {
             setLoading(false);
         }
@@ -174,6 +169,16 @@ const BusinessesPage = () => {
         setBusinesses(initialBusinesses);
         setFilteredBusinesses(initialBusinesses);
     }, [businessesData]);
+
+
+        useEffect(() => {
+    const initialCategories = Array.isArray(categoriesData) ? categoriesData : [];
+        setCategories(initialCategories.map(cat => ({
+            value: cat._id,
+            label: cat.name
+        })) || []);
+    }, [categoriesData]);
+
 
     // Handle filter changes
     const handleFilterChange = (e) => {
@@ -360,7 +365,6 @@ const BusinessesPage = () => {
         setLicenseFiles([]);
         setSelectedBusiness(null);
         setActiveTab('1');
-        setFormAlert({ show: false, message: '', type: '' });
     };
 
     // Handle modal close
@@ -432,8 +436,6 @@ const BusinessesPage = () => {
 
             await dispatch(onCreateOrUpdateBusiness(submitData));
             handleModalClose();
-            fetchData();
-            toast.success("Business created successfully!");
         } catch (error) {
             console.error("Error creating business:", error);
             toast.error("Failed to create business");
@@ -503,8 +505,6 @@ const BusinessesPage = () => {
 
             await dispatch(onCreateOrUpdateBusiness(submitData));
             handleModalClose();
-            fetchData();
-            toast.success("Business updated successfully!");
         } catch (error) {
             console.error("Error updating business:", error);
             toast.error("Failed to update business");
@@ -518,11 +518,8 @@ const BusinessesPage = () => {
         try {
             await dispatch(onDeleteBusiness(selectedBusiness._id));
             setDeleteModal(false);
-            fetchData();
-            toast.success("Business deleted successfully!");
         } catch (error) {
             console.error("Error deleting business:", error);
-            toast.error("Failed to delete business");
         }
     };
 
@@ -536,11 +533,8 @@ const BusinessesPage = () => {
                 isActive: !selectedBusiness.isActive
             }));
             setStatusModal(false);
-            fetchData();
-            toast.success(`Business ${!selectedBusiness.isActive ? 'activated' : 'deactivated'} successfully!`);
         } catch (error) {
             console.error("Error toggling business status:", error);
-            toast.error("Failed to update business status");
         }
     };
 
@@ -551,7 +545,7 @@ const BusinessesPage = () => {
             ownerName: business.ownerName || "",
             businessName: business.businessName || "",
             category: business.category || "",
-            primaryStaffAccount: business.primaryStaffAccount || "",
+            primaryStaffAccount: business.primaryStaffAccount._id || "68e363ffa8ff4ff8597b903c",
             countryCode: business.countryCode || "+252",
             phoneNumber: business.phoneNumber || "",
             email: business.email || "",
@@ -963,7 +957,7 @@ const BusinessesPage = () => {
             </Container>
 
             {/* Add/Edit Modal */}
-            <Modal isOpen={modal} toggle={handleModalClose} size="xl" centered scrollable>
+            <Modal isOpen={modal} toggle={handleModalClose} unmountOnClose={false} size="xl" centered scrollable>
                 <ModalHeader toggle={handleModalClose} className="bg-light">
                     <i className={`ri-${isEdit ? 'pencil' : 'add'}-line me-2`}></i>
                     {isEdit ? 'Edit Business' : 'Create New Business'}
@@ -1570,7 +1564,7 @@ const BusinessesPage = () => {
             </Modal>
 
             {/* View Modal */}
-            <Modal isOpen={viewModal} toggle={() => setViewModal(false)} size="xl" centered scrollable>
+            <Modal isOpen={viewModal} toggle={() => setViewModal(false)} unmountOnClose={false} size="xl" centered scrollable>
                 <ModalHeader toggle={() => setViewModal(false)} className="bg-light">
                     <i className="ri-store-line me-2"></i>
                     Business Details - {selectedBusiness?.businessName}

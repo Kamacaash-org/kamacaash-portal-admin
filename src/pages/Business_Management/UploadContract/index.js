@@ -38,7 +38,7 @@ import {
 
 // Selectors
 const selectBusinessesData = createSelector(
-    (state) => state.Business,
+    (state) => state.BusinessManagement,
     (businessesData) => businessesData.businessesData.businesses || []
 );
 
@@ -189,27 +189,18 @@ const UploadContractPage = () => {
             }, 200);
 
             const submitData = new FormData();
-            submitData.append('contractFile', contractFiles[0].file);
-            submitData.append('businessId', selectedBusiness._id);
+            submitData.append('agreementPdf', contractFiles[0].file);
+            submitData.append('_id', selectedBusiness._id);
 
-            await dispatch(onSignContract({
-                id: selectedBusiness._id,
-                file: contractFiles[0].file
-            }));
+            await dispatch(onSignContract(submitData));
 
             clearInterval(progressInterval);
             setUploadProgress(100);
+            handleModalClose();
 
-            setTimeout(() => {
-                handleModalClose();
-                fetchData();
-                toast.success("Contract uploaded and signed successfully!");
-                setUploading(false);
-            }, 500);
 
         } catch (error) {
             console.error("Error uploading contract:", error);
-            toast.error("Failed to upload contract");
             setUploading(false);
             setUploadProgress(0);
         }
@@ -274,7 +265,6 @@ const UploadContractPage = () => {
         {
             name: '#',
             cell: (row, index) => index + 1,
-            width: '60px'
         },
         {
             name: 'Business',
@@ -300,7 +290,6 @@ const UploadContractPage = () => {
                     </div>
                 </div>
             ),
-            sortable: true,
         },
         {
             name: 'Contact',
@@ -325,7 +314,7 @@ const UploadContractPage = () => {
         {
             name: 'Contract Signed',
             cell: (row) => row.contract?.signedDate ? new Date(row.contract.signedDate).toLocaleDateString() : 'N/A',
-            width: '140px'
+
         },
         {
             name: 'Actions',
@@ -364,7 +353,6 @@ const UploadContractPage = () => {
                     )}
                 </div>
             ),
-            width: '150px'
         }
     ];
 
@@ -374,7 +362,6 @@ const UploadContractPage = () => {
             style: {
                 fontWeight: '600',
                 fontSize: '0.875rem',
-                backgroundColor: '#f8f9fa',
             },
         },
         cells: {

@@ -9,7 +9,9 @@ import Categories from '../pages/Business_Management/Categories';
 import Business from '../pages/Business_Management/Businesses';
 
 import Staff from '../pages/User_Management/Staffs';
-import Packages from '../pages/Content_Management/SurplusPackages'
+import Packages from '../pages/Content_Management/SurplusPackages';
+import UploadContract from '../pages/Business_Management/UploadContract';
+import ApproveBusiness from '../pages/Business_Management/ApproveBusiness';
 
 
 import TwosVerify from '../pages/AuthenticationInner/TwoStepVerification';
@@ -28,6 +30,10 @@ const authProtectedRoutes = [
 
   { path: "/business-management/categories", component: <Categories /> },
   { path: "/buiness-management/businsesses", component: <Business /> },
+  { path: "/business-management/upload-contract", component: <UploadContract /> },
+  { path: "/business-management/approve-business", component: <ApproveBusiness /> },
+
+
   { path: "/user-management/staff-accounts", component: <Staff /> },
   { path: "/content-management/packages", component: <Packages /> },
 

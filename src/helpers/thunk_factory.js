@@ -2,31 +2,58 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 
 export const makeCRUDThunks = (name, API) => {
-    const list = createAsyncThunk(`${name}/list`, async () => {
-        const res = await API.list();
-        if (!res.success) throw res;
-        return res.data;
+    // console.log("API is:", API)
+    const list = createAsyncThunk(`${name}/list`, async (_, thunkAPI) => {
+        try {
+            const res = await API.list();
+            if (!res.success) throw res;
+            return res.data;
+        } catch (error) {
+            toast.error(error?.message || "Failed to fetch list");
+            return thunkAPI.rejectWithValue(error);
+        }
     });
 
-    const create = createAsyncThunk(`${name}/create`, async (payload, { dispatch }) => {
-        const res = await API.create(payload);
-        res.success ? toast.success(res.message) : toast.error(res.message);
-        dispatch(list()); //  refresh
-        return res;
+    const create = createAsyncThunk(`${name}/create`, async (payload, { dispatch, rejectWithValue }) => {
+        try {
+            const res = await API.create(payload);
+            // console.log("res is:", res)
+            if (!res.success) throw res;
+            toast.success(res.message);
+            dispatch(list()); // refresh
+            return res;
+        } catch (error) {
+            console.log("error is:", error)
+            toast.error(error?.message || "Create failed");
+            return rejectWithValue(error);
+        }
     });
 
-    const update = createAsyncThunk(`${name}/update`, async (payload, { dispatch }) => {
-        const res = await API.update(payload);
-        res.success ? toast.success(res.message) : toast.error(res.message);
-        dispatch(list()); //  refresh
-        return res;
+    const update = createAsyncThunk(`${name}/update`, async (payload, { dispatch, rejectWithValue }) => {
+        try {
+            const res = await API.update(payload);
+            console.log("res is:", res)
+            if (!res.success) throw res;
+            toast.success(res.message);
+            dispatch(list()); // refresh
+            return res;
+        } catch (error) {
+            toast.error(error?.message || "Update failed");
+            return rejectWithValue(error);
+        }
     });
 
-    const remove = createAsyncThunk(`${name}/delete`, async (id, { dispatch }) => {
-        const res = await API.delete(id);
-        res.success ? toast.success(res.message) : toast.error(res.message);
-        dispatch(list()); // refresh
-        return res;
+    const remove = createAsyncThunk(`${name}/delete`, async (id, { dispatch, rejectWithValue }) => {
+        try {
+            const res = await API.delete(id);
+            if (!res.success) throw res;
+            toast.success(res.message);
+            dispatch(list()); // refresh
+            return res;
+        } catch (error) {
+            toast.error(error?.message || "Delete failed");
+            return rejectWithValue(error);
+        }
     });
 
     return { list, create, update, delete: remove };

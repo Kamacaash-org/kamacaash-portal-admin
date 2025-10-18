@@ -27,7 +27,7 @@ import {
 
 // Selectors
 const selectBusinessesData = createSelector(
-    (state) => state.Business,
+    (state) => state.BusinessManagement,
     (businessesData) => businessesData.businessesData.businesses || []
 );
 
@@ -533,7 +533,7 @@ const ApproveBusinessPage = () => {
                                 </FormGroup>
                             </Col>
                             <Col md={2}>
-                                <div className="d-grid">
+                                <div className="d-grid mb-3">
                                     <Button
                                         color="primary"
                                         onClick={() => setFilters({ search: '', status: 'PENDING' })}
