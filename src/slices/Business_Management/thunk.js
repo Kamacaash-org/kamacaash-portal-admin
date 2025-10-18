@@ -12,21 +12,51 @@ export const {
 
 export const {
     list: getBusinessesData,
-    create: addBusiness,
-    update: updateBusiness,
-    delete: deleteBusiness,
 } = makeCRUDThunks("business-management/business", BusinessAPI);
 
-// register custom endpoints separately
-export const activateBusiness = createAsyncThunk("business-management/business/activate", async (id, { dispatch }) => {
-    const res = await BusinessAPI.activate(id);
+export const createOrUpdateBusiness = createAsyncThunk("business-management/business/createOrUpdateBusiness", async (payload, { dispatch }) => {
+    const res = await BusinessAPI.createOrUpdate(payload);
     res.success ? toast.success(res.message) : toast.error(res.message);
     dispatch(getBusinessesData());
     return res;
 });
 
+
+// register custom endpoints separately
+export const archiveBusiness = createAsyncThunk("business-management/business/archive", async (id, { dispatch }) => {
+    const res = await BusinessAPI.archive(id);
+    res.success ? toast.success(res.message) : toast.error(res.message);
+    dispatch(getBusinessesData());
+    return res;
+});
+
+export const toggleStatusBusiness = createAsyncThunk("business-management/business/toggleStatus", async (id, { dispatch }) => {
+    const res = await BusinessAPI.toggleStatus(id);
+    res.success ? toast.success(res.message) : toast.error(res.message);
+    dispatch(getBusinessesData());
+    return res;
+});
+
+
+export const approveBusiness = createAsyncThunk("business-management/business/approve", async (id, { dispatch }) => {
+    const res = await BusinessAPI.approve(id);
+    res.success ? toast.success(res.message) : toast.error(res.message);
+    dispatch(getBusinessesData());
+    return res;
+});
+
+
+export const rejectBusiness = createAsyncThunk("business-management/business/reject", async (id, { dispatch }) => {
+    const res = await BusinessAPI.reject(id);
+    res.success ? toast.success(res.message) : toast.error(res.message);
+    dispatch(getBusinessesData());
+    return res;
+});
+
+
+
 export const signContract = createAsyncThunk("business-management/business/contract", async (payload, { dispatch }) => {
-    const res = await BusinessAPI.contract(payload);
+    const res = await BusinessAPI.signContract(payload);
     res.success ? toast.success(res.message) : toast.error(res.message);
     dispatch(getBusinessesData());
     return res;

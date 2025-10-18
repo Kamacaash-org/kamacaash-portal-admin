@@ -30,15 +30,15 @@ import { createSelector } from 'reselect';
 
 // Redux thunks
 import {
-    getBusinesses as onGetBusinesses,
-    deleteBusiness as onDeleteBusiness,
+    getBusinessesData as onGetBusinesses,
+    archiveBusiness as onDeleteBusiness,
     createOrUpdateBusiness as onCreateOrUpdateBusiness,
-    toggleBusinessActiveStatus as onToggleBusinessActiveStatus
+    toggleStatusBusiness as onToggleBusinessActiveStatus
 } from "../../../slices/thunks";
 
 // Selectors
 const selectBusinessesData = createSelector(
-    (state) => state.Business,
+    (state) => state.BusinessManagement,
     (businessesData) => businessesData.businessesData.businesses || []
 );
 

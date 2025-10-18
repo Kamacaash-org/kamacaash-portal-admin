@@ -32,7 +32,7 @@ import { createSelector } from 'reselect';
 
 // Redux thunks
 import {
-    getBusinesses as onGetBusinesses,
+    getBusinessesData as onGetBusinesses,
     signContract as onSignContract
 } from "../../../slices/thunks";
 

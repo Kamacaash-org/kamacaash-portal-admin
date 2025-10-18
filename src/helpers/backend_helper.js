@@ -30,11 +30,14 @@ export const login = (data) => api.create(url.POST_LOGIN, data);
 export const SurPlusCategoryAPI = makeCRUD(url.SURPLUS_CATEGORY);
 // Business API with extra endpoints
 export const BusinessAPI = {
-    ...makeCRUD(url.BUSINESS),
-
+    list: () => api.get(url.BUSINESS),
+    createOrUpdate: (payload) => api.create(url.BUSINESS, payload),
     // extra endpoints
-    activate: (id) => api.update(`${url.BUSINESS}/${id}/activate`),
-    contract: (payload) => api.update(`${url.BUSINESS}/${payload.id}/contract`, payload)
+    archive: (id) => api.patch(`${url.BUSINESS}/${id}/archive`),
+    toggleStatus: (id) => api.patch(`${url.BUSINESS}/${id}/toggle-status`),
+    approve: (id) => api.patch(`${url.BUSINESS}/${id}/approve`),
+    reject: (id) => api.patch(`${url.BUSINESS}/${id}/reject`),
+    signContract: (payload) => api.create(`${url.BUSINESS}/sign-contract`, payload),
 };
 
 export const StaffsAPI = makeCRUD(url.STAFFS);
