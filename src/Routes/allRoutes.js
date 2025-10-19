@@ -13,6 +13,10 @@ import Packages from '../pages/Content_Management/SurplusPackages';
 import UploadContract from '../pages/Business_Management/UploadContract';
 import ApproveBusiness from '../pages/Business_Management/ApproveBusiness';
 
+import PendingOrders from '../pages/Orders/Orders/index';
+import CompletedRejectedOrders from '../pages/Orders/Orders/CompletedRejectedOrders';
+
+
 
 import TwosVerify from '../pages/AuthenticationInner/TwoStepVerification';
 import Cover404 from '../pages/AuthenticationInner/Errors/Cover404';
@@ -32,6 +36,11 @@ const authProtectedRoutes = [
   { path: "/buiness-management/businsesses", component: <Business /> },
   { path: "/business-management/upload-contract", component: <UploadContract /> },
   { path: "/business-management/approve-business", component: <ApproveBusiness /> },
+
+
+  { path: "/orders/manage-pending-orders", component: <PendingOrders /> },
+  { path: "/orders/order-history", component: <CompletedRejectedOrders /> },
+
 
 
   { path: "/user-management/staff-accounts", component: <Staff /> },

@@ -80,5 +80,18 @@ export const Surplus_PackageAPI = {
         }
     }
 };
+
+
+
+
+export const OrdersAPI = {
+    listPendingOrders: (id) => api.get(`${url.ORDERS}/pending-orders/${id}`),
+    completeOrder: (payload) => api.create(`${url.ORDERS}/complete-order`, payload),
+    cancelOrder: (payload) => api.create(`${url.ORDERS}/cancel-order`, payload),
+    listCompletedOrders: (id) => api.get(`${url.ORDERS}/completed-orders/${id}`),
+    listCancelledOrders: (id) => api.get(`${url.ORDERS}/cancelled-orders/${id}`),
+
+};
+
 // // ================================== END OF  URL ===================================================
 

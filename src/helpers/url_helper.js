@@ -10,12 +10,6 @@ export const STAFFS = "/staffs";
 export const SURPLUS_PACKAGE = "/surplus-packages";
 
 
-// // schools
-// export const SCHOOLS = "/schools";
-// // departments
-// export const DEPARTMENTS = "/departments";
-// // programs
-// export const PROGRAMS = "/programs";
-// // staff
-// export const STAFFS = "/staffs";
+export const ORDERS = "/orders"
+
 // ================================== END OF  URL ===================================================

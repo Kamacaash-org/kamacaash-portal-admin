@@ -165,9 +165,42 @@ const Navdata = () => {
           id: "surplusPackages",
           label: "surplusPackages",
           link: "/content-management/packages",
-          parentId: "BUSINESS_MANAGEMENT",
+          parentId: "CONTENT_MANAGEMENT",
         },
 
+
+
+
+      ],
+    },
+
+
+    {
+      id: "ORDERS",
+      label: "Orders",
+      icon: "ri-apps-2-line",
+      link: "/#",
+      stateVariables: menuStates["ORDERS"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, ORDERS: !prev.ORDERS }));
+        setIscurrentState("ORDERS");
+        updateIconSidebar(e);
+      },
+      subItems: [
+        {
+          id: "pendingOrders",
+          label: "Pending Orders",
+          link: "/orders/manage-pending-orders",
+          parentId: "ORDERS",
+        },
+
+        {
+          id: "OrderHistory",
+          label: "Order History",
+          link: "/orders/order-history",
+          parentId: "ORDERS",
+        },
 
 
 
