@@ -109,7 +109,7 @@ const Staff = () => {
                 staff.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
                 staff.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
                 staff.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-                staff.phoneNumber?.toLowerCase().includes(filters.search.toLowerCase())) &&
+                staff.phone?.toLowerCase().includes(filters.search.toLowerCase())) &&
             (filters.status === '' ||
                 (filters.status === 'Active' ? staff.isActive : !staff.isActive)) &&
             (filters.role === '' || staff.role === filters.role)
@@ -151,7 +151,7 @@ const Staff = () => {
             firstName: selectedStaff?.firstName || "",
             lastName: selectedStaff?.lastName || "",
             email: selectedStaff?.email || "",
-            phoneNumber: selectedStaff?.phoneNumber || "",
+            phone: selectedStaff?.phone || "",
             username: selectedStaff?.username || "",
             password: "",
             title: selectedStaff?.title || "",
@@ -170,7 +170,7 @@ const Staff = () => {
                 .required("Email is required")
                 .trim()
                 .lowercase(),
-            phoneNumber: Yup.string()
+            phone: Yup.string()
                 .required("Phone number is required")
                 .trim(),
             username: Yup.string()
@@ -241,7 +241,7 @@ const Staff = () => {
         },
         {
             name: 'Phone',
-            selector: row => row.phoneNumber || '-',
+            selector: row => row.phone || '-',
         },
         {
             name: 'Role',
@@ -348,7 +348,7 @@ const Staff = () => {
                                 columns={columns}
                                 data={filteredStaff}
                                 pagination
-                                highlightOnHover
+                                // highlightOnHover
                                 responsive
                                 noDataComponent="No staff members found matching your criteria"
                             />
@@ -414,13 +414,13 @@ const Staff = () => {
                                         <FormGroup>
                                             <Label>Phone Number <span className="text-danger">*</span></Label>
                                             <Input
-                                                name="phoneNumber"
-                                                value={validation.values.phoneNumber}
+                                                name="phone"
+                                                value={validation.values.phone}
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
-                                                invalid={validation.touched.phoneNumber && !!validation.errors.phoneNumber}
+                                                invalid={validation.touched.phone && !!validation.errors.phone}
                                             />
-                                            <FormFeedback>{validation.errors.phoneNumber}</FormFeedback>
+                                            <FormFeedback>{validation.errors.phone}</FormFeedback>
                                         </FormGroup>
                                     </Col>
                                 </Row>

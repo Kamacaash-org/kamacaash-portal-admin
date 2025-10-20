@@ -22,6 +22,7 @@ import {
     getCompletedOrdersByBusinessID as onGetCompletedOrders,
     getCancelledOrdersByBusinessID as onGetCancelledOrders
 } from "../../../slices/thunks";
+import useAuthUser from '../../../Components/Hooks/useAuthUser';
 
 // Selectors
 const selectCompletedOrdersData = createSelector(
@@ -66,19 +67,20 @@ const CompletedRejectedOrdersPage = () => {
         avgOrderValue: 0,
         completionRate: 0
     });
+    const userAuth = useAuthUser();
 
     // Fetch data
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const businessId = '68e3763dd6e0c17018d0386c'; // Replace with actual business ID
+            const businessId = userAuth.businessId; // Replace with actual business ID
             await Promise.all([
                 dispatch(onGetCompletedOrders(businessId)),
                 dispatch(onGetCancelledOrders(businessId))
             ]);
         } catch (error) {
             console.error("Error loading orders:", error);
-            toast.error("Failed to load orders");
+
         } finally {
             setLoading(false);
         }
@@ -163,12 +165,12 @@ const CompletedRejectedOrdersPage = () => {
             const amountFilter = (order) => {
                 const amount = order.amount || 0;
                 switch (filterSettings.amountRange) {
-                    case '0-50':
-                        return amount <= 50;
-                    case '50-100':
-                        return amount > 50 && amount <= 100;
-                    case '100+':
-                        return amount > 100;
+                    case '0-5':
+                        return amount <= 5;
+                    case '5-10':
+                        return amount > 5 && amount <= 10;
+                    case '10+':
+                        return amount > 10;
                     default:
                         return true;
                 }
@@ -303,7 +305,7 @@ const CompletedRejectedOrdersPage = () => {
         {
             name: 'AMOUNT',
             cell: row => `$${row.amount || 0}`,
-            sortable: true,
+            // sortable: true,
         },
         {
             name: 'COMPLETED AT',
@@ -313,12 +315,12 @@ const CompletedRejectedOrdersPage = () => {
                     <small className="text-muted">{formatRelativeTime(row.completedAt)}</small>
                 </div>
             ),
-            sortable: true
+            // sortable: true
         },
-        {
-            name: 'COMPLETED BY',
-            cell: row => row.completedBy || 'System',
-        },
+        // {
+        //     name: 'COMPLETED BY',
+        //     cell: row => row.completedBy || 'System',
+        // },
         {
             name: 'ACTIONS',
             cell: (row) => (
@@ -386,7 +388,7 @@ const CompletedRejectedOrdersPage = () => {
         {
             name: 'AMOUNT',
             cell: row => `$${row.amount || 0}`,
-            sortable: true,
+            // sortable: true,
         },
         {
             name: 'CANCELLED AT',
@@ -396,7 +398,7 @@ const CompletedRejectedOrdersPage = () => {
                     <small className="text-muted">{formatRelativeTime(row.cancelledAt)}</small>
                 </div>
             ),
-            sortable: true
+            // sortable: true
         },
         {
             name: 'REASON',
@@ -625,15 +627,15 @@ const CompletedRejectedOrdersPage = () => {
                                         <Select
                                             options={[
                                                 { value: 'all', label: 'All Amounts' },
-                                                { value: '0-50', label: '$0 - $50' },
-                                                { value: '50-100', label: '$50 - $100' },
-                                                { value: '100+', label: '$100+' }
+                                                { value: '0-5', label: '$0 - $5' },
+                                                { value: '5-10', label: '$5 - $10' },
+                                                { value: '10+', label: '$10+' }
                                             ]}
                                             value={{
                                                 value: filters.amountRange,
                                                 label: filters.amountRange === 'all' ? 'All Amounts' :
-                                                    filters.amountRange === '0-50' ? '$0 - $50' :
-                                                        filters.amountRange === '50-100' ? '$50 - $100' : '$100+'
+                                                    filters.amountRange === '0-5' ? '$0 - $5' :
+                                                        filters.amountRange === '5-10' ? '$5 - $10' : '$10+'
                                             }}
                                             onChange={(opt) => setFilters(prev => ({ ...prev, amountRange: opt.value }))}
                                             className="react-select"
@@ -735,7 +737,7 @@ const CompletedRejectedOrdersPage = () => {
                                 <div className="border rounded p-3 mb-3">
                                     <p><strong>Name:</strong> {selectedOrder.user?.fullName || 'N/A'}</p>
                                     <p><strong>Phone:</strong> {selectedOrder.user?.phoneNumber || 'N/A'}</p>
-                                    <p><strong>User ID:</strong> {selectedOrder.user?.userId || 'N/A'}</p>
+                                    {/* <p><strong>User ID:</strong> {selectedOrder.user?.userId || 'N/A'}</p> */}
                                 </div>
 
                                 <h6>Order Information</h6>
@@ -749,8 +751,8 @@ const CompletedRejectedOrdersPage = () => {
                                             {getStatusBadge(selectedOrder.status, selectedOrder.type).text}
                                         </Badge>
                                     </p>
-                                    <p><strong>Payment Status:</strong> {selectedOrder.paymentStatus}</p>
-                                    <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'N/A'}</p>
+                                    {/* <p><strong>Payment Status:</strong> {selectedOrder.paymentStatus}</p>
+                                    <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'N/A'}</p> */}
                                 </div>
                             </Col>
                             <Col md={6}>

@@ -140,8 +140,6 @@ const ApproveBusinessPage = () => {
         try {
             await dispatch(onApproveBusiness(selectedBusiness._id));
             setApproveModal(false);
-            fetchData();
-            toast.success(`Business "${selectedBusiness.businessName}" approved successfully!`);
         } catch (error) {
             console.error("Error approving business:", error);
             toast.error("Failed to approve business");
@@ -162,8 +160,6 @@ const ApproveBusinessPage = () => {
             }));
             setRejectModal(false);
             setRejectionReason('');
-            fetchData();
-            toast.success(`Business "${selectedBusiness.businessName}" rejected successfully!`);
         } catch (error) {
             console.error("Error rejecting business:", error);
             toast.error("Failed to reject business");

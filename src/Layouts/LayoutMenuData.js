@@ -190,7 +190,7 @@ const Navdata = () => {
       subItems: [
         {
           id: "pendingOrders",
-          label: "Pending Orders",
+          label: "Orders",
           link: "/orders/manage-pending-orders",
           parentId: "ORDERS",
         },

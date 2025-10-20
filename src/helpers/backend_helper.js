@@ -46,39 +46,10 @@ export const StaffsAPI = makeCRUD(url.STAFFS);
 
 
 export const Surplus_PackageAPI = {
-    list: () => api.get(url.SURPLUS_PACKAGE),
-
+    list: (id) => api.get(url.SURPLUS_PACKAGE, { businessId: id }),
     delete: (id) => api.delete(`${url.SURPLUS_PACKAGE}/${id}`),
-
-    create: (formData) => {
-        // Check if it's FormData (for file uploads) or regular data
-        if (formData instanceof FormData) {
-            // For FormData, use post with multipart/form-data headers
-            return axios.post(url.SURPLUS_PACKAGE, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-        } else {
-            // For regular JSON data, use the existing api.update method
-            return api.create(url.SURPLUS_PACKAGE, formData);
-        }
-    },
-
-    update: (formData) => {
-        // Check if it's FormData (for file uploads) or regular data
-        if (formData instanceof FormData) {
-            // For FormData, use post with multipart/form-data headers
-            return axios.post(url.SURPLUS_PACKAGE, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-        } else {
-            // For regular JSON data, use the existing api.update method
-            return api.update(url.SURPLUS_PACKAGE, formData);
-        }
-    }
+    createOrUpdate: (payload) =>
+        axios.post(url.SURPLUS_PACKAGE, payload, { headers: { 'Content-Type': undefined } }),
 };
 
 

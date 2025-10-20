@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 
 //import images
 import avatar1 from "../../assets/images/logo-kamacash.png";
+import useAuthUser from '../Hooks/useAuthUser';
 
 const ProfileDropdown = () => {
 
@@ -20,15 +21,21 @@ const ProfileDropdown = () => {
     const { user } = useSelector(profiledropdownData);
 
     const [userName, setUserName] = useState("Admin");
+    const [staffRole, setStaffRole] = useState("Admin");
+
+    const authUser = useAuthUser();
 
     useEffect(() => {
         if (sessionStorage.getItem("authUser")) {
             const obj = JSON.parse(sessionStorage.getItem("authUser"));
-            // console.log("obj is:", obj.data.user.username)
-            setUserName("Admin"
-            );
+            const staffName = obj.data.staff.firstName || "Admin";
+            const staffRole = obj.data.staff.role || "Admin";
+
+            setUserName(staffName);
+            setStaffRole(staffRole);
+
         }
-    }, [userName, user]);
+    }, [userName, staffRole, user]);
 
     //Dropdown Toggle
     const [isProfileDropdown, setIsProfileDropdown] = useState(false);
@@ -43,8 +50,8 @@ const ProfileDropdown = () => {
                         <img className="rounded-circle header-profile-user" src={avatar1}
                             alt="Header Avatar" />
                         <span className="text-start ms-xl-2">
-                            <span className="d-none d-xl-inline-block ms-1 fw-medium user-name-text">{userName}</span>
-                            <span className="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">Admin</span>
+                            <span className="d-none d-xl-inline-block ms-1 fw-medium user-name-text">{authUser.firstName}</span>
+                            <span className="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">{authUser.role}</span>
                         </span>
                     </span>
                 </DropdownToggle>

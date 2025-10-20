@@ -5,9 +5,6 @@ import { toast } from "react-toastify";
 
 
 export const {
-    list: getSurplusPackages,
-    // create: addSurplusPackage,
-    // update: updateSurplusPackage,
     delete: deleteSurplusPackage,
 } = makeCRUDThunks("content-operation/surplus-package", Surplus_PackageAPI);
 
@@ -19,46 +16,31 @@ export const activateSurplusPackage = createAsyncThunk("content-operation/surplu
 });
 
 
-// In your Redux thunks (example)
-export const addSurplusPackage = (formData) => async (dispatch) => {
-    try {
-        const res = await Surplus_PackageAPI.create(formData);
-        res.success ? toast.success(res.message) : toast.error(res.message);
-        dispatch(getSurplusPackages());
-        return res;
-    } catch (error) {
-        // Handle axios error response
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to create package data';
-        toast.error(errorMessage);
 
-        // Return error structure to handle in the reducer
-        return {
-            success: false,
-            message: errorMessage,
-            errors: error.response?.data?.errors || []
-        };
+export const getSurplusPackages = createAsyncThunk("orders/order/return-completed-orders", async (id) => {
+    try {
+        const res = await Surplus_PackageAPI.list(id);
+        if (!res.success) throw res;
+        return res.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to load completed orders';
+        toast.error(errorMessage);
     }
-};
 
+});
 
-export const updateSurplusPackage = (formData) => async (dispatch) => {
+// In your Redux thunks (example)
+export const createOrUpdateSurplusPackage = (formData) => async (dispatch) => {
     try {
-
-        const res = await Surplus_PackageAPI.update(formData);
-        res.success ? toast.success(res.message) : toast.error(res.message);
-        dispatch(getSurplusPackages());
-        return res;
+        const res = await Surplus_PackageAPI.createOrUpdate(formData);
+        if (!res.success) throw res;
+        toast.success(res.message);
+        dispatch(getSurplusPackages(formData.get('businessId')));
     } catch (error) {
         // Handle axios error response
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to create package data';
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to save package data';
         toast.error(errorMessage);
 
-        // Return error structure to handle in the reducer
-        return {
-            success: false,
-            message: errorMessage,
-            errors: error.response?.data?.errors || []
-        };
     }
 };
 

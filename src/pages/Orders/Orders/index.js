@@ -25,6 +25,7 @@ import {
     cancelOrder as onCancelOrder,
     completeOrder as onCompleteOrder
 } from "../../../slices/thunks";
+import useAuthUser from '../../../Components/Hooks/useAuthUser';
 
 // Selectors
 const selectOrdersData = createSelector(
@@ -49,8 +50,9 @@ const OrdersPage = () => {
     const [filteredOrders, setFilteredOrders] = useState([]);
     const [pinCode, setPinCode] = useState('');
     const [cancellationReason, setCancellationReason] = useState('');
-    // const [completedBy, setCompletedBy] = useState('');
-    const completedBy = "68e36ff406e62755a3a281e5";
+
+    const userAuth = useAuthUser();
+    const completedBy = userAuth.staffId;
     // Filters state
     const [filters, setFilters] = useState({
         search: '',
@@ -72,11 +74,10 @@ const OrdersPage = () => {
         setLoading(true);
         try {
             // In a real app, you would get businessId from auth or context
-            const businessId = '68e3763dd6e0c17018d0386c'; // Replace with actual business ID
+            const businessId = userAuth.businessId; // Replace with actual business ID
             await dispatch(onGetPendingOrders(businessId));
         } catch (error) {
             console.error("Error loading orders:", error);
-            toast.error("Failed to load orders");
         } finally {
             setLoading(false);
         }
@@ -226,7 +227,7 @@ const OrdersPage = () => {
                 return {
                     color: 'primary',
                     icon: 'ri-money-dollar-circle-line',
-                    text: 'PAID'
+                    text: 'ORDER PLACED'
                 };
             case 'READY_FOR_PICKUP':
                 return {
@@ -374,7 +375,7 @@ const OrdersPage = () => {
         },
         {
             name: 'ORDER AGE',
-            cell: row => `${row.orderAgeMinutes}m ago`,
+            cell: row => `${row.orderAge}`,
             // width: '120px'
         },
         {
@@ -700,7 +701,7 @@ const OrdersPage = () => {
                                 <div className="border rounded p-3 mb-3">
                                     <p><strong>Name:</strong> {selectedOrder.user?.fullName || 'N/A'}</p>
                                     <p><strong>Phone:</strong> {selectedOrder.user?.phoneNumber || 'N/A'}</p>
-                                    <p><strong>User ID:</strong> {selectedOrder.user?.userId || 'N/A'}</p>
+                                    {/* <p><strong>User ID:</strong> {selectedOrder.user?.userId || 'N/A'}</p> */}
                                 </div>
 
                                 <h6>Order Information</h6>
@@ -708,13 +709,13 @@ const OrdersPage = () => {
                                     <p><strong>Order ID:</strong> #{selectedOrder.orderId}</p>
                                     <p><strong>Quantity:</strong> {selectedOrder.quantity}</p>
                                     <p><strong>Amount:</strong> ${selectedOrder.amount}</p>
-                                    <p><strong>PIN Code:</strong>
+                                    {/* <p><strong>PIN Code:</strong>
                                         <Badge color="info" className="ms-2">
                                             {selectedOrder.pinCode}
                                         </Badge>
-                                    </p>
+                                    </p> */}
                                     <p><strong>Reserved At:</strong> {new Date(selectedOrder.reservedAt).toLocaleString()}</p>
-                                    <p><strong>Order Age:</strong> {selectedOrder.orderAgeMinutes} minutes</p>
+                                    <p><strong>Order Age:</strong> {selectedOrder.orderAge}</p>
                                 </div>
                             </Col>
                             <Col md={6}>
@@ -743,8 +744,8 @@ const OrdersPage = () => {
                                             {getStatusBadge(selectedOrder.status).text}
                                         </Badge>
                                     </p>
-                                    <p><strong>Payment Status:</strong> {selectedOrder.paymentStatus}</p>
-                                    <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'N/A'}</p>
+                                    {/* <p><strong>Payment Status:</strong> {selectedOrder.paymentStatus}</p> */}
+                                    {/* <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'N/A'}</p> */}
                                     <p><strong>Time Remaining:</strong> {selectedOrder.readableRemaining || 'N/A'}</p>
                                     <p>
                                         <strong>Urgent:</strong>
