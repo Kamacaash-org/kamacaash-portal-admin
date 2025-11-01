@@ -39,6 +39,9 @@ const Sidebar = ({ layoutType }) => {
       <div className="app-menu navbar-menu">
         <div className="navbar-brand-box">
           <Link to="/" className="logo logo-dark">
+            <span className="logo-kamacash">
+              <img src={logoSm} alt="" height="26" />
+            </span>
             <span className="logo-lg">
               <span
                 style={{
@@ -47,13 +50,13 @@ const Sidebar = ({ layoutType }) => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   overflow: 'hidden',
-                  marginTop: '25px',
+                  marginTop: '10px',
                   marginBottom: '10px'
                 }}
               >
                 <div className="col-auto">
                   <div className="avatar-lg">
-                    <img src={logoDark} alt="user-img"
+                    <img src={logoLight} alt="user-img"
                       className="img-thumbnail rounded-circle" />
                   </div>
                 </div>
@@ -63,9 +66,6 @@ const Sidebar = ({ layoutType }) => {
 
           </Link>
 
-          {/* <Link to="/" className="logo logo-light">
-         
-          </Link> */}
           <button
             onClick={addEventListenerOnSmHoverMenu}
             type="button"

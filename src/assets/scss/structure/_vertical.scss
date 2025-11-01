@@ -289,7 +289,7 @@
     display: none;
 }
 
-.sidebar-user { 
+.sidebar-user {
     display: none;
 }
 
@@ -310,27 +310,28 @@
         }
 
     }
-    
-    &[data-sidebar-user-show] { 
+
+    &[data-sidebar-user-show] {
         .app-menu {
             .sidebar-user {
                 display: block;
                 background-color: var(--#{$prefix}sidebar-user-bg);
-        
+
                 .sidebar-user-name-text {
                     color: var(--#{$prefix}sidebar-user-name-text);
                 }
-        
+
                 .sidebar-user-name-sub-text {
                     color: var(--#{$prefix}sidebar-user-name-sub-text);
                 }
-        
+
                 .header-profile-user {
                     height: 40px;
                     width: 40px;
                 }
             }
         }
+
         #page-topbar {
             .topbar-user {
                 display: none;
@@ -338,18 +339,18 @@
         }
 
         &:is([data-sidebar-size="sm"], [data-sidebar-size="sm-hover"]) {
-            
+
             .app-menu {
                 .header-profile-user {
                     height: 40px;
                     width: 40px;
                 }
-    
+
                 .sidebar-user {
                     .btn {
                         padding: 9px;
                     }
-    
+
                     .text-start {
                         display: none;
                     }
@@ -817,9 +818,9 @@
     }
 
     &[data-sidebar="light"] {
-        .logo-kamacash {
-            display: inline-block;
-        }
+        // .logo-kamacash {
+        //     display: inline-block;
+        // }
 
         .logo-light {
             display: none;
@@ -914,7 +915,7 @@
     &[data-layout-style="detached"] {
 
         @media (min-width: 1024.1px) {
-            &:is([data-sidebar="light"],[data-sidebar="dark"], [data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {
+            &:is([data-sidebar="light"], [data-sidebar="dark"], [data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {
                 .logo-kamacash {
                     display: none;
                 }
@@ -985,8 +986,8 @@
     }
 }
 
-@if $sidebar-gradient-mode { 
-    
+@if $sidebar-gradient-mode {
+
     .bg-vertical-gradient {
         background: $vertical-menu-bg-gradient;
         ;
@@ -1178,7 +1179,7 @@
     }
 }
 
-@media (min-width: 1440px) { 
+@media (min-width: 1440px) {
     [data-theme="vintage"]:is([data-layout="vertical"], [data-layout="twocolumn"], [data-layout="horizontal"]) {
         .page-content {
             padding: calc(#{$header-height} + #{$grid-gutter-width}) calc(#{$grid-gutter-width} * 5) $footer-height calc(#{$grid-gutter-width} * 5);

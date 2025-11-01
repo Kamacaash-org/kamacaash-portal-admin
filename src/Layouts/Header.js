@@ -77,8 +77,8 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                         <div className="d-flex">
 
                             <div className="navbar-brand-box horizontal-logo">
-                                <Link to="/" className="logo logo-kamacash">
-                                    <span className="logo-kamacash">
+                                <Link to="/" className="logo logo-dark">
+                                    <span className="logo-sm">
                                         <img src={logoSm} alt="" height="22" />
                                     </span>
                                     <span className="logo-lg">
@@ -87,7 +87,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                                 </Link>
 
                                 <Link to="/" className="logo logo-light">
-                                    <span className="logo-kamacash">
+                                    <span className="logo-sm">
                                         <img src={logoSm} alt="" height="22" />
                                     </span>
                                     <span className="logo-lg">
@@ -145,10 +145,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                             {/* <FullScreenDropdown /> */}
 
                             {/* Dark/Light Mode set */}
-                            <LightDark
+                            {/* <LightDark
                                 layoutMode={layoutModeType}
                                 onChangeLayoutMode={onChangeLayoutMode}
-                            />
+                            /> */}
 
                             {/* NotificationDropdown */}
                             {/* <NotificationDropdown /> */}
