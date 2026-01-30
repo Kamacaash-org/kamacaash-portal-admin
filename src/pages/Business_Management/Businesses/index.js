@@ -21,6 +21,8 @@ import 'filepond/dist/filepond.min.css';
 import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
 import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import AgreementPdf from '../../../Components/Common/AgreementPdf';
 
 // Register the plugins
 registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
@@ -41,7 +43,7 @@ import {
 // Selectors
 const selectBusinessesData = createSelector(
     (state) => state.BusinessManagement,
-    (businessesData) => businessesData.businessesData.businesses || []
+    (businessesData) => businessesData.businessesData || []
 );
 const selectCategoriesData = createSelector(
     (state) => state.BusinessManagement,
@@ -50,7 +52,7 @@ const selectCategoriesData = createSelector(
 
 const selectStaffData = createSelector(
     (state) => state.UserManagement,
-    (staffData) => staffData.staffData.staff || []
+    (staffData) => staffData.staffData || []
 );
 
 
@@ -130,12 +132,8 @@ const BusinessesPage = () => {
             sat: { open: "08:00", close: "20:00" },
             sun: { open: "08:00", close: "18:00" }
         },
-        defaultLanguage: "en",
-        currency: "USD",
-        timeZone: "Africa/Mogadishu",
         contract: {
-            payoutSchedule: "WEEKLY",
-            commissionRate: 10
+            payoutSchedule: "WEEKLY"
         },
         bankAccountDetails: {
             accountHolderName: "",
@@ -143,7 +141,10 @@ const BusinessesPage = () => {
             accountNumber: ""
         },
         taxId: "",
-        registrationNumber: ""
+        registrationNumber: "",
+        defaultLanguage: "en",
+        currency: "USD",
+        timeZone: "Africa/Mogadishu"
     });
 
     const [logoFiles, setLogoFiles] = useState([]);
@@ -378,12 +379,8 @@ const BusinessesPage = () => {
                 sat: { open: "08:00", close: "20:00" },
                 sun: { open: "08:00", close: "18:00" }
             },
-            defaultLanguage: "en",
-            currency: "USD",
-            timeZone: "Africa/Mogadishu",
             contract: {
-                payoutSchedule: "WEEKLY",
-                commissionRate: 10
+                payoutSchedule: "WEEKLY"
             },
             bankAccountDetails: {
                 accountHolderName: "",
@@ -433,9 +430,9 @@ const BusinessesPage = () => {
             // Append address
             Object.keys(formData.address).forEach(key => {
                 if (key === 'coordinates') {
-                    submitData.append(`address[coordinates][type]`, formData.address.coordinates.type);
-                    submitData.append(`address[coordinates][coordinates][0]`, formData.address.coordinates.coordinates[0]);
-                    submitData.append(`address[coordinates][coordinates][1]`, formData.address.coordinates.coordinates[1]);
+                    submitData.append(`address[type]`, formData.address.coordinates.type);
+                    submitData.append(`address[coordinates][0]`, formData.address.coordinates.coordinates[0]);
+                    submitData.append(`address[coordinates][1]`, formData.address.coordinates.coordinates[1]);
                 } else {
                     submitData.append(`address[${key}]`, formData.address[key]);
                 }
@@ -443,13 +440,14 @@ const BusinessesPage = () => {
 
             // Append opening hours
             Object.keys(formData.openingHours).forEach(day => {
-                submitData.append(`openingHours[${day}][open]`, formData.openingHours[day].open);
-                submitData.append(`openingHours[${day}][close]`, formData.openingHours[day].close);
+                const openTime = formData.openingHours[day]?.open || "08:00";
+                const closeTime = formData.openingHours[day]?.close || "20:00";
+                submitData.append(`openingHours[${day}][open]`, openTime);
+                submitData.append(`openingHours[${day}][close]`, closeTime);
             });
 
             // Append contract
             submitData.append('contract[payoutSchedule]', formData.contract.payoutSchedule);
-            submitData.append('contract[commissionRate]', formData.contract.commissionRate);
 
             // Append bank details
             Object.keys(formData.bankAccountDetails).forEach(key => {
@@ -499,9 +497,9 @@ const BusinessesPage = () => {
             // Append address
             Object.keys(formData.address).forEach(key => {
                 if (key === 'coordinates') {
-                    submitData.append(`address[coordinates][type]`, formData.address.coordinates.type);
-                    submitData.append(`address[coordinates][coordinates][0]`, formData.address.coordinates.coordinates[0]);
-                    submitData.append(`address[coordinates][coordinates][1]`, formData.address.coordinates.coordinates[1]);
+                    submitData.append(`address[type]`, formData.address.coordinates.type);
+                    submitData.append(`address[coordinates][0]`, formData.address.coordinates.coordinates[0]);
+                    submitData.append(`address[coordinates][1]`, formData.address.coordinates.coordinates[1]);
                 } else {
                     submitData.append(`address[${key}]`, formData.address[key]);
                 }
@@ -509,13 +507,14 @@ const BusinessesPage = () => {
 
             // Append opening hours
             Object.keys(formData.openingHours).forEach(day => {
-                submitData.append(`openingHours[${day}][open]`, formData.openingHours[day].open);
-                submitData.append(`openingHours[${day}][close]`, formData.openingHours[day].close);
+                const openTime = formData.openingHours[day]?.open || "08:00";
+                const closeTime = formData.openingHours[day]?.close || "20:00";
+                submitData.append(`openingHours[${day}][open]`, openTime);
+                submitData.append(`openingHours[${day}][close]`, closeTime);
             });
 
             // Append contract
             submitData.append('contract[payoutSchedule]', formData.contract.payoutSchedule);
-            submitData.append('contract[commissionRate]', formData.contract.commissionRate);
 
             // Append bank details
             Object.keys(formData.bankAccountDetails).forEach(key => {
@@ -573,12 +572,35 @@ const BusinessesPage = () => {
 
     // Open modal for edit
     const handleEdit = (business) => {
+        const defaultOpeningHours = {
+            mon: { open: "08:00", close: "20:00" },
+            tue: { open: "08:00", close: "20:00" },
+            wed: { open: "08:00", close: "20:00" },
+            thur: { open: "08:00", close: "20:00" },
+            fri: { open: "14:00", close: "20:00" },
+            sat: { open: "08:00", close: "20:00" },
+            sun: { open: "08:00", close: "18:00" }
+        };
+
+        // Merge business openingHours with defaults to ensure all fields are defined
+        const mergedOpeningHours = { ...defaultOpeningHours };
+        if (business.openingHours) {
+            Object.keys(business.openingHours).forEach(day => {
+                if (business.openingHours[day]) {
+                    mergedOpeningHours[day] = {
+                        open: business.openingHours[day].open || defaultOpeningHours[day].open,
+                        close: business.openingHours[day].close || defaultOpeningHours[day].close
+                    };
+                }
+            });
+        }
+
         setSelectedBusiness(business);
         setFormData({
             ownerName: business.ownerName || "",
             businessName: business.businessName || "",
             category: business.category || "",
-            primaryStaffAccount: business.primaryStaffAccount._id || "68e363ffa8ff4ff8597b903c",
+            primaryStaffAccount: business.primaryStaffAccount._id || "",
             countryCode: business.countryCode || "+252",
             phoneNumber: business.phoneNumber || "",
             email: business.email || "",
@@ -597,15 +619,7 @@ const BusinessesPage = () => {
                     coordinates: [0, 0]
                 }
             },
-            openingHours: business.openingHours || {
-                mon: { open: "08:00", close: "20:00" },
-                tue: { open: "08:00", close: "20:00" },
-                wed: { open: "08:00", close: "20:00" },
-                thur: { open: "08:00", close: "20:00" },
-                fri: { open: "14:00", close: "20:00" },
-                sat: { open: "08:00", close: "20:00" },
-                sun: { open: "08:00", close: "18:00" }
-            },
+            openingHours: mergedOpeningHours,
             defaultLanguage: business.defaultLanguage || "en",
             currency: business.currency || "USD",
             timeZone: business.timeZone || "Africa/Mogadishu",
@@ -747,6 +761,23 @@ const BusinessesPage = () => {
                     >
                         <i className="ri-pencil-line" />
                     </Button>
+                    {/* Agreement Download */}
+                    <PDFDownloadLink
+                        document={<AgreementPdf business={row} />}
+                        fileName={`Kamacaash-Agreement-${row.businessName}.pdf`}
+                    >
+                        {({ loading }) => (
+                            <Button
+                                color="outline-success"
+                                size="sm"
+                                className="btn-icon"
+                                title="Download Agreement"
+                                disabled={loading}
+                            >
+                                <i className="ri-file-download-line" />
+                            </Button>
+                        )}
+                    </PDFDownloadLink>
                     <Button
                         color={row.isActive ? "outline-warning" : "outline-success"}
                         size="sm"
@@ -1356,18 +1387,6 @@ const BusinessesPage = () => {
                                                         classNamePrefix="select"
                                                     />
                                                 </FormGroup>
-
-                                                <FormGroup>
-                                                    <Label className="form-label">Commission Rate (%)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        min="0"
-                                                        max="100"
-                                                        value={formData.contract.commissionRate}
-                                                        onChange={(e) => handleNestedChange('contract', 'commissionRate', parseInt(e.target.value))}
-                                                        className="form-control-lg"
-                                                    />
-                                                </FormGroup>
                                             </CardBody>
                                         </Card>
                                     </Col>
@@ -1405,63 +1424,6 @@ const BusinessesPage = () => {
                                                         onChange={(e) => handleNestedChange('bankAccountDetails', 'accountNumber', e.target.value)}
                                                         placeholder="12345678"
                                                         className="form-control-lg"
-                                                    />
-                                                </FormGroup>
-                                            </CardBody>
-                                        </Card>
-                                    </Col>
-                                </Row>
-
-                                <Row className="mt-3">
-                                    <Col lg={6}>
-                                        <Card className="border">
-                                            <CardHeader className="bg-light">
-                                                <h6 className="mb-0">Locale Settings</h6>
-                                            </CardHeader>
-                                            <CardBody>
-                                                <FormGroup>
-                                                    <Label className="form-label">Default Language</Label>
-                                                    <Select
-                                                        options={[
-                                                            { value: 'en', label: 'English' },
-                                                            { value: 'so', label: 'Somali' },
-                                                            { value: 'ar', label: 'Arabic' }
-                                                        ]}
-                                                        value={{
-                                                            value: formData.defaultLanguage,
-                                                            label: formData.defaultLanguage === 'en' ? 'English' :
-                                                                formData.defaultLanguage === 'so' ? 'Somali' : 'Arabic'
-                                                        }}
-                                                        onChange={(opt) => setFormData(prev => ({ ...prev, defaultLanguage: opt.value }))}
-                                                        className="react-select"
-                                                        classNamePrefix="select"
-                                                    />
-                                                </FormGroup>
-
-                                                <FormGroup>
-                                                    <Label className="form-label">Currency</Label>
-                                                    <Select
-                                                        options={[
-                                                            { value: 'USD', label: 'USD' },
-                                                            { value: 'SOS', label: 'SOS' }
-                                                        ]}
-                                                        value={{
-                                                            value: formData.currency,
-                                                            label: formData.currency
-                                                        }}
-                                                        onChange={(opt) => setFormData(prev => ({ ...prev, currency: opt.value }))}
-                                                        className="react-select"
-                                                        classNamePrefix="select"
-                                                    />
-                                                </FormGroup>
-
-                                                <FormGroup>
-                                                    <Label className="form-label">Time Zone</Label>
-                                                    <Input
-                                                        value={formData.timeZone}
-                                                        onChange={(e) => setFormData(prev => ({ ...prev, timeZone: e.target.value }))}
-                                                        className="form-control-lg"
-                                                        disabled
                                                     />
                                                 </FormGroup>
                                             </CardBody>
