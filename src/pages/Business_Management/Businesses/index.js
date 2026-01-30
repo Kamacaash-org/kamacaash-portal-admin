@@ -68,7 +68,7 @@ window.ResizeObserver = class extends resizeObserverErr {
 };
 
 const BusinessesPage = () => {
-    document.title = "Businesses | simad University";
+    document.title = "Businesses | Kamacaash";
 
     const dispatch = useDispatch();
     const businessesData = useSelector(selectBusinessesData);

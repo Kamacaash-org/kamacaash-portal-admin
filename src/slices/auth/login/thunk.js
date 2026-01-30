@@ -21,8 +21,8 @@ export const loginUser = (user, history) => async (dispatch) => {
       var finallogin = JSON.stringify(data);
       finallogin = JSON.parse(finallogin)
       data = finallogin.data;
-      // console.log("ddd", data.status)
-      if (data.status === "success") {
+      console.log("ddd", finallogin)
+      if (finallogin.success) {
         // console.log("ddddddddddd",)
         dispatch(loginSuccess(data));
         history('/auth-twostep')

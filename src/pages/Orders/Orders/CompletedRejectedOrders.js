@@ -36,7 +36,7 @@ const selectCancelledOrdersData = createSelector(
 );
 
 const CompletedRejectedOrdersPage = () => {
-    document.title = "Order History | simad University";
+    document.title = "Order History | Kamacaash";
 
     const dispatch = useDispatch();
     const completedOrdersData = useSelector(selectCompletedOrdersData);

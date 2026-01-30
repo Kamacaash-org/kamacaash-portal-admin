@@ -7,9 +7,11 @@ export const makeCRUDThunks = (name, API) => {
         try {
             const res = await API.list();
             if (!res.success) throw res;
+            // console.log("res data is:", res.data)
             return res.data;
         } catch (error) {
-            toast.error(error?.message || "Failed to fetch list");
+            const message = Array.isArray(error?.message) ? error.message.join(', ') : (error?.message || "Failed to fetch list");
+            toast.error(message);
             return thunkAPI.rejectWithValue(error);
         }
     });
@@ -24,7 +26,8 @@ export const makeCRUDThunks = (name, API) => {
             return res;
         } catch (error) {
             console.log("error is:", error)
-            toast.error(error?.message || "Create failed");
+            const message = Array.isArray(error?.message) ? error.message.join(', ') : (error?.message || "Create failed");
+            toast.error(message);
             return rejectWithValue(error);
         }
     });
@@ -38,7 +41,8 @@ export const makeCRUDThunks = (name, API) => {
             dispatch(list()); // refresh
             return res;
         } catch (error) {
-            toast.error(error?.message || "Update failed");
+            const message = Array.isArray(error?.message) ? error.message.join(', ') : (error?.message || "Update failed");
+            toast.error(message);
             return rejectWithValue(error);
         }
     });
@@ -51,7 +55,8 @@ export const makeCRUDThunks = (name, API) => {
             dispatch(list()); // refresh
             return res;
         } catch (error) {
-            toast.error(error?.message || "Delete failed");
+            const message = Array.isArray(error?.message) ? error.message.join(', ') : (error?.message || "Delete failed");
+            toast.error(message);
             return rejectWithValue(error);
         }
     });

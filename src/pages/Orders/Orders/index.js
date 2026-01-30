@@ -34,7 +34,7 @@ const selectOrdersData = createSelector(
 );
 
 const OrdersPage = () => {
-    document.title = "Pending Orders | simad University";
+    document.title = "Pending Orders | Kamacaash";
 
     const dispatch = useDispatch();
     const ordersData = useSelector(selectOrdersData);

@@ -32,7 +32,7 @@ const selectBusinessesData = createSelector(
 );
 
 const ApproveBusinessPage = () => {
-    document.title = "Approve Businesses | simad University";
+    document.title = "Approve Businesses | Kamacaash";
 
     const dispatch = useDispatch();
     const businessesData = useSelector(selectBusinessesData);

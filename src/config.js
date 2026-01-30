@@ -8,6 +8,6 @@ module.exports = {
     APP_ID: "",
   },
   api: {
-    API_URL: "http://localhost:4000/api/v1/admin",
+    API_URL: "http://localhost:3001/api/v1/admin",
   }
 };

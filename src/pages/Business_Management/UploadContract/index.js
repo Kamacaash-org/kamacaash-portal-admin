@@ -43,7 +43,7 @@ const selectBusinessesData = createSelector(
 );
 
 const UploadContractPage = () => {
-    document.title = "Upload Contracts | simad University";
+    document.title = "Upload Contracts | Kamacaash";
 
     const dispatch = useDispatch();
     const businessesData = useSelector(selectBusinessesData);

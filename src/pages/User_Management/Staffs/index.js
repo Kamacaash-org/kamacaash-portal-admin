@@ -27,6 +27,7 @@ import {
 // Formik
 import * as Yup from "yup";
 import { useFormik } from "formik";
+import { passiveEventSupported } from '@tanstack/react-table';
 
 const Staff = () => {
     document.title = "Staff | Kamacash";
@@ -45,12 +46,14 @@ const Staff = () => {
     const [deleteModal, setDeleteModal] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Filters state
     const [filters, setFilters] = useState({
         search: '',
         status: '',
-        role: ''
+        role: '',
+        sex: ''
     });
 
     // Options for selects
@@ -64,6 +67,19 @@ const Staff = () => {
         { value: "", label: "All Roles" },
         { value: "SUPER_ADMIN", label: "Admin" },
         { value: "BUSINESS_OWNER", label: "Business Owner" }
+    ];
+
+    const sexOptions = [
+        { value: "", label: "All Sexes" },
+        { value: "MALE", label: "Male" },
+        { value: "FEMALE", label: "Female" }
+
+    ];
+
+    const formSexOptions = [
+        { value: "MALE", label: "Male" },
+        { value: "FEMALE", label: "Female" }
+
     ];
 
     // Fetch staff with filters
@@ -84,7 +100,7 @@ const Staff = () => {
     }, [fetchStaff]);
 
     useEffect(() => {
-        setStaffList(staffData?.staff || []);
+        setStaffList(staffData || []);
     }, [staffData]);
 
     // Handle filter changes
@@ -112,7 +128,8 @@ const Staff = () => {
                 staff.phone?.toLowerCase().includes(filters.search.toLowerCase())) &&
             (filters.status === '' ||
                 (filters.status === 'Active' ? staff.isActive : !staff.isActive)) &&
-            (filters.role === '' || staff.role === filters.role)
+            (filters.role === '' || staff.role === filters.role) &&
+            (filters.sex === '' || staff.sex === filters.sex)
         );
     });
 
@@ -132,12 +149,14 @@ const Staff = () => {
 
     // Delete Staff
     const onClickDelete = (staff) => {
+        // console.log("Selected staff for deletion:", staff);
         setSelectedStaff(staff);
         setDeleteModal(true);
     };
 
     const handleDeleteStaff = () => {
         if (selectedStaff) {
+            // console.log("Deleting staff with id:", selectedStaff);
             dispatch(onDeleteStaff(selectedStaff._id));
             setDeleteModal(false);
         }
@@ -153,8 +172,9 @@ const Staff = () => {
             email: selectedStaff?.email || "",
             phone: selectedStaff?.phone || "",
             username: selectedStaff?.username || "",
-            password: "",
+            // password: "",
             title: selectedStaff?.title || "",
+            sex: selectedStaff?.sex || "",
             role: selectedStaff?.role || "STAFF",
             isActive: selectedStaff?.isActive ?? true
         },
@@ -177,47 +197,59 @@ const Staff = () => {
                 .required("Username is required")
                 .trim()
                 .lowercase(),
-            password: Yup.string()
-                .test(
-                    'password-required',
-                    'Password is required',
-                    (value) => {
-                        // For new staff, password is required
-                        if (!isEdit) {
-                            return !!value && value.length >= 6;
-                        }
-                        // For editing, password is optional but if provided must be at least 6 chars
-                        return !value || value.length >= 6;
-                    }
-                )
-                .test(
-                    'password-length',
-                    'Password must be at least 6 characters',
-                    (value) => {
-                        // Only validate length if password is provided
-                        return !value || value.length >= 6;
-                    }
-                ),
+            // password: Yup.string()
+            //     .test(
+            //         'password-required',
+            //         'Password is required',
+            //         (value) => {
+            //             // For new staff, password is required
+            //             if (!isEdit) {
+            //                 return !!value && value.length >= 6;
+            //             }
+            //             // For editing, password is optional but if provided must be at least 6 chars
+            //             return !value || value.length >= 6;
+            //         }
+            //     )
+            //     .test(
+            //         'password-length',
+            //         'Password must be at least 6 characters',
+            //         (value) => {
+            //             // Only validate length if password is provided
+            //             return !value || value.length >= 6;
+            //         }
+            //     ),
             title: Yup.string().trim(),
+            sex: Yup.string().required("Sex is required").trim(),
             role: Yup.string().required("Role is required"),
             isActive: Yup.boolean()
         }),
-        onSubmit: (values) => {
-            if (isEdit) {
-                const updateStaffData = {
-                    _id: selectedStaff ? selectedStaff._id : 0,
-                    ...values,
-                    // Don't update password if not changed
-                    password: values.password || undefined
-                };
-                dispatch(onUpdateStaff(updateStaffData));
-            } else {
-                const newStaffData = {
-                    ...values
-                };
-                dispatch(onAddNewStaff(newStaffData));
+        onSubmit: async (values) => {
+            setIsSubmitting(true);
+            try {
+                if (isEdit) {
+                    const updateStaffData = {
+                        _id: selectedStaff ? selectedStaff._id : 0,
+                        ...values,
+                        // Don't update password if not changed
+                        // password: values.password || undefined
+                    };
+                    await dispatch(onUpdateStaff(updateStaffData));
+                } else {
+                    const newStaffData = {
+                        ...values,
+                        password: process.env.REACT_APP_DEFAULT_STAFF_PASS,
+                    };
+                    await dispatch(onAddNewStaff(newStaffData));
+                }
+                setModal(false);
+                validation.resetForm();
+            } catch (error) {
+                // Error is already handled by the thunk with toast notifications
+                // Keep modal open on error
+                console.error("Form submission error:", error);
+            } finally {
+                setIsSubmitting(false);
             }
-            setModal(false);
         },
     });
 
@@ -234,14 +266,30 @@ const Staff = () => {
         {
             name: 'Full Name',
             selector: row => `${row.firstName} ${row.lastName}`,
+            wrap: true,
         },
         {
             name: 'Email',
             selector: row => row.email,
+            wrap: true,
         },
         {
             name: 'Phone',
             selector: row => row.phone || '-',
+        },
+        {
+            name: 'Sex',
+            selector: row => row.sex,
+            cell: row => (
+                <Badge
+                    color={
+                        row.sex === 'MALE' ? 'primary' :
+                            row.sex === 'FEMALE' ? 'success' : 'secondary'
+                    }
+                >
+                    {row.sex || 'Not specified'}
+                </Badge>
+            )
         },
         {
             name: 'Role',
@@ -289,7 +337,7 @@ const Staff = () => {
                 <Card className="mb-3">
                     <CardBody>
                         <Row>
-                            <Col md={4}>
+                            <Col md={3}>
                                 <FormGroup>
                                     <Label>Search</Label>
                                     <Input
@@ -301,7 +349,7 @@ const Staff = () => {
                                     />
                                 </FormGroup>
                             </Col>
-                            <Col md={3}>
+                            <Col md={2}>
                                 <FormGroup>
                                     <Label>Status</Label>
                                     <Select
@@ -312,7 +360,7 @@ const Staff = () => {
                                     />
                                 </FormGroup>
                             </Col>
-                            <Col md={3}>
+                            <Col md={2}>
                                 <FormGroup>
                                     <Label>Role</Label>
                                     <Select
@@ -323,7 +371,18 @@ const Staff = () => {
                                     />
                                 </FormGroup>
                             </Col>
-                            <Col md={2} className="d-flex align-items-end mb-3">
+                            <Col md={2}>
+                                <FormGroup>
+                                    <Label>Sex</Label>
+                                    <Select
+                                        options={sexOptions}
+                                        value={sexOptions.find(opt => opt.value === filters.sex)}
+                                        onChange={(opt) => handleSelectFilterChange('sex', opt)}
+                                        isClearable
+                                    />
+                                </FormGroup>
+                            </Col>
+                            <Col md={3} className="d-flex align-items-end mb-3">
                                 <Button color="primary" onClick={fetchStaff} disabled={loading}>
                                     {loading ? 'Filtering...' : 'Apply Filters'}
                                 </Button>
@@ -376,6 +435,7 @@ const Staff = () => {
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
                                                 invalid={validation.touched.firstName && !!validation.errors.firstName}
+                                                placeholder="Enter first name"
                                             />
                                             <FormFeedback>{validation.errors.firstName}</FormFeedback>
                                         </FormGroup>
@@ -389,6 +449,7 @@ const Staff = () => {
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
                                                 invalid={validation.touched.lastName && !!validation.errors.lastName}
+                                                placeholder="Enter last name"
                                             />
                                             <FormFeedback>{validation.errors.lastName}</FormFeedback>
                                         </FormGroup>
@@ -406,6 +467,7 @@ const Staff = () => {
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
                                                 invalid={validation.touched.email && !!validation.errors.email}
+                                                placeholder="Enter email address"
                                             />
                                             <FormFeedback>{validation.errors.email}</FormFeedback>
                                         </FormGroup>
@@ -419,6 +481,7 @@ const Staff = () => {
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
                                                 invalid={validation.touched.phone && !!validation.errors.phone}
+                                                placeholder="Enter phone number"
                                             />
                                             <FormFeedback>{validation.errors.phone}</FormFeedback>
                                         </FormGroup>
@@ -435,6 +498,7 @@ const Staff = () => {
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
                                                 invalid={validation.touched.username && !!validation.errors.username}
+                                                placeholder="Enter username"
                                             />
                                             <FormFeedback>{validation.errors.username}</FormFeedback>
                                         </FormGroup>
@@ -458,7 +522,7 @@ const Staff = () => {
                                     </Col>
                                 </Row>
 
-                                {!isEdit && (
+                                {/* {!isEdit && (
                                     <Row>
                                         <Col md={6}>
                                             <FormGroup>
@@ -475,7 +539,7 @@ const Staff = () => {
                                             </FormGroup>
                                         </Col>
                                     </Row>
-                                )}
+                                )} */}
 
                                 {/* {isEdit && (
                                     <Row>
@@ -507,8 +571,25 @@ const Staff = () => {
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
                                                 invalid={validation.touched.title && !!validation.errors.title}
+                                                placeholder="e.g., Manager, Developer"
                                             />
                                             <FormFeedback>{validation.errors.title}</FormFeedback>
+                                        </FormGroup>
+                                    </Col>
+                                    <Col md={6}>
+                                        <FormGroup>
+                                            <Label>Sex <span className="text-danger">*</span></Label>
+                                            <Select
+                                                options={formSexOptions}
+                                                value={formSexOptions.find(opt => opt.value === validation.values.sex)}
+                                                onChange={(opt) => validation.setFieldValue('sex', opt?.value || "")}
+                                                placeholder="Select sex"
+                                            />
+                                            {validation.touched.sex && validation.errors.sex && (
+                                                <div className="text-danger" style={{ fontSize: '0.875em', marginTop: '0.25rem' }}>
+                                                    {validation.errors.sex}
+                                                </div>
+                                            )}
                                         </FormGroup>
                                     </Col>
                                 </Row>
@@ -529,11 +610,11 @@ const Staff = () => {
                         </Row>
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="light" onClick={() => setModal(false)}>
+                        <Button color="light" onClick={() => setModal(false)} disabled={isSubmitting}>
                             Cancel
                         </Button>
-                        <Button color="primary" type="submit" disabled={loading}>
-                            {loading ? 'Saving...' : 'Save Changes'}
+                        <Button color="primary" type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </ModalFooter>
                 </Form>

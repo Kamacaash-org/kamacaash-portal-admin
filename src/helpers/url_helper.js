@@ -5,8 +5,8 @@ export const POST_LOGIN = "/auth/login";
 // ==================================  URL ===================================================
 // 
 export const SURPLUS_CATEGORY = "/surplus-categories";
-export const BUSINESS = "/business";
-export const STAFFS = "/staffs";
+export const BUSINESS = "/businesses";
+export const STAFFS = "/staff";
 export const SURPLUS_PACKAGE = "/surplus-packages";
 
 
