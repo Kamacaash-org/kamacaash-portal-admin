@@ -39,7 +39,7 @@ import {
 // Selectors
 const selectBusinessesData = createSelector(
     (state) => state.BusinessManagement,
-    (businessesData) => businessesData.businessesData.businesses || []
+    (businessesData) => businessesData.businessesData || []
 );
 
 const UploadContractPage = () => {

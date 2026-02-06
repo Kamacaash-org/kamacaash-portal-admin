@@ -8,6 +8,12 @@ module.exports = {
     APP_ID: "",
   },
   api: {
-    API_URL: "http://localhost:3001/api/v1/admin",
+    //LOCAL CONNECTION
+    // API_URL: "http://localhost:3001/api/v1/admin",
+
+    // PRODUCTION CONNECTION
+    API_URL: "https://kamacaash-backend.onrender.com/api/v1/admin",
+
+
   }
 };
