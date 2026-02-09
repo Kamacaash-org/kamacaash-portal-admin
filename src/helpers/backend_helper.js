@@ -25,6 +25,8 @@ const makeCRUD = (endpoint) => ({
 // Auth
 export const login = (data) => api.create(url.POST_LOGIN, data);
 export const changePassword = (data) => api.create(url.CHANGE_PASSWORD, data);
+export const getStaffProfile = (staffId) =>
+  api.get(`${url.STAFF_PROFILE}/${staffId}`);
 
 // // ==================================  URL ===================================================
 
