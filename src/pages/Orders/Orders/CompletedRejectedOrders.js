@@ -27,12 +27,12 @@ import useAuthUser from '../../../Components/Hooks/useAuthUser';
 // Selectors
 const selectCompletedOrdersData = createSelector(
     (state) => state.Orders,
-    (completedOrders) => completedOrders.completedOrders.orders || []
+    (completedOrders) => completedOrders.completedOrders || []
 );
 
 const selectCancelledOrdersData = createSelector(
     (state) => state.Orders,
-    (cancelledOrders) => cancelledOrders.cancelledOrders.orders || []
+    (cancelledOrders) => cancelledOrders.cancelledOrders || []
 );
 
 const CompletedRejectedOrdersPage = () => {

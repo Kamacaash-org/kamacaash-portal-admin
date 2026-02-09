@@ -30,7 +30,7 @@ import useAuthUser from '../../../Components/Hooks/useAuthUser';
 // Selectors
 const selectOrdersData = createSelector(
     (state) => state.Orders,
-    (pendingOrdersData) => pendingOrdersData.pendingOrdersData.orders || []
+    (pendingOrdersData) => pendingOrdersData.pendingOrdersData || []
 );
 
 const OrdersPage = () => {
@@ -590,13 +590,13 @@ const OrdersPage = () => {
                                     <Label className="form-label">Urgency</Label>
                                     <Select
                                         options={[
-                                            { value: 'all', label: 'All Orders' },
+                                            { value: 'all', label: 'All' },
                                             { value: 'urgent', label: 'Urgent Only' },
                                             { value: 'normal', label: 'Normal Only' }
                                         ]}
                                         value={{
                                             value: filters.urgency,
-                                            label: filters.urgency === 'all' ? 'All Orders' :
+                                            label: filters.urgency === 'all' ? 'All' :
                                                 filters.urgency === 'urgent' ? 'Urgent Only' : 'Normal Only'
                                         }}
                                         onChange={(opt) => setFilters(prev => ({ ...prev, urgency: opt.value }))}

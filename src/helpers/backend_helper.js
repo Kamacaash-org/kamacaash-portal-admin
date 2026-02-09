@@ -59,11 +59,11 @@ export const Surplus_PackageAPI = {
 };
 
 export const OrdersAPI = {
-    listPendingOrders: (id) => api.get(`${url.ORDERS}/pending-orders/${id}`),
-    completeOrder: (payload) => api.post(`${url.ORDERS}/complete-order`, payload),
-    cancelOrder: (payload) => api.post(`${url.ORDERS}/cancel-order`, payload),
-    listCompletedOrders: (id) => api.get(`${url.ORDERS}/completed-orders/${id}`),
-    listCancelledOrders: (id) => api.get(`${url.ORDERS}/cancelled-orders/${id}`),
+    listPendingOrders: (id) => api.get(`${url.ORDERS}/pending/${id}`),
+    completeOrder: (payload) => api.post(`${url.ORDERS}/complete`, payload),
+    cancelOrder: (payload) => api.post(`${url.ORDERS}/cancel`, payload),
+    listCompletedOrders: (id) => api.get(`${url.ORDERS}/completed/${id}`),
+    listCancelledOrders: (id) => api.get(`${url.ORDERS}/cancelled/${id}`),
 
 };
 
