@@ -6,6 +6,7 @@ import SignIn from "../pages/AuthenticationInner/Login";
 //pages
 import Categories from "../pages/Business_Management/Categories";
 import Business from "../pages/Business_Management/Businesses";
+import BusinessProfileSettings from "../pages/Business_Management/BusinessProfileSettings";
 
 import Staff from "../pages/User_Management/Staffs";
 import StaffProfile from "../pages/User_Management/StaffProfile";
@@ -29,6 +30,10 @@ const authProtectedRoutes = [
 
   { path: "/business-management/categories", component: <Categories /> },
   { path: "/buiness-management/businsesses", component: <Business /> },
+  {
+    path: "/business-management/profile-settings",
+    component: <BusinessProfileSettings />,
+  },
   {
     path: "/business-management/upload-contract",
     component: <UploadContract />,

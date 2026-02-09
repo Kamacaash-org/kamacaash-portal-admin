@@ -27,6 +27,8 @@ export const login = (data) => api.post(url.POST_LOGIN, data);
 export const changePassword = (data) => api.post(url.CHANGE_PASSWORD, data);
 export const getStaffProfile = (staffId) =>
     api.get(`${url.STAFF_PROFILE}/${staffId}`);
+export const getBusinessProfile = (businessId) =>
+    api.get(`${url.BUSINESS_PROFILE}/${businessId}`);
 
 // // ==================================  URL ===================================================
 
@@ -41,10 +43,14 @@ export const BusinessAPI = {
 
     // extra endpoints
     archive: (id) => api.post(`${url.BUSINESS}/${id}/archive`),
-    toggleStatus: (payload) => api.patch(`${url.BUSINESS}/${payload.id}/toggle-status`, payload),
+    toggleStatus: (payload) =>
+        api.patch(`${url.BUSINESS}/${payload.id}/toggle-status`, payload),
     approve: (id) => api.post(`${url.BUSINESS}/${id}/approve`),
     reject: (id) => api.post(`${url.BUSINESS}/${id}/reject`),
-    signContract: (payload) => axios.post(`${url.BUSINESS}/sign-contract`, payload, { headers: { 'Content-Type': undefined } }),
+    signContract: (payload) =>
+        axios.post(`${url.BUSINESS}/sign-contract`, payload, {
+            headers: { "Content-Type": undefined },
+        }),
 };
 
 export const StaffsAPI = makeCRUD(url.STAFFS);
