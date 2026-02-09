@@ -80,7 +80,7 @@ const SurplusPackages = () => {
 
     // Options for selects
     const statusOptions = [
-        { value: "", label: "All Statuses" },
+        { value: "", label: "All" },
         { value: "Active", label: "Active" },
         { value: "Inactive", label: "Inactive" }
     ];

@@ -29,7 +29,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 
 const SurplusCategories = () => {
-    document.title = "Surplus Categories | Test Web";
+    document.title = "Surplus Categories | Kamacaash";
 
     const dispatch = useDispatch();
 
@@ -63,7 +63,7 @@ const SurplusCategories = () => {
 
     // Options for selects
     const statusOptions = [
-        { value: "", label: "All Statuses" },
+        { value: "", label: "All" },
         { value: "Active", label: "Active" },
         { value: "Inactive", label: "Inactive" }
     ];

@@ -190,7 +190,7 @@ const BusinessesPage = () => {
     useEffect(() => {
         const initialCategories = Array.isArray(categoriesData) ? categoriesData : [];
         setCategories([
-            { value: '', label: 'Select Category' },
+            // { value: '', label: 'Select Category' },
             ...(initialCategories || []).map(cat => ({
                 value: cat._id,
                 label: cat.name
@@ -921,14 +921,14 @@ const BusinessesPage = () => {
                                     <Label className="form-label">Status</Label>
                                     <Select
                                         options={[
-                                            { value: 'all', label: 'All Status' },
+                                            { value: 'all', label: 'All' },
                                             { value: 'PENDING', label: 'Pending' },
                                             { value: 'APPROVED', label: 'Approved' },
                                             { value: 'REJECTED', label: 'Rejected' }
                                         ]}
                                         value={{
                                             value: filters.status,
-                                            label: filters.status === 'all' ? 'All Status' : filters.status
+                                            label: filters.status === 'all' ? 'All' : filters.status
                                         }}
                                         onChange={(opt) => setFilters(prev => ({ ...prev, status: opt.value }))}
                                         className="react-select"
@@ -941,13 +941,13 @@ const BusinessesPage = () => {
                                     <Label className="form-label">Category</Label>
                                     <Select
                                         options={[
-                                            { value: 'all', label: 'All Categories' },
+                                            { value: 'all', label: 'All' },
                                             ...categories
                                         ]}
                                         value={{
                                             value: filters.category,
-                                            label: filters.category === 'all' ? 'All Categories' :
-                                                categories.find(cat => cat.value === filters.category)?.label || 'All Categories'
+                                            label: filters.category === 'all' ? 'All' :
+                                                categories.find(cat => cat.value === filters.category)?.label || 'All'
                                         }}
                                         onChange={(opt) => setFilters(prev => ({ ...prev, category: opt.value }))}
                                         className="react-select"

@@ -83,7 +83,7 @@ const ApproveBusinessPage = () => {
 
     // Update lists and stats when data changes
     useEffect(() => {
-        const initialBusinesses = Array.isArray(businessesData) ? businessesData : [];
+        const initialBusinesses = Array.isArray(businessesData) ? businessesData.filter(b => b.contract?.isSigned === true) : [];
         setBusinesses(initialBusinesses);
 
         // Calculate stats
@@ -107,7 +107,7 @@ const ApproveBusinessPage = () => {
 
     // Apply filters
     const applyFilters = (businessList, filterSettings) => {
-        let filtered = businessList;
+        let filtered = businessList.filter(b => b.contract?.isSigned === true);
 
         // Search filter
         if (filterSettings.search) {
@@ -511,14 +511,14 @@ const ApproveBusinessPage = () => {
                                     <Label className="form-label">Status Filter</Label>
                                     <Select
                                         options={[
-                                            { value: 'all', label: 'All Statuses' },
+                                            { value: 'all', label: 'All' },
                                             { value: 'PENDING', label: 'Pending Review' },
                                             { value: 'APPROVED', label: 'Approved' },
                                             { value: 'REJECTED', label: 'Rejected' }
                                         ]}
                                         value={{
                                             value: filters.status,
-                                            label: filters.status === 'all' ? 'All Statuses' :
+                                            label: filters.status === 'all' ? 'All' :
                                                 filters.status === 'PENDING' ? 'Pending Review' :
                                                     filters.status === 'APPROVED' ? 'Approved' : 'Rejected'
                                         }}
