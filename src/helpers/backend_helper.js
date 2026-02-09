@@ -17,14 +17,14 @@ export const isUserAuthenticated = () => {
 // generic CRUD function
 const makeCRUD = (endpoint) => ({
     list: () => api.get(endpoint),
-    create: (payload) => api.create(endpoint, payload),
+    create: (payload) => api.post(endpoint, payload),
     update: (payload) => api.update(`${endpoint}/${payload._id}`, payload),
     delete: (id) => api.delete(`${endpoint}/${id}`),
 });
 
 // Auth
-export const login = (data) => api.create(url.POST_LOGIN, data);
-export const changePassword = (data) => api.create(url.CHANGE_PASSWORD, data);
+export const login = (data) => api.post(url.POST_LOGIN, data);
+export const changePassword = (data) => api.post(url.CHANGE_PASSWORD, data);
 
 // // ==================================  URL ===================================================
 
