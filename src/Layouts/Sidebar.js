@@ -57,7 +57,7 @@ const Sidebar = ({ layoutType }) => {
                 <div className="col-auto">
                   <div className="avatar-lg">
                     <img src={logoLight} alt="user-img"
-                      className="img-thumbnail rounded-circle" />
+                      className="img-thumbnail rounded-circle border border-success" />
                   </div>
                 </div>
               </span>

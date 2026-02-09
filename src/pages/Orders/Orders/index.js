@@ -570,13 +570,13 @@ const OrdersPage = () => {
                                     <Label className="form-label">Order Status</Label>
                                     <Select
                                         options={[
-                                            { value: 'all', label: 'All Statuses' },
+                                            { value: 'all', label: 'All' },
                                             { value: 'PAID', label: 'Paid' },
                                             { value: 'READY_FOR_PICKUP', label: 'Ready for Pickup' }
                                         ]}
                                         value={{
                                             value: filters.status,
-                                            label: filters.status === 'all' ? 'All Statuses' :
+                                            label: filters.status === 'all' ? 'All' :
                                                 filters.status === 'PAID' ? 'Paid' : 'Ready for Pickup'
                                         }}
                                         onChange={(opt) => setFilters(prev => ({ ...prev, status: opt.value }))}

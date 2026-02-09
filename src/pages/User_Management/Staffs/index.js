@@ -58,19 +58,19 @@ const Staff = () => {
 
     // Options for selects
     const statusOptions = [
-        { value: "", label: "All Statuses" },
+        { value: "", label: "All" },
         { value: "Active", label: "Active" },
         { value: "Inactive", label: "Inactive" }
     ];
 
     const roleOptions = [
-        { value: "", label: "All Roles" },
+        { value: "", label: "All" },
         { value: "SUPER_ADMIN", label: "Admin" },
         { value: "BUSINESS_OWNER", label: "Business Owner" }
     ];
 
     const sexOptions = [
-        { value: "", label: "All Sexes" },
+        { value: "", label: "All" },
         { value: "MALE", label: "Male" },
         { value: "FEMALE", label: "Female" }
 

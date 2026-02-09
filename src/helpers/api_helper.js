@@ -73,7 +73,7 @@ export const setAuthorization = (token) => {
 
 class APIClient {
   get = (url, params) => axios.get(url, { params });
-  create = (url, data) => axios.post(url, data);
+  post = (url, data) => axios.post(url, data);
   update = (url, data) => axios.put(url, data);
   patch = (url, data) => axios.patch(url, data);
   delete = (url) => axios.delete(url);
