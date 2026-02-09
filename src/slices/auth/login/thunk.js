@@ -1,13 +1,19 @@
 //Include Both Helper File with needed methods
 // import { getFirebaseBackend } from "../../../helpers/firebase_helper";
-import {
-  login
-} from "../../../helpers/backend_helper";
+import { login } from "../../../helpers/backend_helper";
+import { setAuthorization } from "../../../helpers/api_helper";
 
-import { loginSuccess, logoutUserSuccess, apiError, reset_login_flag } from './reducer';
+import {
+  loginStart,
+  loginSuccess,
+  logoutUserSuccess,
+  apiError,
+  reset_login_flag,
+} from "./reducer";
 
 export const loginUser = (user, history) => async (dispatch) => {
   try {
+    dispatch(loginStart());
     let response;
     response = login({
       username: user.username,
@@ -19,13 +25,20 @@ export const loginUser = (user, history) => async (dispatch) => {
       sessionStorage.setItem("authUser", JSON.stringify(data));
 
       var finallogin = JSON.stringify(data);
-      finallogin = JSON.parse(finallogin)
+      finallogin = JSON.parse(finallogin);
       data = finallogin.data;
-      console.log("ddd", finallogin)
+      console.log("ddd", finallogin);
       if (finallogin.success) {
-        // console.log("ddddddddddd",)
+        const accessToken = data?.accessToken;
+        if (accessToken) {
+          setAuthorization(accessToken);
+        }
         dispatch(loginSuccess(data));
-        history('/auth-twostep')
+        if (data?.staff?.mustChangePassword) {
+          history("/auth-change-password");
+        } else {
+          history("/auth-twostep");
+        }
       } else {
         dispatch(apiError(finallogin));
       }
@@ -38,6 +51,9 @@ export const loginUser = (user, history) => async (dispatch) => {
 export const logoutUser = () => async (dispatch) => {
   try {
     sessionStorage.removeItem("authUser");
+    localStorage.removeItem("user");
+    setAuthorization(null);
+    dispatch(logoutUserSuccess(true));
     // let fireBaseBackend = getFirebaseBackend();
     // if (process.env.REACT_APP_DEFAULTAUTH === "firebase") {
     //   const response = fireBaseBackend.logout;
@@ -45,12 +61,10 @@ export const logoutUser = () => async (dispatch) => {
     // } else {
     //   dispatch(logoutUserSuccess(true));
     // }
-
   } catch (error) {
     dispatch(apiError(error));
   }
 };
-
 
 export const resetLoginFlag = () => async (dispatch) => {
   try {

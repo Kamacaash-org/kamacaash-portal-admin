@@ -7,7 +7,12 @@ axios.defaults.baseURL = api.API_URL;
 axios.defaults.headers.post["Content-Type"] = "application/json";
 
 // Authorization
-const token = JSON.parse(sessionStorage.getItem("authUser"))?.token || null;
+const storedAuth = JSON.parse(sessionStorage.getItem("authUser"));
+const token =
+  storedAuth?.data?.accessToken ||
+  storedAuth?.accessToken ||
+  storedAuth?.token ||
+  null;
 if (token) axios.defaults.headers.common["Authorization"] = "Bearer " + token;
 
 axios.interceptors.response.use(
@@ -46,7 +51,7 @@ axios.interceptors.response.use(
       data: null,
       message,
     });
-  }
+  },
 );
 export const getLoggedinUser = () => {
   const user = sessionStorage.getItem("authUser");
@@ -58,7 +63,12 @@ export const getLoggedinUser = () => {
 };
 
 export const setAuthorization = (token) => {
-  axios.defaults.headers.common["Authorization"] = "Bearer " + token;
+  if (token) {
+    axios.defaults.headers.common["Authorization"] = "Bearer " + token;
+    return;
+  }
+
+  delete axios.defaults.headers.common["Authorization"];
 };
 
 class APIClient {

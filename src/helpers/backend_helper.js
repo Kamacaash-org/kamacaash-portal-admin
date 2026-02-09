@@ -17,13 +17,14 @@ export const isUserAuthenticated = () => {
 // generic CRUD function
 const makeCRUD = (endpoint) => ({
     list: () => api.get(endpoint),
-    create: (payload) => api.post(endpoint, payload),
+    create: (payload) => api.create(endpoint, payload),
     update: (payload) => api.update(`${endpoint}/${payload._id}`, payload),
-    delete: (id) => api.delete(`${endpoint}/${id}`)
+    delete: (id) => api.delete(`${endpoint}/${id}`),
 });
 
 // Auth
-export const login = (data) => api.post(url.POST_LOGIN, data);
+export const login = (data) => api.create(url.POST_LOGIN, data);
+export const changePassword = (data) => api.create(url.CHANGE_PASSWORD, data);
 
 // // ==================================  URL ===================================================
 
@@ -32,7 +33,9 @@ export const SurPlusCategoryAPI = makeCRUD(url.SURPLUS_CATEGORY);
 export const BusinessAPI = {
     list: () => api.get(url.BUSINESS),
     createOrUpdate: (payload) =>
-        axios.post(url.BUSINESS, payload, { headers: { 'Content-Type': undefined } }),
+        axios.post(url.BUSINESS, payload, {
+            headers: { "Content-Type": undefined },
+        }),
 
     // extra endpoints
     archive: (id) => api.post(`${url.BUSINESS}/${id}/archive`),
@@ -44,16 +47,14 @@ export const BusinessAPI = {
 
 export const StaffsAPI = makeCRUD(url.STAFFS);
 
-
 export const Surplus_PackageAPI = {
     list: (id) => api.get(url.SURPLUS_PACKAGE, { businessId: id }),
     delete: (id) => api.delete(`${url.SURPLUS_PACKAGE}/${id}`),
     createOrUpdate: (payload) =>
-        axios.post(url.SURPLUS_PACKAGE, payload, { headers: { 'Content-Type': undefined } }),
+        axios.post(url.SURPLUS_PACKAGE, payload, {
+            headers: { "Content-Type": undefined },
+        }),
 };
-
-
-
 
 export const OrdersAPI = {
     listPendingOrders: (id) => api.get(`${url.ORDERS}/pending-orders/${id}`),
@@ -65,4 +66,3 @@ export const OrdersAPI = {
 };
 
 // // ================================== END OF  URL ===================================================
-
