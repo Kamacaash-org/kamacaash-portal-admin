@@ -8,6 +8,7 @@ import Categories from "../pages/Business_Management/Categories";
 import Business from "../pages/Business_Management/Businesses";
 
 import Staff from "../pages/User_Management/Staffs";
+import StaffProfile from "../pages/User_Management/StaffProfile";
 import Packages from "../pages/Content_Management/SurplusPackages";
 import UploadContract from "../pages/Business_Management/UploadContract";
 import ApproveBusiness from "../pages/Business_Management/ApproveBusiness";
@@ -41,6 +42,7 @@ const authProtectedRoutes = [
   { path: "/orders/order-history", component: <CompletedRejectedOrders /> },
 
   { path: "/user-management/staff-accounts", component: <Staff /> },
+  { path: "/user-management/staff-profile", component: <StaffProfile /> },
   { path: "/content-management/packages", component: <Packages /> },
 
   // this route should be at the end of all other routes

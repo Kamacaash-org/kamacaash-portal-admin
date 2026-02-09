@@ -1,5 +1,6 @@
 export const POST_LOGIN = "/auth/login";
 export const CHANGE_PASSWORD = "/staff/change-password";
+export const STAFF_PROFILE = "/staff/profile";
 
 // ==================================  URL ===================================================
 //
