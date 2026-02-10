@@ -40,9 +40,9 @@ const ChangePassword = () => {
 
     setAuthorization(authUser.token);
 
-    if (authUser?.raw?.data?.staff?.mustChangePassword === false) {
-      navigate("/auth-twostep");
-    }
+    // if (authUser?.raw?.data?.staff?.mustChangePassword === false) {
+    //   navigate("/auth-twostep");
+    // }
   }, [authUser, navigate]);
 
   const validation = useFormik({

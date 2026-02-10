@@ -5,15 +5,6 @@ import {
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-  Input,
-  Label,
-  Form,
-  FormGroup,
-  Button,
 } from "reactstrap";
 import { createSelector } from "reselect";
 import { useDispatch, useSelector } from "react-redux";
@@ -56,28 +47,6 @@ const ProfileDropdown = () => {
   const [isProfileDropdown, setIsProfileDropdown] = useState(false);
   const toggleProfileDropdown = () => {
     setIsProfileDropdown(!isProfileDropdown);
-  };
-
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
-  const [changePasswordForm, setChangePasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-  });
-
-  const openChangePassword = () => {
-    setIsProfileDropdown(false);
-    setIsChangePasswordOpen(true);
-  };
-
-  const closeChangePassword = () => {
-    setIsChangePasswordOpen(false);
-    setChangePasswordForm({ currentPassword: "", newPassword: "" });
-  };
-
-  const handleChangePasswordSubmit = (event) => {
-    event.preventDefault();
-    // API not ready yet. This is UI-only for now.
-    closeChangePassword();
   };
 
   const handleLogout = (event) => {
@@ -157,14 +126,10 @@ const ProfileDropdown = () => {
             </Link>
           </DropdownItem>
           <DropdownItem className="p-0">
-            <button
-              type="button"
-              className="dropdown-item"
-              onClick={openChangePassword}
-            >
+            <Link to="/auth-change-password" className="dropdown-item">
               <i className="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i>{" "}
               <span className="align-middle">Change Password</span>
-            </button>
+            </Link>
           </DropdownItem>
           {/* <DropdownItem className='p-0'>
                         <Link to="/auth-lockscreen-basic" className="dropdown-item">
@@ -182,61 +147,6 @@ const ProfileDropdown = () => {
           </DropdownItem>
         </DropdownMenu>
       </Dropdown>
-
-      <Modal
-        isOpen={isChangePasswordOpen}
-        toggle={closeChangePassword}
-        centered
-      >
-        <ModalHeader toggle={closeChangePassword}>Change Password</ModalHeader>
-        <Form onSubmit={handleChangePasswordSubmit}>
-          <ModalBody>
-            <FormGroup>
-              <Label for="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={changePasswordForm.currentPassword}
-                onChange={(event) =>
-                  setChangePasswordForm((prev) => ({
-                    ...prev,
-                    currentPassword: event.target.value,
-                  }))
-                }
-                placeholder="Enter current password"
-                required
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label for="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={changePasswordForm.newPassword}
-                onChange={(event) =>
-                  setChangePasswordForm((prev) => ({
-                    ...prev,
-                    newPassword: event.target.value,
-                  }))
-                }
-                placeholder="Enter new password"
-                required
-              />
-            </FormGroup>
-            <div className="text-muted small">
-              API not connected yet. This form is UI-only.
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button type="button" color="light" onClick={closeChangePassword}>
-              Cancel
-            </Button>
-            <Button type="submit" color="success">
-              Update
-            </Button>
-          </ModalFooter>
-        </Form>
-      </Modal>
     </React.Fragment>
   );
 };
