@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -14,12 +14,17 @@ import {
   Row,
   Spinner,
 } from "reactstrap";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
 import {
   getBusinessProfile,
   getStaffProfile,
+  updateBusinessProfile,
 } from "../../../helpers/backend_helper";
+
+// Import FilePond for file uploads
 
 const defaultHours = {
   open: "",
@@ -47,11 +52,12 @@ const BusinessProfileSettings = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState(null);
-  const [logoFile, setLogoFile] = useState(null);
-  const [bannerFile, setBannerFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState("");
   const [bannerPreview, setBannerPreview] = useState("");
+  const logoInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -134,22 +140,38 @@ const BusinessProfileSettings = () => {
   }, [resolvedBusinessId]);
 
   useEffect(() => {
-    if (logoFile) {
-      const previewUrl = URL.createObjectURL(logoFile);
+    if (profile?.logo instanceof File) {
+      const previewUrl = URL.createObjectURL(profile.logo);
       setLogoPreview(previewUrl);
       return () => URL.revokeObjectURL(previewUrl);
     }
+    setLogoPreview(profile?.logo || "");
     return undefined;
-  }, [logoFile]);
+  }, [profile?.logo]);
 
   useEffect(() => {
-    if (bannerFile) {
-      const previewUrl = URL.createObjectURL(bannerFile);
+    if (profile?.bannerImage instanceof File) {
+      const previewUrl = URL.createObjectURL(profile.bannerImage);
       setBannerPreview(previewUrl);
       return () => URL.revokeObjectURL(previewUrl);
     }
+    setBannerPreview(profile?.bannerImage || "");
     return undefined;
-  }, [bannerFile]);
+  }, [profile?.bannerImage]);
+
+  const handleLogoFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFieldChange("logo", file);
+    }
+  };
+
+  const handleBannerFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFieldChange("bannerImage", file);
+    }
+  };
 
   const handleFieldChange = (key, value) => {
     setProfile((prev) => ({
@@ -183,9 +205,59 @@ const BusinessProfileSettings = () => {
 
   const hoursValue = useMemo(() => profile?.openingHours || {}, [profile]);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setError("Update API not provided yet. Form edits are not saved.");
+    if (!resolvedBusinessId) {
+      setError("Business ID not found. Please sign in again.");
+      return;
+    }
+
+    const submitData = new FormData();
+    submitData.append("businessName", profile?.businessName || "");
+    submitData.append("description", profile?.description || "");
+    submitData.append("phoneNumber", profile?.phoneNumber || "");
+    submitData.append("email", profile?.email || "");
+    submitData.append("address[street]", profile?.address?.street || "");
+
+    if (profile?.logo instanceof File) {
+      submitData.append("logo", profile.logo);
+    } else if (profile?.logo) {
+      submitData.append("logo", profile.logo);
+    }
+
+    if (profile?.bannerImage instanceof File) {
+      submitData.append("bannerImage", profile.bannerImage);
+    } else if (profile?.bannerImage) {
+      submitData.append("bannerImage", profile.bannerImage);
+    }
+
+    Object.keys(profile?.openingHours || {}).forEach((day) => {
+      const openTime = profile?.openingHours?.[day]?.open || "";
+      const closeTime = profile?.openingHours?.[day]?.close || "";
+      submitData.append(`openingHours[${day}][open]`, openTime);
+      submitData.append(`openingHours[${day}][close]`, closeTime);
+    });
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const response = await updateBusinessProfile(
+        resolvedBusinessId,
+        submitData,
+      );
+      if (response?.success) {
+        toast.success("Business profile updated successfully");
+      } else {
+        setError(response?.message || "Failed to update business profile");
+        toast.error(response?.message || "Failed to update business profile");
+      }
+    } catch (err) {
+      setError(err?.message || "Failed to update business profile");
+      toast.error(err?.message || "Failed to update business profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -195,17 +267,15 @@ const BusinessProfileSettings = () => {
           title="Business Profile Settings"
           pageTitle="Business Management"
         />
+        <ToastContainer position="top-right" />
 
         {loading ? (
           <div className="d-flex justify-content-center py-5">
             <Spinner color="primary">Loading...</Spinner>
           </div>
-        ) : error ? (
-          <Card className="border-danger">
-            <CardBody className="text-danger">{error}</CardBody>
-          </Card>
         ) : (
           <Form onSubmit={handleSubmit}>
+            {error ? <Alert color="danger">{error}</Alert> : null}
             <Row className="g-4">
               <Col xl={8}>
                 <Card>
@@ -289,58 +359,6 @@ const BusinessProfileSettings = () => {
                           />
                         </FormGroup>
                       </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label for="city">City</Label>
-                          <Input
-                            id="city"
-                            type="text"
-                            value={profile?.address?.city || ""}
-                            onChange={(e) =>
-                              handleAddressChange("city", e.target.value)
-                            }
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label for="state">State</Label>
-                          <Input
-                            id="state"
-                            type="text"
-                            value={profile?.address?.state || ""}
-                            onChange={(e) =>
-                              handleAddressChange("state", e.target.value)
-                            }
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label for="country">Country</Label>
-                          <Input
-                            id="country"
-                            type="text"
-                            value={profile?.address?.country || ""}
-                            onChange={(e) =>
-                              handleAddressChange("country", e.target.value)
-                            }
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label for="postcode">Postcode</Label>
-                          <Input
-                            id="postcode"
-                            type="text"
-                            value={profile?.address?.postcode || ""}
-                            onChange={(e) =>
-                              handleAddressChange("postcode", e.target.value)
-                            }
-                          />
-                        </FormGroup>
-                      </Col>
                     </Row>
                   </CardBody>
                 </Card>
@@ -397,12 +415,12 @@ const BusinessProfileSettings = () => {
                   <CardBody>
                     <FormGroup>
                       <Label className="form-label">Logo</Label>
-                      <div className="mb-3">
+                      <div className="position-relative mb-3 media-preview">
                         {logoPreview ? (
                           <img
                             src={logoPreview}
                             alt="Business Logo"
-                            className="img-thumbnail w-100"
+                            className="img-thumbnail w-100 media-preview-image"
                             style={{ maxHeight: "180px", objectFit: "cover" }}
                           />
                         ) : (
@@ -412,24 +430,32 @@ const BusinessProfileSettings = () => {
                             </div>
                           </div>
                         )}
+                        <button
+                          type="button"
+                          className="btn btn-light btn-sm position-absolute top-0 end-0 m-2 media-edit-btn"
+                          onClick={() => logoInputRef.current?.click()}
+                          aria-label="Change logo"
+                        >
+                          <i className="ri-image-edit-line"></i>
+                        </button>
+                        <Input
+                          innerRef={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoFileChange}
+                          className="d-none"
+                        />
                       </div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          setLogoFile(e.target.files?.[0] || null)
-                        }
-                      />
                     </FormGroup>
 
                     <FormGroup className="mt-4">
                       <Label className="form-label">Banner Image</Label>
-                      <div className="mb-3">
+                      <div className="position-relative mb-3 media-preview">
                         {bannerPreview ? (
                           <img
                             src={bannerPreview}
                             alt="Business Banner"
-                            className="img-thumbnail w-100"
+                            className="img-thumbnail w-100 media-preview-image"
                             style={{ maxHeight: "180px", objectFit: "cover" }}
                           />
                         ) : (
@@ -439,30 +465,35 @@ const BusinessProfileSettings = () => {
                             </div>
                           </div>
                         )}
+                        <button
+                          type="button"
+                          className="btn btn-light btn-sm position-absolute top-0 end-0 m-2 media-edit-btn"
+                          onClick={() => bannerInputRef.current?.click()}
+                          aria-label="Change banner"
+                        >
+                          <i className="ri-image-edit-line"></i>
+                        </button>
+                        <Input
+                          innerRef={bannerInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleBannerFileChange}
+                          className="d-none"
+                        />
                       </div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          setBannerFile(e.target.files?.[0] || null)
-                        }
-                      />
                     </FormGroup>
                   </CardBody>
                 </Card>
 
                 <Card>
                   <CardBody>
-                    <Alert color="warning" className="mb-3">
-                      Update API not provided yet. Changes are not saved.
-                    </Alert>
                     <Button
                       color="success"
                       type="submit"
                       className="w-100"
-                      disabled
+                      disabled={saving}
                     >
-                      Save Changes
+                      {saving ? "Saving..." : "Save Changes"}
                     </Button>
                   </CardBody>
                 </Card>
