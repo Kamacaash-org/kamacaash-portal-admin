@@ -7,6 +7,8 @@ import SignIn from "../pages/AuthenticationInner/Login";
 import Categories from "../pages/Business_Management/Categories";
 import Business from "../pages/Business_Management/Businesses";
 import BusinessProfileSettings from "../pages/Business_Management/BusinessProfileSettings";
+import BusinessReviews from "../pages/Business_Management/BusinessReviews";
+import ReviewRequests from "../pages/Business_Management/ReviewRequests";
 
 import Staff from "../pages/User_Management/Staffs";
 import StaffProfile from "../pages/User_Management/StaffProfile";
@@ -33,6 +35,14 @@ const authProtectedRoutes = [
   {
     path: "/business-management/profile-settings",
     component: <BusinessProfileSettings />,
+  },
+  {
+    path: "/business-management/reviews",
+    component: <BusinessReviews />,
+  },
+  {
+    path: "/business-management/review-requests",
+    component: <ReviewRequests />,
   },
   {
     path: "/business-management/upload-contract",

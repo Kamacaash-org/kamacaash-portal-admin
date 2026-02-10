@@ -31,6 +31,18 @@ export const getBusinessProfile = (businessId) =>
   api.get(`${url.BUSINESS_PROFILE}/${businessId}`);
 export const updateBusinessProfile = (businessId, payload) =>
   api.update(`${url.BUSINESS_PROFILE_UPDATE}/${businessId}`, payload);
+export const getBusinessReviews = (businessId) =>
+  api.get(`${url.BUSINESS_REVIEWS}/${businessId}`);
+export const requestTopReviewApproval = (payload) =>
+  api.post(url.REVIEW_TOP_REQUESTS, payload);
+export const getPendingReviewRequests = () =>
+  api.get(url.REVIEW_TOP_REQUESTS_PENDING);
+export const getReviewRequestsByStatus = (status) =>
+  api.get(`${url.REVIEW_TOP_REQUESTS_STATUS}/${status}`);
+export const approveReviewRequest = (requestId) =>
+  api.post(`${url.REVIEW_TOP_REQUESTS_APPROVE}/${requestId}/approve`);
+export const rejectReviewRequest = (requestId, payload) =>
+  api.post(`${url.REVIEW_TOP_REQUESTS_REJECT}/${requestId}/reject`, payload);
 
 // // ==================================  URL ===================================================
 

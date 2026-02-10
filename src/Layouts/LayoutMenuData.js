@@ -28,10 +28,10 @@ const Navdata = () => {
   // Function to collect all permitted paths from menus
   const getAllPermittedPaths = (menus) => {
     const paths = [];
-    menus.forEach(menu => {
+    menus.forEach((menu) => {
       if (menu.link && menu.link !== "/#") paths.push(menu.link);
       if (menu.subItems) {
-        menu.subItems.forEach(sub => {
+        menu.subItems.forEach((sub) => {
           paths.push(sub.link);
         });
       }
@@ -70,9 +70,6 @@ const Navdata = () => {
   //   }
   // }, [userId]);
 
-
-
-
   // Check route permission
   useEffect(() => {
     if (!isSuperAdmin && retreivedMenus.length > 0) {
@@ -83,9 +80,11 @@ const Navdata = () => {
       if (currentPath === "/" || currentPath === "/not-found") return;
 
       // Check if current path or any parent path is permitted
-      const isPermitted = permittedPaths.some(path => {
-        return currentPath.startsWith(path) ||
-          (path !== "/dashboard" && currentPath.includes(path));
+      const isPermitted = permittedPaths.some((path) => {
+        return (
+          currentPath.startsWith(path) ||
+          (path !== "/dashboard" && currentPath.includes(path))
+        );
       });
 
       if (!isPermitted) {
@@ -94,11 +93,8 @@ const Navdata = () => {
     }
   }, [location.pathname, retreivedMenus, isSuperAdmin, history]);
 
-
-
   // Static full-access menu for superadmin
   const menuItems = [
-
     {
       id: "BUSINESS_MANAGEMENT",
       label: "Business Mngmnt",
@@ -107,7 +103,10 @@ const Navdata = () => {
       stateVariables: menuStates["BUSINESS_MANAGEMENT"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, BUSINESS_MANAGEMENT: !prev.BUSINESS_MANAGEMENT }));
+        setMenuStates((prev) => ({
+          ...prev,
+          BUSINESS_MANAGEMENT: !prev.BUSINESS_MANAGEMENT,
+        }));
         setIscurrentState("BUSINESS_MANAGEMENT");
         updateIconSidebar(e);
       },
@@ -118,8 +117,6 @@ const Navdata = () => {
           link: "/business-management/categories",
           parentId: "BUSINESS_MANAGEMENT",
         },
-
-
 
         {
           id: "Businesses",
@@ -135,16 +132,24 @@ const Navdata = () => {
           parentId: "BUSINESS_MANAGEMENT",
         },
 
-
-
         {
           id: "approveCusiness",
           label: "approve business",
           link: "/business-management/approve-business",
           parentId: "BUSINESS_MANAGEMENT",
         },
-
-
+        {
+          id: "BusinessReviews",
+          label: "Reviews",
+          link: "/business-management/reviews",
+          parentId: "BUSINESS_MANAGEMENT",
+        },
+        {
+          id: "ReviewRequests",
+          label: "Review Requests",
+          link: "/business-management/review-requests",
+          parentId: "BUSINESS_MANAGEMENT",
+        },
       ],
     },
 
@@ -156,7 +161,10 @@ const Navdata = () => {
       stateVariables: menuStates["CONTENT_MANAGEMENT"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, CONTENT_MANAGEMENT: !prev.CONTENT_MANAGEMENT }));
+        setMenuStates((prev) => ({
+          ...prev,
+          CONTENT_MANAGEMENT: !prev.CONTENT_MANAGEMENT,
+        }));
         setIscurrentState("CONTENT_MANAGEMENT");
         updateIconSidebar(e);
       },
@@ -167,13 +175,8 @@ const Navdata = () => {
           link: "/content-management/packages",
           parentId: "CONTENT_MANAGEMENT",
         },
-
-
-
-
       ],
     },
-
 
     {
       id: "ORDERS",
@@ -201,12 +204,8 @@ const Navdata = () => {
           link: "/orders/order-history",
           parentId: "ORDERS",
         },
-
-
-
       ],
     },
-
 
     {
       id: "USER_MANAGEMENT",
@@ -216,7 +215,10 @@ const Navdata = () => {
       stateVariables: menuStates["USER_MANAGEMENT"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, USER_MANAGEMENT: !prev.USER_MANAGEMENT }));
+        setMenuStates((prev) => ({
+          ...prev,
+          USER_MANAGEMENT: !prev.USER_MANAGEMENT,
+        }));
         setIscurrentState("USER_MANAGEMENT");
         updateIconSidebar(e);
       },
@@ -227,13 +229,8 @@ const Navdata = () => {
           link: "/user-management/staff-accounts",
           parentId: "USER_MANAGEMENT",
         },
-
-
-
-
       ],
     },
-
   ];
 
   // console.log("retreivced data is:", retreivedMenus);
@@ -252,7 +249,7 @@ const Navdata = () => {
         }));
         setIscurrentState(item.label);
         updateIconSidebar(e);
-      }
+      },
     };
 
     // Only add subItems if they exist and length > 0
@@ -268,10 +265,7 @@ const Navdata = () => {
     return menuItem;
   });
 
-
   // const menuToRender = userId === "superadmin-id" ? menuItems : dynamicMenu;
-
-
 
   return <React.Fragment>{menuItems}</React.Fragment>;
 };
