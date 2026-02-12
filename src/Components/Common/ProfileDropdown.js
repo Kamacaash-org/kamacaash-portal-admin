@@ -81,7 +81,7 @@ const ProfileDropdown = () => {
         <DropdownMenu className="dropdown-menu-end">
           <h6 className="dropdown-header">Welcome {userName}!</h6>
           <DropdownItem className="p-0">
-            <Link to="/user-management/staff-profile" className="dropdown-item">
+            <Link to="/users/staff-profile" className="dropdown-item">
               <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
               <span className="align-middle">Profile</span>
             </Link>
@@ -115,7 +115,7 @@ const ProfileDropdown = () => {
                     </DropdownItem > */}
           <DropdownItem className="p-0">
             <Link
-              to="/business-management/profile-settings"
+              to="/business/profile-settings"
               className="dropdown-item"
             >
               <span className="badge bg-success-subtle text-success mt-1 float-end">

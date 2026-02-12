@@ -378,7 +378,7 @@ const ApproveBusinessPage = () => {
     return (
         <div className="page-content">
             <Container fluid>
-                <BreadCrumb title="Approve Businesses" pageTitle="Business Management" />
+                <BreadCrumb title="Approve Businesses" pageTitle="Business" />
 
                 {/* Stats Cards */}
                 <Row className="mb-4">
@@ -508,7 +508,7 @@ const ApproveBusinessPage = () => {
                             </Col>
                             <Col md={4}>
                                 <FormGroup className="mb-0">
-                                    <Label className="form-label">Status Filter</Label>
+                                    <Label className="form-label">Status</Label>
                                     <Select
                                         options={[
                                             { value: 'all', label: 'All' },

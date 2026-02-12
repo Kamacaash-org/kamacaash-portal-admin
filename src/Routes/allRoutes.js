@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 
 // //AuthenticationInner pages
 import SignIn from "../pages/AuthenticationInner/Login";
+import Dashboard from "../pages/Dashboard";
 //pages
 import Categories from "../pages/Business_Management/Categories";
 import Business from "../pages/Business_Management/Businesses";
@@ -28,44 +29,37 @@ import Error500 from "../pages/AuthenticationInner/Errors/Error500";
 import Offlinepage from "../pages/AuthenticationInner/Errors/Offlinepage";
 
 const authProtectedRoutes = [
-  //Pages
+  // Dashboard
+  { path: "/dashboard", component: <Dashboard /> },
 
-  { path: "/business-management/categories", component: <Categories /> },
-  { path: "/buiness-management/businsesses", component: <Business /> },
-  {
-    path: "/business-management/profile-settings",
-    component: <BusinessProfileSettings />,
-  },
-  {
-    path: "/business-management/reviews",
-    component: <BusinessReviews />,
-  },
-  {
-    path: "/business-management/review-requests",
-    component: <ReviewRequests />,
-  },
-  {
-    path: "/business-management/upload-contract",
-    component: <UploadContract />,
-  },
-  {
-    path: "/business-management/approve-business",
-    component: <ApproveBusiness />,
-  },
+  // Business
+  { path: "/business/categories", component: <Categories /> },
+  { path: "/business/list", component: <Business /> },
+  { path: "/business/profile-settings", component: <BusinessProfileSettings /> },
 
-  { path: "/orders/manage-pending-orders", component: <PendingOrders /> },
-  { path: "/orders/order-history", component: <CompletedRejectedOrders /> },
+  // Reviews (separated)
+  { path: "/reviews", component: <BusinessReviews /> },
+  { path: "/reviews/feature-requests", component: <ReviewRequests /> },
 
-  { path: "/user-management/staff-accounts", component: <Staff /> },
-  { path: "/user-management/staff-profile", component: <StaffProfile /> },
-  { path: "/content-management/packages", component: <Packages /> },
+  // Contracts + Approval
+  { path: "/business/contracts", component: <UploadContract /> },
+  { path: "/business/approval", component: <ApproveBusiness /> },
 
-  // this route should be at the end of all other routes
-  // eslint-disable-next-line react/display-name
+  // Orders
+  { path: "/orders", component: <PendingOrders /> },          // manage orders
+  { path: "/orders/history", component: <CompletedRejectedOrders /> },
+
+  // Users
+  { path: "/users/staff", component: <Staff /> },
+  { path: "/users/staff-profile", component: <StaffProfile /> },
+
+  // Content
+  { path: "/content/packages", component: <Packages /> },
+
+  // Default
   {
     path: "/",
     exact: true,
-    // do not forget to change for this
     component: <Navigate to="/dashboard" />,
   },
   // { path: "*", component: <Navigate to="/not-found-404" /> },

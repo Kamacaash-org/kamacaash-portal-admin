@@ -499,7 +499,7 @@ const SurplusPackages = () => {
     return (
         <div className="page-content">
             <Container fluid>
-                <BreadCrumb title="Surplus Packages" pageTitle="Surplus Management" />
+                <BreadCrumb title="Packages" pageTitle="Content" />
 
                 {/* Stats Cards */}
                 <Row className="mb-4">

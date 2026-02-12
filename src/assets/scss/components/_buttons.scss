@@ -55,7 +55,19 @@ a {
         --#{$prefix}btn-active-border-color: var(--#{$prefix}#{$state}-text-emphasis);
         --#{$prefix}btn-disabled-bg: var(--#{$prefix}#{$state});
         --#{$prefix}btn-disabled-border-color: var(--#{$prefix}#{$state});
+        font-weight: 600; // semi-bold
+        letter-spacing: 0.3px; // cleaner spacing
     }
+
+    .btn-primary {
+        --#{$prefix}btn-color: #fff !important;
+        --#{$prefix}btn-hover-color: #fff !important;
+        --#{$prefix}btn-active-color: #fff !important;
+        --#{$prefix}btn-disabled-color: #fff !important;
+
+        color: #fff !important;
+    }
+
 
     .btn-outline-#{$state} {
         --#{$prefix}btn-color: var(--#{$prefix}#{$state});

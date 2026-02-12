@@ -158,13 +158,13 @@ const ChangePassword = () => {
                                   value={validation.values.currentPassword}
                                   invalid={
                                     validation.touched.currentPassword &&
-                                    validation.errors.currentPassword
+                                      validation.errors.currentPassword
                                       ? true
                                       : false
                                   }
                                 />
                                 {validation.touched.currentPassword &&
-                                validation.errors.currentPassword ? (
+                                  validation.errors.currentPassword ? (
                                   <FormFeedback type="invalid">
                                     {validation.errors.currentPassword}
                                   </FormFeedback>
@@ -203,13 +203,13 @@ const ChangePassword = () => {
                                   value={validation.values.newPassword}
                                   invalid={
                                     validation.touched.newPassword &&
-                                    validation.errors.newPassword
+                                      validation.errors.newPassword
                                       ? true
                                       : false
                                   }
                                 />
                                 {validation.touched.newPassword &&
-                                validation.errors.newPassword ? (
+                                  validation.errors.newPassword ? (
                                   <FormFeedback type="invalid">
                                     {validation.errors.newPassword}
                                   </FormFeedback>
@@ -255,13 +255,13 @@ const ChangePassword = () => {
                                   value={validation.values.confirmPassword}
                                   invalid={
                                     validation.touched.confirmPassword &&
-                                    validation.errors.confirmPassword
+                                      validation.errors.confirmPassword
                                       ? true
                                       : false
                                   }
                                 />
                                 {validation.touched.confirmPassword &&
-                                validation.errors.confirmPassword ? (
+                                  validation.errors.confirmPassword ? (
                                   <FormFeedback type="invalid">
                                     {validation.errors.confirmPassword}
                                   </FormFeedback>

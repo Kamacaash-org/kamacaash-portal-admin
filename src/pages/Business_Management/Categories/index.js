@@ -258,7 +258,7 @@ const SurplusCategories = () => {
     return (
         <div className="page-content">
             <Container fluid>
-                <BreadCrumb title="Surplus Categories" pageTitle="Surplus Management" />
+                <BreadCrumb title="Categories" pageTitle="Business" />
 
                 {/* Filter Controls */}
                 <Card className="mb-3">

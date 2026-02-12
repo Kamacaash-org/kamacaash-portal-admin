@@ -43,7 +43,7 @@ const selectBusinessesData = createSelector(
 );
 
 const UploadContractPage = () => {
-    document.title = "Upload Contracts | Kamacaash";
+    document.title = "Contracts | Kamacaash";
 
     const dispatch = useDispatch();
     const businessesData = useSelector(selectBusinessesData);
@@ -380,7 +380,7 @@ const UploadContractPage = () => {
     return (
         <div className="page-content">
             <Container fluid>
-                <BreadCrumb title="Upload Contracts" pageTitle="Business Management" />
+                <BreadCrumb title="Contracts" pageTitle="Business" />
 
                 {/* Stats Cards */}
                 <Row className="mb-4">

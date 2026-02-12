@@ -437,7 +437,7 @@ const OrdersPage = () => {
     return (
         <div className="page-content">
             <Container fluid>
-                <BreadCrumb title="Pending Orders" pageTitle="Order Management" />
+                <BreadCrumb title="Pending Orders" pageTitle="Orders" />
 
                 {/* Stats Cards */}
                 <Row className="mb-4">
@@ -524,7 +524,7 @@ const OrdersPage = () => {
                     <CardBody>
                         <Row className="g-3 align-items-center">
                             <Col md={6}>
-                                <h6 className="card-title mb-0">Order Management</h6>
+                                <h6 className="card-title mb-0">Orders</h6>
                                 <p className="text-muted mb-0">
                                     Manage pending orders, complete pickups, or cancel orders as needed
                                 </p>

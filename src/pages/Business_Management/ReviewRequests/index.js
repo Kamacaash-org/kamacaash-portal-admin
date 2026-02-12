@@ -38,7 +38,7 @@ import {
 } from "../../../helpers/backend_helper";
 
 const ReviewRequests = () => {
-  document.title = "Review Requests | Kamacash";
+  document.title = "Featured Review Approval | Kamacash";
 
   const authUser = useAuthUser();
   const [loading, setLoading] = useState(true);
@@ -398,10 +398,39 @@ const ReviewRequests = () => {
     },
   };
 
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderColor: state.isFocused ? "#338427" : "#338427",
+      boxShadow: state.isFocused ? "0 0 0 1px #338427" : "none",
+      "&:hover": {
+        borderColor: "#338427",
+      },
+    }),
+
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#338427"
+        : state.isFocused
+          ? "#e8f8f0"
+          : "white",
+      color: state.isSelected ? "#fff" : "#333",
+      "&:active": {
+        backgroundColor: "#338427",
+      },
+    }),
+
+    singleValue: (base) => ({
+      ...base,
+      fontWeight: 500,
+    }),
+  };
+
   return (
     <div className="page-content">
       <Container fluid>
-        <BreadCrumb title="Review Requests" pageTitle="Business Management" />
+        <BreadCrumb title="Featured Review Approval" pageTitle="Reviews" />
 
         {/* Stats Cards */}
         <Row className="mb-4">
@@ -531,8 +560,10 @@ const ReviewRequests = () => {
               </Col>
               <Col md={4}>
                 <FormGroup className="mb-0">
-                  <Label className="form-label">Status Filter</Label>
+                  <Label className="form-label">Status</Label>
                   <Select
+                    styles={customSelectStyles}
+
                     options={[
                       { value: "all", label: "All" },
                       { value: "PENDING", label: "Pending Review" },
@@ -943,389 +974,3 @@ const ReviewRequests = () => {
 };
 
 export default ReviewRequests;
-// import React, { useEffect, useMemo, useState } from "react";
-// import {
-//   Badge,
-//   Button,
-//   ButtonGroup,
-//   Card,
-//   CardBody,
-//   CardHeader,
-//   Col,
-//   Container,
-//   FormGroup,
-//   Input,
-//   Label,
-//   Modal,
-//   ModalBody,
-//   ModalFooter,
-//   ModalHeader,
-//   Row,
-//   Spinner,
-// } from "reactstrap";
-// import DataTable from "react-data-table-component";
-// import { toast, ToastContainer } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
-// import BreadCrumb from "../../../Components/Common/BreadCrumb";
-// import useAuthUser from "../../../Components/Hooks/useAuthUser";
-// import { setAuthorization } from "../../../helpers/api_helper";
-// import {
-//   approveReviewRequest,
-//   getReviewRequestsByStatus,
-//   rejectReviewRequest,
-// } from "../../../helpers/backend_helper";
-
-// const ReviewRequests = () => {
-//   document.title = "Review Requests | Kamacash";
-
-//   const authUser = useAuthUser();
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState("");
-//   const [requests, setRequests] = useState([]);
-//   const [statusFilter, setStatusFilter] = useState("PENDING");
-//   const [actionModalOpen, setActionModalOpen] = useState(false);
-//   const [actionType, setActionType] = useState("approve");
-//   const [selectedRequestId, setSelectedRequestId] = useState("");
-//   const [rejectionReason, setRejectionReason] = useState("");
-//   const [actionLoading, setActionLoading] = useState(false);
-
-//   useEffect(() => {
-//     if (authUser?.token) {
-//       setAuthorization(authUser.token);
-//     }
-
-//     let isMounted = true;
-
-//     const fetchRequests = async () => {
-//       setLoading(true);
-//       setError("");
-
-//       try {
-//         const response = await getReviewRequestsByStatus(statusFilter);
-//         const list = response?.data || [];
-//         if (response?.success && isMounted) {
-//           setRequests(Array.isArray(list) ? list : []);
-//         } else if (isMounted) {
-//           setError(response?.message || "Failed to load review requests");
-//         }
-//       } catch (err) {
-//         if (isMounted) {
-//           setError(err?.message || "Failed to load review requests");
-//         }
-//       } finally {
-//         if (isMounted) {
-//           setLoading(false);
-//         }
-//       }
-//     };
-
-//     fetchRequests();
-
-//     return () => {
-//       isMounted = false;
-//     };
-//   }, [authUser?.token, statusFilter]);
-
-//   const openActionModal = (type, requestId) => {
-//     setActionType(type);
-//     setSelectedRequestId(requestId || "");
-//     setRejectionReason("");
-//     setActionModalOpen(true);
-//   };
-
-//   const closeActionModal = () => {
-//     if (actionLoading) return;
-//     setActionModalOpen(false);
-//     setSelectedRequestId("");
-//     setRejectionReason("");
-//   };
-
-//   const handleActionSubmit = async () => {
-//     if (!selectedRequestId) {
-//       setError("Request ID is missing.");
-//       setActionModalOpen(false);
-//       return;
-//     }
-
-//     if (actionType === "reject" && !rejectionReason.trim()) {
-//       setError("Please enter a rejection reason.");
-//       return;
-//     }
-
-//     setActionLoading(true);
-//     setError("");
-
-//     try {
-//       if (actionType === "approve") {
-//         await approveReviewRequest(selectedRequestId);
-//         toast.success("Request approved successfully");
-//       } else {
-//         await rejectReviewRequest(selectedRequestId, {
-//           rejectionReason: rejectionReason.trim(),
-//         });
-//         toast.success("Request rejected successfully");
-//       }
-
-//       const response = await getReviewRequestsByStatus(statusFilter);
-//       const list = response?.data || [];
-//       if (response?.success) {
-//         setRequests(Array.isArray(list) ? list : []);
-//       } else {
-//         setError(response?.message || "Failed to refresh requests");
-//       }
-//     } catch (err) {
-//       setError(err?.message || "Failed to update request");
-//       toast.error(err?.message || "Failed to update request");
-//     } finally {
-//       setActionLoading(false);
-//       setActionModalOpen(false);
-//       setSelectedRequestId("");
-//     }
-//   };
-
-//   const statusBadge = (status) => {
-//     switch (status) {
-//       case "APPROVED":
-//         return <Badge color="success">Approved</Badge>;
-//       case "REJECTED":
-//         return <Badge color="danger">Rejected</Badge>;
-//       default:
-//         return <Badge color="primary">Pending</Badge>;
-//     }
-//   };
-
-//   const columns = useMemo(() => {
-//     const baseColumns = [
-//       {
-//         name: "#",
-//         width: "70px",
-//         cell: (row, index) => index + 1, // works if DataTable passes index
-//       },
-//       {
-//         name: "Business",
-//         grow: 1.5,
-//         wrap: true,
-//         cell: (row) => (
-//           <div className="d-flex align-items-center gap-2">
-//             {row.business?.logo ? (
-//               <img
-//                 src={row.business.logo}
-//                 alt={row.business?.businessName || "Business"}
-//                 style={{ width: 34, height: 34, borderRadius: 8, objectFit: "cover" }}
-//               />
-//             ) : (
-//               <div style={{ width: 34, height: 34, borderRadius: 8, background: "#eee" }} />
-//             )}
-//             <div className="d-flex flex-column">
-//               <span className="fw-semibold">{row.business?.businessName || "—"}</span>
-//               <small className="text-muted">{row.businessId ? "Business" : ""}</small>
-//             </div>
-//           </div>
-//         ),
-//       },
-//       {
-//         name: "Requested By",
-//         wrap: true,
-//         cell: (row) => (
-//           <div className="d-flex flex-column">
-//             <span className="fw-semibold">{row.requestedByStaff?.fullName || "—"}</span>
-//             <small className="text-muted">
-//               {(row.requestedByStaff?.countryCode || "") + (row.requestedByStaff?.phone || "") || ""}
-//             </small>
-//           </div>
-//         ),
-//       },
-//       {
-//         name: "Reviewer",
-//         wrap: true,
-//         cell: (row) => (
-//           <span>
-//             {row.reviewIds?.[0]?.reviewerName ||
-//               row.reviewerName ||
-//               row.userName ||
-//               "—"}
-//           </span>
-//         ),
-//       },
-//       {
-//         name: "Rate",
-//         width: "90px",
-//         cell: (row) => {
-//           const rating = row.reviewIds?.[0]?.rating;
-//           return (
-//             <Badge
-//               color={rating >= 4 ? "success" : rating >= 3 ? "warning" : "danger"}
-//             >
-//               {rating ?? "—"}
-//             </Badge>
-//           );
-//         },
-//       },
-//       {
-//         name: "Comment",
-//         grow: 2,
-//         wrap: true,
-//         selector: (row) => row.reviewIds?.[0]?.comment || "—",
-//       },
-//       {
-//         name: "Likes",
-//         width: "90px",
-//         selector: (row) => row.reviewIds?.[0]?.no_of_likes ?? 0,
-//       },
-//       {
-//         name: "Dislikes",
-//         width: "100px",
-//         selector: (row) => row.reviewIds?.[0]?.no_of_dis_likes ?? 0,
-//       },
-//     ];
-
-//     if (statusFilter === "REJECTED") {
-//       baseColumns.push({
-//         name: "Rejection Reason",
-//         grow: 1.5,
-//         wrap: true,
-//         selector: (row) => row.rejectionReason || "—",
-//       });
-//     }
-
-//     baseColumns.push({
-//       name: "Status",
-//       width: "120px",
-//       cell: (row) => statusBadge(row.status),
-//     });
-
-//     if (statusFilter === "PENDING") {
-//       baseColumns.push({
-//         name: "Action",
-//         width: "170px",
-//         cell: (row) => (
-//           <div className="d-flex gap-2">
-//             <Button
-//               color="success"
-//               size="sm"
-//               onClick={() => openActionModal("approve", row._id)}
-//             >
-//               Approve
-//             </Button>
-//             <Button
-//               color="danger"
-//               size="sm"
-//               onClick={() => openActionModal("reject", row._id)}
-//             >
-//               Reject
-//             </Button>
-//           </div>
-//         ),
-//       });
-//     }
-
-//     return baseColumns;
-//   }, [statusFilter]);
-
-
-//   return (
-//     <div className="page-content">
-//       <Container fluid>
-//         <BreadCrumb title="Review Requests" pageTitle="Business Mngmnt" />
-//         <ToastContainer position="top-right" />
-
-//         <Row>
-//           <Col lg={12}>
-//             <Card>
-//               <CardHeader className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-//                 <h5 className="card-title mb-0">Review Requests</h5>
-//                 <ButtonGroup>
-//                   <Button
-//                     color={statusFilter === "PENDING" ? "primary" : "light"}
-//                     onClick={() => setStatusFilter("PENDING")}
-//                   >
-//                     Pending
-//                   </Button>
-//                   <Button
-//                     color={statusFilter === "APPROVED" ? "primary" : "light"}
-//                     onClick={() => setStatusFilter("APPROVED")}
-//                   >
-//                     Approved
-//                   </Button>
-//                   <Button
-//                     color={statusFilter === "REJECTED" ? "primary" : "light"}
-//                     onClick={() => setStatusFilter("REJECTED")}
-//                   >
-//                     Rejected
-//                   </Button>
-//                 </ButtonGroup>
-//               </CardHeader>
-//               <CardBody>
-//                 {loading ? (
-//                   <div className="d-flex justify-content-center py-5">
-//                     <Spinner color="primary">Loading...</Spinner>
-//                   </div>
-//                 ) : (
-//                   <>
-//                     {error ? (
-//                       <div className="text-danger mb-3">{error}</div>
-//                     ) : null}
-//                     <DataTable
-//                       columns={columns}
-//                       data={requests}
-//                       pagination
-//                       highlightOnHover
-//                       responsive
-//                       noDataComponent={`No ${statusFilter.toLowerCase()} requests`}
-//                     />
-//                   </>
-//                 )}
-//               </CardBody>
-//             </Card>
-//           </Col>
-//         </Row>
-//       </Container>
-
-//       <Modal isOpen={actionModalOpen} toggle={closeActionModal} centered>
-//         <ModalHeader toggle={closeActionModal}>
-//           {actionType === "approve" ? "Approve Request" : "Reject Request"}
-//         </ModalHeader>
-//         <ModalBody>
-//           {actionType === "approve" ? (
-//             <p className="mb-0">
-//               Are you sure you want to approve this review request?
-//             </p>
-//           ) : (
-//             <FormGroup>
-//               <Label for="rejectionReason">Rejection Reason</Label>
-//               <Input
-//                 id="rejectionReason"
-//                 type="text"
-//                 value={rejectionReason}
-//                 onChange={(event) => setRejectionReason(event.target.value)}
-//                 placeholder="Enter reason"
-//               />
-//             </FormGroup>
-//           )}
-//         </ModalBody>
-//         <ModalFooter>
-//           <Button
-//             color="light"
-//             onClick={closeActionModal}
-//             disabled={actionLoading}
-//           >
-//             Cancel
-//           </Button>
-//           <Button
-//             color={actionType === "approve" ? "success" : "danger"}
-//             onClick={handleActionSubmit}
-//             disabled={actionLoading}
-//           >
-//             {actionLoading
-//               ? "Saving..."
-//               : actionType === "approve"
-//                 ? "Approve"
-//                 : "Reject"}
-//           </Button>
-//         </ModalFooter>
-//       </Modal>
-//     </div>
-//   );
-// };
-
-// export default ReviewRequests;

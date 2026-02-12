@@ -96,84 +96,111 @@ const Navdata = () => {
   // Static full-access menu for superadmin
   const menuItems = [
     {
-      id: "BUSINESS_MANAGEMENT",
-      label: "Business Mngmnt",
-      icon: "ri-apps-2-line",
+      id: "DASHBOARD",
+      label: "Dashboard",
+      icon: "ri-dashboard-2-line",
+      link: "/dashboard",
+    },
+    {
+      id: "BUSINESS",
+      label: "Business",
+      icon: "ri-store-2-line",
       link: "/#",
-      stateVariables: menuStates["BUSINESS_MANAGEMENT"] || false,
+      stateVariables: menuStates["BUSINESS"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({
-          ...prev,
-          BUSINESS_MANAGEMENT: !prev.BUSINESS_MANAGEMENT,
-        }));
-        setIscurrentState("BUSINESS_MANAGEMENT");
+        setMenuStates((prev) => ({ ...prev, BUSINESS: !prev.BUSINESS }));
+        setIscurrentState("BUSINESS");
+        updateIconSidebar(e);
+      },
+      subItems: [
+
+        {
+          id: "BusinessCategories",
+          label: "Categories",
+          link: "/business/categories",
+          parentId: "BUSINESS",
+        },
+        {
+          id: "Businesses",
+          label: "Businesses",
+          link: "/business/list",
+          parentId: "BUSINESS",
+        },
+        {
+          id: "BusinessApproval",
+          label: "Approve Businesses",
+          link: "/business/approval",
+          parentId: "BUSINESS",
+        },
+        {
+          id: "Contracts",
+          label: "Contracts",
+          link: "/business/contracts",
+          parentId: "BUSINESS",
+        },
+        // {
+        //   id: "UploadContract",
+        //   label: "Upload Contract",
+        //   link: "/business/contracts/upload",
+        //   parentId: "BUSINESS",
+        // },
+      ],
+    },
+
+    // ✅ Reviews separated
+    {
+      id: "REVIEWS",
+      label: "Reviews",
+      icon: "ri-star-smile-line",
+      link: "/#",
+      stateVariables: menuStates["REVIEWS"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, REVIEWS: !prev.REVIEWS }));
+        setIscurrentState("REVIEWS");
         updateIconSidebar(e);
       },
       subItems: [
         {
-          id: "Businesses",
-          label: "Categories",
-          link: "/business-management/categories",
-          parentId: "BUSINESS_MANAGEMENT",
-        },
-
-        {
-          id: "Businesses",
-          label: "Businesses",
-          link: "/buiness-management/businsesses",
-          parentId: "BUSINESS_MANAGEMENT",
-        },
-
-        {
-          id: "uploadContract",
-          label: "Upload Contract",
-          link: "/business-management/upload-contract",
-          parentId: "BUSINESS_MANAGEMENT",
-        },
-
-        {
-          id: "approveCusiness",
-          label: "approve business",
-          link: "/business-management/approve-business",
-          parentId: "BUSINESS_MANAGEMENT",
-        },
-        {
           id: "BusinessReviews",
-          label: "Reviews",
-          link: "/business-management/reviews",
-          parentId: "BUSINESS_MANAGEMENT",
+          label: "All Reviews",
+          link: "/reviews",
+          parentId: "REVIEWS",
         },
         {
           id: "ReviewRequests",
-          label: "Review Requests",
-          link: "/business-management/review-requests",
-          parentId: "BUSINESS_MANAGEMENT",
+          label: "Featured Review Requests",
+          link: "/reviews/feature-requests",
+          parentId: "REVIEWS",
         },
+        // {
+        //   id: "Moderation",
+        //   label: "Moderation",
+        //   link: "/reviews/moderation",
+        //   parentId: "REVIEWS",
+        // },
       ],
     },
 
     {
-      id: "CONTENT_MANAGEMENT",
-      label: "Content Mngmnt",
-      icon: "ri-apps-2-line",
+      id: "CONTENT",
+      label: "Content",
+      icon: "ri-file-list-2-line",
       link: "/#",
-      stateVariables: menuStates["CONTENT_MANAGEMENT"] || false,
+      stateVariables: menuStates["CONTENT"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({
-          ...prev,
-          CONTENT_MANAGEMENT: !prev.CONTENT_MANAGEMENT,
-        }));
-        setIscurrentState("CONTENT_MANAGEMENT");
+        setMenuStates((prev) => ({ ...prev, CONTENT: !prev.CONTENT }));
+        setIscurrentState("CONTENT");
         updateIconSidebar(e);
       },
       subItems: [
         {
-          id: "surplusPackages",
-          label: "surplusPackages",
-          link: "/content-management/packages",
-          parentId: "CONTENT_MANAGEMENT",
+          id: "Packages",
+          label: "Packages",
+          link: "/content/packages",
+          parentId: "CONTENT",
         },
       ],
     },
@@ -181,7 +208,7 @@ const Navdata = () => {
     {
       id: "ORDERS",
       label: "Orders",
-      icon: "ri-apps-2-line",
+      icon: "ri-shopping-bag-3-line",
       link: "/#",
       stateVariables: menuStates["ORDERS"] || false,
       click: function (e) {
@@ -192,46 +219,181 @@ const Navdata = () => {
       },
       subItems: [
         {
-          id: "pendingOrders",
-          label: "Orders",
-          link: "/orders/manage-pending-orders",
+          id: "ManageOrders",
+          label: "Manage Orders",
+          link: "/orders",
           parentId: "ORDERS",
         },
-
         {
           id: "OrderHistory",
           label: "Order History",
-          link: "/orders/order-history",
+          link: "/orders/history",
           parentId: "ORDERS",
         },
       ],
     },
 
     {
-      id: "USER_MANAGEMENT",
-      label: "User Mngmnt",
-      icon: "ri-apps-2-line",
+      id: "USERS",
+      label: "Users",
+      icon: "ri-team-line",
       link: "/#",
-      stateVariables: menuStates["USER_MANAGEMENT"] || false,
+      stateVariables: menuStates["USERS"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({
-          ...prev,
-          USER_MANAGEMENT: !prev.USER_MANAGEMENT,
-        }));
-        setIscurrentState("USER_MANAGEMENT");
+        setMenuStates((prev) => ({ ...prev, USERS: !prev.USERS }));
+        setIscurrentState("USERS");
         updateIconSidebar(e);
       },
       subItems: [
         {
-          id: "Staff_Accounts",
+          id: "StaffAccounts",
           label: "Staff Accounts",
-          link: "/user-management/staff-accounts",
-          parentId: "USER_MANAGEMENT",
+          link: "/users/staff",
+          parentId: "USERS",
         },
       ],
     },
   ];
+
+  // const menuItems = [
+  //   {
+  //     id: "BUSINESS_MANAGEMENT",
+  //     label: "Business Mngmnt",
+  //     icon: "ri-apps-2-line",
+  //     link: "/#",
+  //     stateVariables: menuStates["BUSINESS_MANAGEMENT"] || false,
+  //     click: function (e) {
+  //       e.preventDefault();
+  //       setMenuStates((prev) => ({
+  //         ...prev,
+  //         BUSINESS_MANAGEMENT: !prev.BUSINESS_MANAGEMENT,
+  //       }));
+  //       setIscurrentState("BUSINESS_MANAGEMENT");
+  //       updateIconSidebar(e);
+  //     },
+  //     subItems: [
+  //       {
+  //         id: "Businesses",
+  //         label: "Categories",
+  //         link: "/business-management/categories",
+  //         parentId: "BUSINESS_MANAGEMENT",
+  //       },
+
+  //       {
+  //         id: "Businesses",
+  //         label: "Businesses",
+  //         link: "/buiness-management/businsesses",
+  //         parentId: "BUSINESS_MANAGEMENT",
+  //       },
+
+  //       {
+  //         id: "uploadContract",
+  //         label: "Upload Contract",
+  //         link: "/business-management/upload-contract",
+  //         parentId: "BUSINESS_MANAGEMENT",
+  //       },
+
+  //       {
+  //         id: "approveCusiness",
+  //         label: "approve business",
+  //         link: "/business-management/approve-business",
+  //         parentId: "BUSINESS_MANAGEMENT",
+  //       },
+  //       {
+  //         id: "BusinessReviews",
+  //         label: "Reviews",
+  //         link: "/business-management/reviews",
+  //         parentId: "BUSINESS_MANAGEMENT",
+  //       },
+  //       {
+  //         id: "ReviewRequests",
+  //         label: "Review Requests",
+  //         link: "/business-management/review-requests",
+  //         parentId: "BUSINESS_MANAGEMENT",
+  //       },
+  //     ],
+  //   },
+
+  //   {
+  //     id: "CONTENT_MANAGEMENT",
+  //     label: "Content Mngmnt",
+  //     icon: "ri-apps-2-line",
+  //     link: "/#",
+  //     stateVariables: menuStates["CONTENT_MANAGEMENT"] || false,
+  //     click: function (e) {
+  //       e.preventDefault();
+  //       setMenuStates((prev) => ({
+  //         ...prev,
+  //         CONTENT_MANAGEMENT: !prev.CONTENT_MANAGEMENT,
+  //       }));
+  //       setIscurrentState("CONTENT_MANAGEMENT");
+  //       updateIconSidebar(e);
+  //     },
+  //     subItems: [
+  //       {
+  //         id: "surplusPackages",
+  //         label: "surplusPackages",
+  //         link: "/content-management/packages",
+  //         parentId: "CONTENT_MANAGEMENT",
+  //       },
+  //     ],
+  //   },
+
+  //   {
+  //     id: "ORDERS",
+  //     label: "Orders",
+  //     icon: "ri-apps-2-line",
+  //     link: "/#",
+  //     stateVariables: menuStates["ORDERS"] || false,
+  //     click: function (e) {
+  //       e.preventDefault();
+  //       setMenuStates((prev) => ({ ...prev, ORDERS: !prev.ORDERS }));
+  //       setIscurrentState("ORDERS");
+  //       updateIconSidebar(e);
+  //     },
+  //     subItems: [
+  //       {
+  //         id: "pendingOrders",
+  //         label: "Orders",
+  //         link: "/orders/manage-pending-orders",
+  //         parentId: "ORDERS",
+  //       },
+
+  //       {
+  //         id: "OrderHistory",
+  //         label: "Order History",
+  //         link: "/orders/order-history",
+  //         parentId: "ORDERS",
+  //       },
+  //     ],
+  //   },
+
+  //   {
+  //     id: "USER_MANAGEMENT",
+  //     label: "User Mngmnt",
+  //     icon: "ri-apps-2-line",
+  //     link: "/#",
+  //     stateVariables: menuStates["USER_MANAGEMENT"] || false,
+  //     click: function (e) {
+  //       e.preventDefault();
+  //       setMenuStates((prev) => ({
+  //         ...prev,
+  //         USER_MANAGEMENT: !prev.USER_MANAGEMENT,
+  //       }));
+  //       setIscurrentState("USER_MANAGEMENT");
+  //       updateIconSidebar(e);
+  //     },
+  //     subItems: [
+  //       {
+  //         id: "Staff_Accounts",
+  //         label: "Staff Accounts",
+  //         link: "/user-management/staff-accounts",
+  //         parentId: "USER_MANAGEMENT",
+  //       },
+  //     ],
+  //   },
+  // ];
 
   // console.log("retreivced data is:", retreivedMenus);
   const dynamicMenu = retreivedMenus.map((item) => {

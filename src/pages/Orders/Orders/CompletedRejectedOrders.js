@@ -444,7 +444,7 @@ const CompletedRejectedOrdersPage = () => {
     return (
         <div className="page-content">
             <Container fluid>
-                <BreadCrumb title="Order History" pageTitle="Order Management" />
+                <BreadCrumb title="Order History" pageTitle="Orders" />
 
                 {/* Stats Cards */}
                 <Row className="mb-4">

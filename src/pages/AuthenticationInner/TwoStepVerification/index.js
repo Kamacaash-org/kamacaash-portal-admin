@@ -20,7 +20,7 @@ const TwosVerify = () => {
             } else {
                 getInputElement(index).blur();
                 // Submit code
-                navigate('/business-management/categories')
+                navigate('/business/categories')
 
                 console.log('submit code');
             }
