@@ -70,6 +70,8 @@ export const BusinessAPI = {
 
 export const StaffsAPI = makeCRUD(url.STAFFS);
 
+export const toggleStaff2FA = (enabled) => api.patch(url.TOGGLE_2FA, { enabled });
+
 export const Surplus_PackageAPI = {
   list: (id) => api.get(url.SURPLUS_PACKAGE, { businessId: id }),
   delete: (id) => api.delete(`${url.SURPLUS_PACKAGE}/${id}`),

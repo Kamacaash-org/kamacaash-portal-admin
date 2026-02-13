@@ -17,18 +17,77 @@ import {
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import Loader from "../../../Components/Common/Loader";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
-import { getStaffProfile } from "../../../helpers/backend_helper";
+import { getStaffProfile, toggleStaff2FA } from "../../../helpers/backend_helper";
+
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { updateStaff } from "../../../slices/thunks";
+import { useDispatch } from "react-redux";
+import { toast } from "react-toastify";
+import {
+  Modal,
+  ModalHeader,
+  ModalBody,
+  Form,
+  Label,
+  Input,
+  FormFeedback,
+  ModalFooter
+} from "reactstrap";
 
 const StaffProfile = () => {
   document.title = "Staff Profile | Kamacash";
 
+  const dispatch = useDispatch();
   const authUser = useAuthUser();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
 
   const staffId = authUser?.staffId;
+
+  // Validation Schema
+  const validationSchema = Yup.object({
+    firstName: Yup.string().required("First Name is required"),
+    lastName: Yup.string().required("Last Name is required"),
+    phone: Yup.string().required("Phone is required"),
+    countryCode: Yup.string(),
+    username: Yup.string().required("Username is required"),
+    email: Yup.string().email("Invalid email").required("Email is required"),
+  });
+
+  const validation = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      firstName: profile?.firstName || "",
+      lastName: profile?.lastName || "",
+      phone: profile?.phone || "",
+      countryCode: profile?.countryCode || "+1",
+      username: profile?.username || "",
+      email: profile?.email || "",
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      try {
+        const updateData = {
+          _id: staffId,
+          ...values,
+        };
+        await dispatch(updateStaff(updateData));
+        toast.success("Profile updated successfully");
+        setIsEdit(false);
+        // Refresh profile data
+        const freshProfile = await getStaffProfile(staffId);
+        if (freshProfile?.success) {
+          setProfile(freshProfile.data);
+        }
+      } catch (err) {
+        toast.error("Failed to update profile");
+        console.error(err);
+      }
+    },
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -183,6 +242,12 @@ const StaffProfile = () => {
     return score;
   }, [profile]);
 
+  const toggleEdit = () => {
+    setIsEdit(!isEdit);
+    if (!isEdit) validation.resetForm();
+  };
+
+
   return (
     <div className="page-content">
       <Container fluid>
@@ -206,7 +271,7 @@ const StaffProfile = () => {
                   background: "linear-gradient(135deg, #338427 0%, #E36814 100%)",
                 }}
               >
-                {/* Decorative Pattern */}
+                {/* ... decorative svg ... */}
                 <svg className="position-absolute w-100 h-100" preserveAspectRatio="none">
                   <defs>
                     <pattern id="pattern-1" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -215,9 +280,16 @@ const StaffProfile = () => {
                   </defs>
                   <rect x="0" y="0" width="100%" height="100%" fill="url(#pattern-1)" />
                 </svg>
+
+                <div className="position-absolute top-0 end-0 p-3">
+                  <Button color="light" size="sm" onClick={toggleEdit}>
+                    <i className="ri-edit-line me-1"></i> Edit Profile
+                  </Button>
+                </div>
               </div>
 
               <CardBody className="pt-0">
+                {/* ... existing card body content ... */}
                 <div className="d-flex flex-wrap align-items-end justify-content-between">
                   <div className="d-flex align-items-end gap-4">
                     {/* Avatar with ring */}
@@ -265,8 +337,9 @@ const StaffProfile = () => {
               </CardBody>
             </Card>
 
-            {/* Stats Cards */}
+            {/* ... Rest of existing JSX ... */}
             <Row className="g-4 mb-4">
+              {/* ... Stats Cards ... */}
               <Col xl={3} md={6}>
                 <Card className="border-0 shadow-sm h-100">
                   <CardBody>
@@ -356,8 +429,8 @@ const StaffProfile = () => {
 
             <Row className="g-4">
               {/* Left Column - Profile Details */}
-              <Col xl={8}>
-                <Card className="border-0 shadow-sm">
+              <Col xl={6}>
+                <Card className="border-0 shadow-sm h-100">
                   <CardHeader className="bg-transparent border-0 pt-4 px-4">
                     <div className="d-flex align-items-center">
                       <div className="flex-shrink-0">
@@ -448,91 +521,48 @@ const StaffProfile = () => {
                           </div>
                         </div>
                       </Col>
+                      <Col md={12}>
+                        <div className="border-top pt-3 mt-2">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div>
+                              <h6 className="mb-1"><i className="ri-shield-keyhole-line me-1"></i> Two-Factor Authentication</h6>
+                              <p className="text-muted small mb-0">Secure your account with 2FA</p>
+                            </div>
+                            <div className="form-check form-switch form-switch-lg">
+                              <Input
+                                className="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                id="flexSwitchCheckDefault"
+                                checked={profile?.twoFactorEnabled || false}
+                                onChange={async (e) => {
+                                  const newStatus = e.target.checked;
+                                  try {
+                                    await toggleStaff2FA(newStatus);
+                                    toast.success(`Two-Factor Authentication ${newStatus ? 'enabled' : 'disabled'}`);
+                                    setProfile(prev => ({ ...prev, twoFactorEnabled: newStatus }));
+                                  } catch (err) {
+                                    toast.error("Failed to update 2FA status");
+                                    // Revert switch if failed ?? actually better to just not update state if failed, but here we update state after success
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </Col>
                     </Row>
                   </CardBody>
                 </Card>
               </Col>
 
-              {/* Right Column - Security & Activity */}
-              <Col xl={4}>
-                {/* Security Score Card */}
-                <Card className="border-0 shadow-sm mb-4">
-                  <CardBody className="p-4">
-                    <div className="d-flex align-items-center mb-3">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-light text-warning rounded-circle">
-                            <i className="ri-shield-line fs-4"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h6 className="mb-1">Security Score</h6>
-                        <p className="text-muted small mb-0">Based on account security settings</p>
-                      </div>
-                    </div>
+              {/* Security & Activity Col -> Now Activity Timeline Only */}
+              <Col xl={6}>
+                {/* Security Score - HIDDEN as per request */}
+                {/* <Card className="border-0 shadow-sm mb-4"> ... </Card> */}
 
-                    <div className="text-center mb-3">
-                      <div className="position-relative d-inline-block">
-                        <div className="avatar-xl">
-                          <div className="avatar-title bg-light rounded-circle">
-                            <span className="fs-2 fw-bold">{getSecurityScore}</span>
-                            <span className="fs-6 text-muted">/100</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Progress
-                      value={getSecurityScore}
-                      color={getSecurityScore >= 70 ? "success" : getSecurityScore >= 40 ? "warning" : "danger"}
-                      className="rounded-pill"
-                      style={{ height: "8px" }}
-                    />
-
-                    <div className="d-flex justify-content-between mt-2">
-                      <small className="text-muted">Weak</small>
-                      <small className="text-muted">Strong</small>
-                    </div>
-                  </CardBody>
-                </Card>
-
-                {/* Security Settings Card */}
-                <Card className="border-0 shadow-sm mb-4">
-                  <CardHeader className="bg-transparent border-0 pt-4 px-4">
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-light text-success rounded-circle">
-                            <i className="ri-shield-check-line fs-4"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h6 className="mb-1">Security Settings</h6>
-                        <p className="text-muted small mb-0">Account protection features</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardBody className="p-4">
-                    <ListGroup flush className="border-0">
-                      <ListGroupItem className="d-flex justify-content-between align-items-center px-0 border-0 bg-transparent">
-                        <div>
-                          <span className="fw-medium">Two-Factor Authentication</span>
-                          <div className="text-muted small">Additional login protection</div>
-                        </div>
-                        {statusBadge(profile?.twoFactorEnabled, "Enabled", "Disabled")}
-                      </ListGroupItem>
-                      <ListGroupItem className="d-flex justify-content-between align-items-center px-0 border-0 bg-transparent pt-3">
-                        <div>
-                          <span className="fw-medium">Admin Approval</span>
-                          <div className="text-muted small">Profile verification status</div>
-                        </div>
-                        {statusBadge(profile?.isAdminApproved, "Approved", "Pending")}
-                      </ListGroupItem>
-                    </ListGroup>
-                  </CardBody>
-                </Card>
+                {/* Security Settings - HIDDEN as per request */}
+                {/* <Card className="border-0 shadow-sm mb-4"> ... </Card> */}
 
                 {/* Activity Timeline Card */}
                 <Card className="border-0 shadow-sm">
@@ -598,6 +628,128 @@ const StaffProfile = () => {
             </Row>
           </>
         )}
+
+        {/* Edit Profile Modal */}
+        <Modal isOpen={isEdit} toggle={toggleEdit} centered>
+          <ModalHeader toggle={toggleEdit}>Edit Profile</ModalHeader>
+          <Form onSubmit={(e) => {
+            e.preventDefault();
+            validation.handleSubmit();
+            return false;
+          }}>
+            <ModalBody>
+              <Row>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label htmlFor="username" className="form-label">Username</Label>
+                    <Input
+                      id="username"
+                      name="username"
+                      type="text"
+                      className="form-control"
+                      onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      value={validation.values.username || ""}
+                      invalid={validation.touched.username && validation.errors.username ? true : false}
+                    />
+                    {validation.touched.username && validation.errors.username ? (
+                      <FormFeedback type="invalid">{validation.errors.username}</FormFeedback>
+                    ) : null}
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label htmlFor="email" className="form-label">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      className="form-control"
+                      onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      value={validation.values.email || ""}
+                      invalid={validation.touched.email && validation.errors.email ? true : false}
+                    />
+                    {validation.touched.email && validation.errors.email ? (
+                      <FormFeedback type="invalid">{validation.errors.email}</FormFeedback>
+                    ) : null}
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label htmlFor="firstName" className="form-label">First Name</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      className="form-control"
+                      onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      value={validation.values.firstName || ""}
+                      invalid={validation.touched.firstName && validation.errors.firstName ? true : false}
+                    />
+                    {validation.touched.firstName && validation.errors.firstName ? (
+                      <FormFeedback type="invalid">{validation.errors.firstName}</FormFeedback>
+                    ) : null}
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label htmlFor="lastName" className="form-label">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      className="form-control"
+                      onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      value={validation.values.lastName || ""}
+                      invalid={validation.touched.lastName && validation.errors.lastName ? true : false}
+                    />
+                    {validation.touched.lastName && validation.errors.lastName ? (
+                      <FormFeedback type="invalid">{validation.errors.lastName}</FormFeedback>
+                    ) : null}
+                  </div>
+                </Col>
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Label htmlFor="phone" className="form-label">Phone Number</Label>
+                    <div className="input-group">
+                      <Input
+                        id="countryCode"
+                        name="countryCode"
+                        type="text"
+                        className="form-control"
+                        style={{ maxWidth: '80px' }}
+                        onChange={validation.handleChange}
+                        onBlur={validation.handleBlur}
+                        value={validation.values.countryCode || ""}
+                      />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="text"
+                        className="form-control"
+                        onChange={validation.handleChange}
+                        onBlur={validation.handleBlur}
+                        value={validation.values.phone || ""}
+                        invalid={validation.touched.phone && validation.errors.phone ? true : false}
+                      />
+                      {validation.touched.phone && validation.errors.phone ? (
+                        <FormFeedback type="invalid">{validation.errors.phone}</FormFeedback>
+                      ) : null}
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </ModalBody>
+            <ModalFooter>
+              <Button color="light" onClick={toggleEdit}>Cancel</Button>
+              <Button color="primary" type="submit">Save Changes</Button>
+            </ModalFooter>
+          </Form>
+        </Modal>
+
       </Container>
 
       <style jsx>{`

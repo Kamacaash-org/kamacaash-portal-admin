@@ -29,7 +29,6 @@ import {
     createOrUpdateSurplusPackage as onCreateOrUpdateSurplusPackage,
     deleteSurplusPackage as onDeleteSurplusPackage,
     activateSurplusPackage as onActivateSurplusPackage,
-    getBusinessesData as onGetBusinessesData
 } from "../../../slices/thunks";
 
 // Formik
@@ -50,15 +49,8 @@ const SurplusPackages = () => {
         (packagesData) => packagesData.packagesData
     );
 
-    const selectBusinessesData = createSelector(
-        (state) => state.BusinessManagement,
-        (businessesData) => businessesData.businessesData
-    );
-
     const packagesData = useSelector(selectPackagesData);
-    const businessesData = useSelector(selectBusinessesData);
     const [packagesList, setPackagesList] = useState([]);
-    const [businessesList, setBusinessesList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState(false);
     const [viewModal, setViewModal] = useState(false);
@@ -156,30 +148,15 @@ const SurplusPackages = () => {
         }
     }, [dispatch]);
 
-    // Fetch businesses
-    const fetchBusinesses = useCallback(async () => {
-        try {
-            await Promise.all([
-                dispatch(onGetBusinessesData())
-            ]);
-        } catch (error) {
-            console.error("Error loading data:", error);
-        }
-    }, [dispatch]);
-
     // Update data when changes
     useEffect(() => {
         fetchPackages();
-        fetchBusinesses();
-    }, [fetchPackages, fetchBusinesses]);
+    }, [fetchPackages]);
 
     useEffect(() => {
-        setPackagesList(packagesData?.packages || []);
+        setPackagesList(packagesData || []);
     }, [packagesData]);
 
-    useEffect(() => {
-        setBusinessesList(businessesData?.businesses || []);
-    }, [businessesData]);
 
     // Handle filter changes
     const handleFilterChange = (e) => {
@@ -393,12 +370,7 @@ const SurplusPackages = () => {
             // minWidth: '250px'
 
         },
-        {
-            name: 'Business',
-            selector: row => row.businessId?.businessName || 'N/A',
-            wrap: true,
 
-        },
         {
             name: 'Pricing',
             cell: row => (
@@ -611,25 +583,7 @@ const SurplusPackages = () => {
                                     />
                                 </FormGroup>
                             </Col>
-                            <Col md={3} style={{ display: "none" }}>
-                                <FormGroup className="mb-0">
-                                    <Label className="form-label">Business</Label>
-                                    <Select
-                                        options={businessesList.map(business => ({
-                                            value: business._id,
-                                            label: business.businessName
-                                        }))}
-                                        value={businessesList
-                                            .map(business => ({ value: business._id, label: business.businessName }))
-                                            .find(opt => opt.value === filters.businessId)}
-                                        onChange={(opt) => handleSelectFilterChange('businessId', opt)}
-                                        isClearable
-                                        placeholder="Select business..."
-                                        className="react-select"
-                                        classNamePrefix="select"
-                                    />
-                                </FormGroup>
-                            </Col>
+
                             <Col md={2} >
                                 <Button
                                     color="primary"
@@ -1099,10 +1053,10 @@ const SurplusPackages = () => {
                                 <hr className="my-4" />
 
                                 <Row>
-                                    <Col sm={6}>
+                                    {/* <Col sm={6}>
                                         <strong>Business:</strong>
                                         <div className="text-muted">{selectedPackage.businessId?.businessName || 'N/A'}</div>
-                                    </Col>
+                                    </Col> */}
                                     <Col sm={6}>
                                         <strong>Total Orders:</strong>
                                         <div className="text-muted">{selectedPackage.totalOrders || 0}</div>
