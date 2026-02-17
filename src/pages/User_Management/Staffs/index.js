@@ -157,7 +157,7 @@ const Staff = () => {
     const handleDeleteStaff = () => {
         if (selectedStaff) {
             // console.log("Deleting staff with id:", selectedStaff);
-            dispatch(onDeleteStaff(selectedStaff._id));
+            dispatch(onDeleteStaff(selectedStaff.id));
             setDeleteModal(false);
         }
     };
@@ -208,7 +208,7 @@ const Staff = () => {
             try {
                 if (isEdit) {
                     const updateStaffData = {
-                        _id: selectedStaff ? selectedStaff._id : 0,
+                        id: selectedStaff ? selectedStaff.id : 0,
                         ...values,
                         // Don't update password if not changed
                         // password: values.password || undefined
