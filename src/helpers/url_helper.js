@@ -1,4 +1,4 @@
-export const POST_LOGIN = "/auth/login";
+export const POST_LOGIN = "/staff/login";
 export const CHANGE_PASSWORD = "/staff/change-password";
 export const TOGGLE_2FA = "/staff/toggle-2fa";
 export const DASHBOARD_OVERVIEW = "/dashboard/overview";

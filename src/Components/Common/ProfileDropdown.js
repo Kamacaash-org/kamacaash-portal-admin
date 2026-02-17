@@ -35,8 +35,8 @@ const ProfileDropdown = () => {
   useEffect(() => {
     if (sessionStorage.getItem("authUser")) {
       const obj = JSON.parse(sessionStorage.getItem("authUser"));
-      const staffName = obj.data.staff.firstName || "Admin";
-      const staffRole = obj.data.staff.role || "Admin";
+      const staffName = obj.data.user.firstName || "Admin";
+      const staffRole = obj.data.user.role || "Admin";
 
       setUserName(staffName);
       setStaffRole(staffRole);

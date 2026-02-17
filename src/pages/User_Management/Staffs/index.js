@@ -122,12 +122,12 @@ const Staff = () => {
         return (
             (filters.search === '' ||
                 staff.username.toLowerCase().includes(filters.search.toLowerCase()) ||
-                staff.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
-                staff.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
+                staff.first_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                staff.last_name.toLowerCase().includes(filters.search.toLowerCase()) ||
                 staff.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-                staff.phone?.toLowerCase().includes(filters.search.toLowerCase())) &&
+                staff.phone_e164?.toLowerCase().includes(filters.search.toLowerCase())) &&
             (filters.status === '' ||
-                (filters.status === 'Active' ? staff.isActive : !staff.isActive)) &&
+                (filters.status === 'Active' ? staff.is_active : !staff.is_active)) &&
             (filters.role === '' || staff.role === filters.role) &&
             (filters.sex === '' || staff.sex === filters.sex)
         );
@@ -167,22 +167,22 @@ const Staff = () => {
     const validation = useFormik({
         enableReinitialize: true,
         initialValues: {
-            firstName: selectedStaff?.firstName || "",
-            lastName: selectedStaff?.lastName || "",
+            first_name: selectedStaff?.first_name || "",
+            last_name: selectedStaff?.last_name || "",
             email: selectedStaff?.email || "",
-            phone: selectedStaff?.phone || "",
+            phone_e164: selectedStaff?.phone_e164 || "",
             username: selectedStaff?.username || "",
             // password: "",
             title: selectedStaff?.title || "",
             sex: selectedStaff?.sex || "",
             role: selectedStaff?.role || "STAFF",
-            isActive: selectedStaff?.isActive ?? true
+            is_active: selectedStaff?.is_active ?? true
         },
         validationSchema: Yup.object({
-            firstName: Yup.string()
+            first_name: Yup.string()
                 .required("First name is required")
                 .trim(),
-            lastName: Yup.string()
+            last_name: Yup.string()
                 .required("Last name is required")
                 .trim(),
             email: Yup.string()
@@ -190,38 +190,18 @@ const Staff = () => {
                 .required("Email is required")
                 .trim()
                 .lowercase(),
-            phone: Yup.string()
-                .required("Phone number is required")
+            phone_e164: Yup.string()
+                .required("phone_e164 number is required")
                 .trim(),
             username: Yup.string()
                 .required("Username is required")
                 .trim()
                 .lowercase(),
-            // password: Yup.string()
-            //     .test(
-            //         'password-required',
-            //         'Password is required',
-            //         (value) => {
-            //             // For new staff, password is required
-            //             if (!isEdit) {
-            //                 return !!value && value.length >= 6;
-            //             }
-            //             // For editing, password is optional but if provided must be at least 6 chars
-            //             return !value || value.length >= 6;
-            //         }
-            //     )
-            //     .test(
-            //         'password-length',
-            //         'Password must be at least 6 characters',
-            //         (value) => {
-            //             // Only validate length if password is provided
-            //             return !value || value.length >= 6;
-            //         }
-            //     ),
+
             title: Yup.string().trim(),
             sex: Yup.string().required("Sex is required").trim(),
             role: Yup.string().required("Role is required"),
-            isActive: Yup.boolean()
+            is_active: Yup.boolean()
         }),
         onSubmit: async (values) => {
             setIsSubmitting(true);
@@ -265,7 +245,7 @@ const Staff = () => {
         },
         {
             name: 'Full Name',
-            selector: row => `${row.firstName} ${row.lastName}`,
+            selector: row => `${row.first_name} ${row.last_name}`,
             wrap: true,
         },
         {
@@ -274,8 +254,8 @@ const Staff = () => {
             wrap: true,
         },
         {
-            name: 'Phone',
-            selector: row => row.phone || '-',
+            name: 'phone_e164',
+            selector: row => row.phone_e164 || '-',
         },
         {
             name: 'Sex',
@@ -308,8 +288,8 @@ const Staff = () => {
         {
             name: 'Status',
             cell: row => (
-                <Badge color={row.isActive ? 'success' : 'danger'}>
-                    {row.isActive ? 'Active' : 'Inactive'}
+                <Badge color={row.is_active ? 'success' : 'danger'}>
+                    {row.is_active ? 'Active' : 'Inactive'}
                 </Badge>
             ),
         },
@@ -343,7 +323,7 @@ const Staff = () => {
                                     <Input
                                         type="text"
                                         name="search"
-                                        placeholder="Search by username, name, email or phone"
+                                        placeholder="Search by username, name, email or phone_e164"
                                         value={filters.search}
                                         onChange={handleFilterChange}
                                     />
@@ -430,28 +410,28 @@ const Staff = () => {
                                         <FormGroup>
                                             <Label>First Name <span className="text-danger">*</span></Label>
                                             <Input
-                                                name="firstName"
-                                                value={validation.values.firstName}
+                                                name="first_name"
+                                                value={validation.values.first_name}
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
-                                                invalid={validation.touched.firstName && !!validation.errors.firstName}
+                                                invalid={validation.touched.first_name && !!validation.errors.first_name}
                                                 placeholder="Enter first name"
                                             />
-                                            <FormFeedback>{validation.errors.firstName}</FormFeedback>
+                                            <FormFeedback>{validation.errors.first_name}</FormFeedback>
                                         </FormGroup>
                                     </Col>
                                     <Col md={6}>
                                         <FormGroup>
                                             <Label>Last Name <span className="text-danger">*</span></Label>
                                             <Input
-                                                name="lastName"
-                                                value={validation.values.lastName}
+                                                name="last_name"
+                                                value={validation.values.last_name}
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
-                                                invalid={validation.touched.lastName && !!validation.errors.lastName}
+                                                invalid={validation.touched.last_name && !!validation.errors.last_name}
                                                 placeholder="Enter last name"
                                             />
-                                            <FormFeedback>{validation.errors.lastName}</FormFeedback>
+                                            <FormFeedback>{validation.errors.last_name}</FormFeedback>
                                         </FormGroup>
                                     </Col>
                                 </Row>
@@ -474,16 +454,16 @@ const Staff = () => {
                                     </Col>
                                     <Col md={6}>
                                         <FormGroup>
-                                            <Label>Phone Number <span className="text-danger">*</span></Label>
+                                            <Label>phone_e164 Number <span className="text-danger">*</span></Label>
                                             <Input
-                                                name="phone"
-                                                value={validation.values.phone}
+                                                name="phone_e164"
+                                                value={validation.values.phone_e164}
                                                 onChange={validation.handleChange}
                                                 onBlur={validation.handleBlur}
-                                                invalid={validation.touched.phone && !!validation.errors.phone}
-                                                placeholder="Enter phone number"
+                                                invalid={validation.touched.phone_e164 && !!validation.errors.phone_e164}
+                                                placeholder="Enter phone_e164 number"
                                             />
-                                            <FormFeedback>{validation.errors.phone}</FormFeedback>
+                                            <FormFeedback>{validation.errors.phone_e164}</FormFeedback>
                                         </FormGroup>
                                     </Col>
                                 </Row>
@@ -597,12 +577,12 @@ const Staff = () => {
                                 <FormGroup check className="mt-3">
                                     <Input
                                         type="checkbox"
-                                        name="isActive"
-                                        checked={validation.values.isActive}
+                                        name="is_active"
+                                        checked={validation.values.is_active}
                                         onChange={validation.handleChange}
-                                        id="isActive"
+                                        id="is_active"
                                     />
-                                    <Label for="isActive" check>
+                                    <Label for="is_active" check>
                                         Active Staff Member
                                     </Label>
                                 </FormGroup>

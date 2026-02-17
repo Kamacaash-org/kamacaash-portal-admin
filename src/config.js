@@ -9,7 +9,7 @@ module.exports = {
   },
   api: {
     //LOCAL CONNECTION
-    API_URL: "http://localhost:3001/api/v1/admin",
+    API_URL: "http://localhost:5216/api/v1",
 
     // PRODUCTION CONNECTION
     // API_URL: "https://kamacaash-backend.onrender.com/api/v1/admin",

@@ -65,7 +65,8 @@ const Dashboard = () => {
 
   const authUser = useAuthUser();
   const obj = JSON.parse(sessionStorage.getItem("authUser"));
-  const staffName = obj.data.staff.firstName || "Admin";
+  console.log("Auth User from sessionStorage:", obj);
+  const staffName = obj.data.user.firstName || "Admin";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [overview, setOverview] = useState(defaultOverview);
