@@ -18,7 +18,10 @@ export const isUserAuthenticated = () => {
 const makeCRUD = (endpoint) => ({
   list: () => api.get(endpoint),
   create: (payload) => api.post(endpoint, payload),
-  update: (payload) => api.update(`${endpoint}/${payload._id}`, payload),
+  update: (payload) => {
+    const { id, ...data } = payload;
+    return api.update(`${endpoint}/${id}`, data);
+  },
   delete: (id) => api.delete(`${endpoint}/${id}`),
 });
 

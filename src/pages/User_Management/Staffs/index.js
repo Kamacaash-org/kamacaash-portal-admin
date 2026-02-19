@@ -173,7 +173,7 @@ const Staff = () => {
             phone_e164: selectedStaff?.phone_e164 || "",
             username: selectedStaff?.username || "",
             // password: "",
-            title: selectedStaff?.title || "",
+            // title: selectedStaff?.title || "",
             sex: selectedStaff?.sex || "",
             role: selectedStaff?.role || "STAFF",
             is_active: selectedStaff?.is_active ?? true
@@ -198,7 +198,7 @@ const Staff = () => {
                 .trim()
                 .lowercase(),
 
-            title: Yup.string().trim(),
+            // title: Yup.string().trim(),
             sex: Yup.string().required("Sex is required").trim(),
             role: Yup.string().required("Role is required"),
             is_active: Yup.boolean()
@@ -208,7 +208,7 @@ const Staff = () => {
             try {
                 if (isEdit) {
                     const updateStaffData = {
-                        id: selectedStaff ? selectedStaff.id : 0,
+                        id: selectedStaff.id,
                         ...values,
                         // Don't update password if not changed
                         // password: values.password || undefined
@@ -542,7 +542,7 @@ const Staff = () => {
                                 )} */}
 
                                 <Row>
-                                    <Col md={6}>
+                                    {/* <Col md={6}>
                                         <FormGroup>
                                             <Label>Title/Position</Label>
                                             <Input
@@ -555,7 +555,7 @@ const Staff = () => {
                                             />
                                             <FormFeedback>{validation.errors.title}</FormFeedback>
                                         </FormGroup>
-                                    </Col>
+                                    </Col> */}
                                     <Col md={6}>
                                         <FormGroup>
                                             <Label>Sex <span className="text-danger">*</span></Label>
