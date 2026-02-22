@@ -50,7 +50,20 @@ export const rejectReviewRequest = (requestId, payload) =>
 
 // // ==================================  URL ===================================================
 
-export const SurPlusCategoryAPI = makeCRUD(url.SURPLUS_CATEGORY);
+export const SurPlusCategoryAPI = {
+  list: () => api.get(url.CATEGORIES),
+  create: (payload) =>
+    axios.post(url.CATEGORIES, payload, {
+      headers: { "Content-Type": undefined },
+    }),
+  update: (payload) => {
+    const { id, formData } = payload;
+    return axios.put(`${url.CATEGORIES}/${id}`, formData, {
+      headers: { "Content-Type": undefined },
+    });
+  },
+  delete: (id) => api.delete(`${url.CATEGORIES}/${id}`),
+};
 // Business API with extra endpoints
 export const BusinessAPI = {
   list: () => api.get(url.BUSINESS),

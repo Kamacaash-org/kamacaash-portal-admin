@@ -19,6 +19,7 @@ export const BUSINESS = "/businesses";
 export const STAFFS = "/staff";
 export const SURPLUS_PACKAGE = "/surplus-packages";
 export const COUNTRIES = "/countries";
+export const CATEGORIES = "/categories";
 
 export const ORDERS = "/orders";
 
