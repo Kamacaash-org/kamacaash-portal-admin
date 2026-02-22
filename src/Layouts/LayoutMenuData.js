@@ -114,7 +114,6 @@ const Navdata = () => {
         updateIconSidebar(e);
       },
       subItems: [
-
         {
           id: "BusinessCategories",
           label: "Categories",
@@ -251,6 +250,28 @@ const Navdata = () => {
           label: "Staff Accounts",
           link: "/users/staff",
           parentId: "USERS",
+        },
+      ],
+    },
+
+    {
+      id: "SETTINGS",
+      label: "Settings",
+      icon: "ri-settings-3-line",
+      link: "/#",
+      stateVariables: menuStates["SETTINGS"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, SETTINGS: !prev.SETTINGS }));
+        setIscurrentState("SETTINGS");
+        updateIconSidebar(e);
+      },
+      subItems: [
+        {
+          id: "SettingsCountry",
+          label: "Country",
+          link: "/settings/country",
+          parentId: "SETTINGS",
         },
       ],
     },

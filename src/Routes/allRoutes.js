@@ -16,6 +16,7 @@ import StaffProfile from "../pages/User_Management/StaffProfile";
 import Packages from "../pages/Content_Management/SurplusPackages";
 import UploadContract from "../pages/Business_Management/UploadContract";
 import ApproveBusiness from "../pages/Business_Management/ApproveBusiness";
+import Country from "../pages/Settings/Country";
 
 import PendingOrders from "../pages/Orders/Orders/index";
 import CompletedRejectedOrders from "../pages/Orders/Orders/CompletedRejectedOrders";
@@ -35,7 +36,10 @@ const authProtectedRoutes = [
   // Business
   { path: "/business/categories", component: <Categories /> },
   { path: "/business/list", component: <Business /> },
-  { path: "/business/profile-settings", component: <BusinessProfileSettings /> },
+  {
+    path: "/business/profile-settings",
+    component: <BusinessProfileSettings />,
+  },
 
   // Reviews (separated)
   { path: "/reviews", component: <BusinessReviews /> },
@@ -46,7 +50,7 @@ const authProtectedRoutes = [
   { path: "/business/approval", component: <ApproveBusiness /> },
 
   // Orders
-  { path: "/orders", component: <PendingOrders /> },          // manage orders
+  { path: "/orders", component: <PendingOrders /> }, // manage orders
   { path: "/orders/history", component: <CompletedRejectedOrders /> },
 
   // Users
@@ -55,6 +59,9 @@ const authProtectedRoutes = [
 
   // Content
   { path: "/content/packages", component: <Packages /> },
+
+  // Settings
+  { path: "/settings/country", component: <Country /> },
 
   // Default
   {

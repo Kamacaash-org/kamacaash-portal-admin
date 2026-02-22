@@ -72,8 +72,10 @@ export const BusinessAPI = {
 };
 
 export const StaffsAPI = makeCRUD(url.STAFFS);
+export const CountriesAPI = makeCRUD(url.COUNTRIES);
 
-export const toggleStaff2FA = (enabled) => api.patch(url.TOGGLE_2FA, { enabled });
+export const toggleStaff2FA = (enabled) =>
+  api.patch(url.TOGGLE_2FA, { enabled });
 
 export const Surplus_PackageAPI = {
   list: (id) => api.get(url.SURPLUS_PACKAGE, { businessId: id }),
