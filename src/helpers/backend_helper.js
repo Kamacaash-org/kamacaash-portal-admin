@@ -67,15 +67,14 @@ export const SurPlusCategoryAPI = {
 // Business API with extra endpoints
 export const BusinessAPI = {
   list: () => api.get(url.BUSINESS),
-  createOrUpdate: (payload) =>
-    axios.post(url.BUSINESS, payload, {
-      headers: { "Content-Type": undefined },
-    }),
+  create: (payload) => api.post(url.BUSINESS, payload),
+  update: ({ id, payload }) => api.update(`${url.BUSINESS}/${id}`, payload),
+  delete: (id) => api.delete(`${url.BUSINESS}/${id}`),
 
   // extra endpoints
   archive: (id) => api.post(`${url.BUSINESS}/${id}/archive`),
-  toggleStatus: (payload) =>
-    api.patch(`${url.BUSINESS}/${payload.id}/toggle-status`, payload),
+  toggleStatus: ({ id, is_active }) =>
+    api.update(`${url.BUSINESS}/${id}`, { is_active }),
   approve: (id) => api.post(`${url.BUSINESS}/${id}/approve`),
   reject: (id) => api.post(`${url.BUSINESS}/${id}/reject`),
   signContract: (payload) =>

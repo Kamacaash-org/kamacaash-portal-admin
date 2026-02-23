@@ -59,7 +59,10 @@ export const {
 
 export const createOrUpdateBusiness = createAsyncThunk("business-management/business/createOrUpdateBusiness", async (payload, { dispatch }) => {
     try {
-        const res = await BusinessAPI.createOrUpdate(payload);
+        const isUpdate = !!payload?.id;
+        const res = isUpdate
+            ? await BusinessAPI.update({ id: payload.id, payload: payload.data })
+            : await BusinessAPI.create(payload?.data ?? payload);
         if (!res.success) throw res;
         toast.success(res.message);
 
@@ -81,7 +84,7 @@ export const createOrUpdateBusiness = createAsyncThunk("business-management/busi
 // register custom endpoints separately
 export const archiveBusiness = createAsyncThunk("business-management/business/archive", async (id, { dispatch }) => {
     try {
-        const res = await BusinessAPI.archive(id);
+        const res = await BusinessAPI.delete(id);
         if (!res.success) throw res;
         toast.success(res.message);
         dispatch(getBusinessesData());

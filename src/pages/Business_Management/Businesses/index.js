@@ -47,7 +47,7 @@ const selectBusinessesData = createSelector(
 );
 const selectCategoriesData = createSelector(
     (state) => state.BusinessManagement,
-    (categoriesData) => categoriesData.categoriesData.categories || []
+    (categoriesData) => categoriesData.categoriesData || []
 );
 
 const selectStaffData = createSelector(
@@ -67,6 +67,238 @@ window.ResizeObserver = class extends resizeObserverErr {
             }
         });
     }
+};
+
+const dayMappings = [
+    { key: 'mon', day_of_week: 1 },
+    { key: 'tue', day_of_week: 2 },
+    { key: 'wed', day_of_week: 3 },
+    { key: 'thur', day_of_week: 4 },
+    { key: 'fri', day_of_week: 5 },
+    { key: 'sat', day_of_week: 6 },
+    { key: 'sun', day_of_week: 7 }
+];
+
+const defaultOpeningHours = {
+    mon: { open: '08:00', close: '20:00' },
+    tue: { open: '08:00', close: '20:00' },
+    wed: { open: '08:00', close: '20:00' },
+    thur: { open: '08:00', close: '20:00' },
+    fri: { open: '14:00', close: '20:00' },
+    sat: { open: '08:00', close: '20:00' },
+    sun: { open: '08:00', close: '18:00' }
+};
+
+const getEntityId = (entity) => entity?._id || entity?.id || '';
+
+const normalizeList = (payload, keys = []) => {
+    if (Array.isArray(payload)) return payload;
+    for (const key of keys) {
+        if (Array.isArray(payload?.[key])) return payload[key];
+    }
+    return [];
+};
+
+const buildInitialFormData = () => ({
+    ownerName: '',
+    businessName: '',
+    category: '',
+    primaryStaffAccount: '',
+    countryCode: '+252',
+    phoneNumber: '',
+    email: '',
+    description: '',
+    logo: '',
+    bannerImage: '',
+    licenseDocument: '',
+    address: {
+        street: '',
+        city: '',
+        state: '',
+        country: 'Somalia',
+        postcode: '',
+        coordinates: {
+            type: 'Point',
+            coordinates: [0, 0]
+        }
+    },
+    openingHours: { ...defaultOpeningHours },
+    contract: {
+        payoutSchedule: 'WEEKLY'
+    },
+    bankAccountDetails: {
+        accountHolderName: '',
+        sortCode: '',
+        accountNumber: ''
+    },
+    taxId: '',
+    registrationNumber: '',
+    defaultLanguage: 'en',
+    currency: 'USD',
+    timeZone: 'Africa/Mogadishu'
+});
+
+const splitPhone = (phoneE164 = '') => {
+    if (!phoneE164 || typeof phoneE164 !== 'string') {
+        return { countryCode: '+252', phoneNumber: '' };
+    }
+
+    const cleaned = phoneE164.trim();
+    if (!cleaned.startsWith('+')) {
+        return { countryCode: '+252', phoneNumber: cleaned };
+    }
+
+    const match = cleaned.match(/^\+\d{1,4}/);
+    const countryCode = match?.[0] || '+252';
+    const phoneNumber = cleaned.replace(countryCode, '').trim();
+    return { countryCode, phoneNumber };
+};
+
+const normalizeBusiness = (business = {}) => {
+    const id = getEntityId(business);
+    const openingHours = { ...defaultOpeningHours };
+
+    if (Array.isArray(business.opening_hours)) {
+        business.opening_hours.forEach((entry) => {
+            const mapping = dayMappings.find((day) => day.day_of_week === entry.day_of_week);
+            if (mapping) {
+                openingHours[mapping.key] = {
+                    open: entry.opens_at || defaultOpeningHours[mapping.key].open,
+                    close: entry.closes_at || defaultOpeningHours[mapping.key].close
+                };
+            }
+        });
+    } else if (business.openingHours) {
+        Object.keys(business.openingHours).forEach((key) => {
+            if (openingHours[key]) {
+                openingHours[key] = {
+                    open: business.openingHours[key]?.open || openingHours[key].open,
+                    close: business.openingHours[key]?.close || openingHours[key].close
+                };
+            }
+        });
+    }
+
+    const resolvedCategoryId = typeof business.category === 'object'
+        ? getEntityId(business.category)
+        : (business.category_id || business.category || '');
+
+    const resolvedCategoryName = business.category?.name || business.category_name || business.category || '';
+    const staffId = business.primary_staff_id || getEntityId(business.primaryStaffAccount) || getEntityId(business.primary_staff);
+    const { countryCode, phoneNumber } = splitPhone(business.phone_e164 || `${business.countryCode || ''}${business.phoneNumber || ''}`);
+
+    return {
+        ...business,
+        id,
+        _id: id,
+        ownerName: business.owner_name || business.ownerName || '',
+        businessName: business.display_name || business.legal_name || business.businessName || '',
+        category: resolvedCategoryId,
+        categoryName: resolvedCategoryName,
+        primaryStaffAccount: { _id: staffId },
+        countryCode,
+        phoneNumber,
+        email: business.email || '',
+        description: business.description || '',
+        logo: business.logo_url || business.logo || '',
+        bannerImage: business.banner_url || business.bannerImage || '',
+        licenseDocument: business.license_document_url || business.licenseDocument || '',
+        address: {
+            street: business.address_line1 || business.address?.street || '',
+            city: business.city || business.address?.city || '',
+            state: business.region || business.address?.state || '',
+            country: business.country || business.address?.country || 'Somalia',
+            postcode: business.postal_code || business.address?.postcode || '',
+            coordinates: {
+                type: 'Point',
+                coordinates: [
+                    Number(business.longitude ?? business.address?.coordinates?.coordinates?.[0] ?? 0),
+                    Number(business.latitude ?? business.address?.coordinates?.coordinates?.[1] ?? 0)
+                ]
+            }
+        },
+        openingHours,
+        contract: business.contract || { payoutSchedule: 'WEEKLY' },
+        bankAccountDetails: {
+            accountHolderName: business.bank_account?.account_holder_name || business.bankAccountDetails?.accountHolderName || '',
+            sortCode: business.bank_account?.sort_code || business.bankAccountDetails?.sortCode || '',
+            accountNumber: business.bank_account?.account_number || business.bankAccountDetails?.accountNumber || ''
+        },
+        taxId: business.tax_id || business.taxId || '',
+        registrationNumber: business.registration_number || business.registrationNumber || '',
+        defaultLanguage: business.default_language || business.defaultLanguage || 'en',
+        currency: business.currency || 'USD',
+        timeZone: business.time_zone || business.timeZone || 'Africa/Mogadishu',
+        isActive: business.is_active ?? business.isActive ?? true,
+        status: business.status || 'PENDING'
+    };
+};
+
+const buildBusinessPayload = (formData) => {
+    const submitData = new FormData();
+    const phoneDigits = (formData.phoneNumber || '').replace(/^0+/, '');
+    const phoneE164 = `${formData.countryCode || '+252'}${phoneDigits}`;
+
+    submitData.append('owner_name', formData.ownerName || '');
+    submitData.append('legal_name', formData.businessName || '');
+    submitData.append('display_name', formData.businessName || '');
+    submitData.append('category_id', formData.category || '');
+    submitData.append('primary_staff_id', formData.primaryStaffAccount || '');
+    submitData.append('subcategories', JSON.stringify([]));
+    submitData.append('tags', JSON.stringify([]));
+    submitData.append('city', formData.address.city || '');
+    submitData.append('region', formData.address.state || '');
+    submitData.append('district', formData.address.city || '');
+    submitData.append('address_line1', formData.address.street || '');
+    submitData.append('address_line2', '');
+    submitData.append('postal_code', formData.address.postcode || '');
+    submitData.append('latitude', Number(formData.address.coordinates.coordinates[1] || 0));
+    submitData.append('longitude', Number(formData.address.coordinates.coordinates[0] || 0));
+    submitData.append('phone_e164', phoneE164);
+    submitData.append('email', formData.email || '');
+    submitData.append('description', formData.description || '');
+    submitData.append('short_description', formData.description || '');
+    submitData.append('registration_number', formData.registrationNumber || '');
+    submitData.append('tax_id', formData.taxId || '');
+
+    const openingHours = dayMappings.map(({ key, day_of_week }) => ({
+        day_of_week,
+        opens_at: formData.openingHours[key]?.open || defaultOpeningHours[key].open,
+        closes_at: formData.openingHours[key]?.close || defaultOpeningHours[key].close
+    }));
+    submitData.append('opening_hours', JSON.stringify(openingHours));
+
+    submitData.append('bank_account', JSON.stringify({
+        account_holder_name: formData.bankAccountDetails.accountHolderName || '',
+        account_number: formData.bankAccountDetails.accountNumber || '',
+        sort_code: formData.bankAccountDetails.sortCode || '',
+        bank_name: '',
+        merchant_holder_name: '',
+        merchant_name: '',
+        merchant_number: '',
+        iban: '',
+        swift_bic: ''
+    }));
+
+    if (formData.logo instanceof File) {
+        submitData.append('logo_url', formData.logo);
+    } else if (formData.logo) {
+        submitData.append('logo_url', formData.logo);
+    }
+
+    if (formData.bannerImage instanceof File) {
+        submitData.append('banner_url', formData.bannerImage);
+    } else if (formData.bannerImage) {
+        submitData.append('banner_url', formData.bannerImage);
+    }
+
+    if (formData.licenseDocument instanceof File) {
+        submitData.append('license_document_url', formData.licenseDocument);
+    } else if (formData.licenseDocument) {
+        submitData.append('license_document_url', formData.licenseDocument);
+    }
+
+    return submitData;
 };
 
 const BusinessesPage = () => {
@@ -100,52 +332,7 @@ const BusinessesPage = () => {
     const [categories, setCategories] = useState([]);
 
     // Form state
-    const [formData, setFormData] = useState({
-        ownerName: "",
-        businessName: "",
-        category: "",
-        primaryStaffAccount: "",
-        countryCode: "+252",
-        phoneNumber: "",
-        email: "",
-        description: "",
-        logo: "",
-        bannerImage: "",
-        licenseDocument: "",
-        address: {
-            street: "",
-            city: "",
-            state: "",
-            country: "Somalia",
-            postcode: "",
-            coordinates: {
-                type: "Point",
-                coordinates: [0, 0]
-            }
-        },
-        openingHours: {
-            mon: { open: "08:00", close: "20:00" },
-            tue: { open: "08:00", close: "20:00" },
-            wed: { open: "08:00", close: "20:00" },
-            thur: { open: "08:00", close: "20:00" },
-            fri: { open: "14:00", close: "20:00" },
-            sat: { open: "08:00", close: "20:00" },
-            sun: { open: "08:00", close: "18:00" }
-        },
-        contract: {
-            payoutSchedule: "WEEKLY"
-        },
-        bankAccountDetails: {
-            accountHolderName: "",
-            sortCode: "",
-            accountNumber: ""
-        },
-        taxId: "",
-        registrationNumber: "",
-        defaultLanguage: "en",
-        currency: "USD",
-        timeZone: "Africa/Mogadishu"
-    });
+    const [formData, setFormData] = useState(buildInitialFormData());
 
     const [logoFiles, setLogoFiles] = useState([]);
     const [bannerFiles, setBannerFiles] = useState([]);
@@ -176,28 +363,46 @@ const BusinessesPage = () => {
 
     // Update lists when data changes
     useEffect(() => {
-        const initialBusinesses = Array.isArray(businessesData) ? businessesData : [];
+        const businessRows = normalizeList(businessesData, ['businesses', 'rows', 'data']);
+        const initialBusinesses = Array.isArray(businessRows)
+            ? businessRows.map((item) => normalizeBusiness(item))
+            : [];
         setBusinesses(initialBusinesses);
-        setFilteredBusinesses(initialBusinesses);
     }, [businessesData]);
 
 
     useEffect(() => {
-        const initialStaffsData = Array.isArray(staffData) ? staffData : [];
+        const initialStaffsData = normalizeList(staffData, ['staffs', 'rows', 'data']);
         setStaffList(initialStaffsData);
     }, [staffData]);
 
     useEffect(() => {
-        const initialCategories = Array.isArray(categoriesData) ? categoriesData : [];
+        const initialCategories = normalizeList(categoriesData, ['categories', 'rows', 'data']);
         setCategories([
-            // { value: '', label: 'Select Category' },
             ...(initialCategories || []).map(cat => ({
-                value: cat._id,
-                label: cat.name
+                value: getEntityId(cat),
+                label: cat.name || cat.label || cat.title || 'Unknown Category'
             }))
         ]);
 
     }, [categoriesData]);
+
+    useEffect(() => {
+        const searchTerm = filters.search.toLowerCase().trim();
+        const filtered = businesses.filter((business) => {
+            const matchesSearch = !searchTerm ||
+                business.businessName?.toLowerCase().includes(searchTerm) ||
+                business.ownerName?.toLowerCase().includes(searchTerm) ||
+                business.email?.toLowerCase().includes(searchTerm);
+
+            const matchesStatus = filters.status === 'all' || (business.status || '').toUpperCase() === filters.status;
+            const matchesCategory = filters.category === 'all' || business.category === filters.category;
+
+            return matchesSearch && matchesStatus && matchesCategory;
+        });
+
+        setFilteredBusinesses(filtered);
+    }, [businesses, filters]);
 
 
 
@@ -205,10 +410,10 @@ const BusinessesPage = () => {
     const staffOptions = [
         { value: '', label: 'Select Staff' },
         ...staffList
-            .filter(staff => staff.isActive)
+            .filter(staff => staff?.isActive ?? staff?.is_active)
             .map(staff => ({
-                value: staff._id,
-                label: `${staff.firstName} ${staff.lastName} (${staff.phone})`
+                value: getEntityId(staff),
+                label: `${staff.firstName || ''} ${staff.lastName || ''} (${staff.phone || staff.phone_e164 || 'N/A'})`
             }))
     ];
 
@@ -218,19 +423,6 @@ const BusinessesPage = () => {
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prevFilters => ({ ...prevFilters, [name]: value }));
-
-        const filtered = businesses.filter(business => {
-            const matchesSearch = !value ||
-                business.businessName?.toLowerCase().includes(value.toLowerCase()) ||
-                business.ownerName?.toLowerCase().includes(value.toLowerCase()) ||
-                business.email?.toLowerCase().includes(value.toLowerCase());
-
-            const matchesStatus = filters.status === 'all' || business.status === filters.status;
-            const matchesCategory = filters.category === 'all' || business.category === filters.category;
-
-            return matchesSearch && matchesStatus && matchesCategory;
-        });
-        setFilteredBusinesses(filtered);
     };
 
     // Handle form input changes
@@ -347,49 +539,7 @@ const BusinessesPage = () => {
 
     // Reset form
     const resetForm = () => {
-        setFormData({
-            ownerName: "",
-            businessName: "",
-            category: "",
-            primaryStaffAccount: "",
-            countryCode: "+252",
-            phoneNumber: "",
-            email: "",
-            description: "",
-            logo: "",
-            bannerImage: "",
-            licenseDocument: "",
-            address: {
-                street: "",
-                city: "",
-                state: "",
-                country: "Somalia",
-                postcode: "",
-                coordinates: {
-                    type: "Point",
-                    coordinates: [0, 0]
-                }
-            },
-            openingHours: {
-                mon: { open: "08:00", close: "20:00" },
-                tue: { open: "08:00", close: "20:00" },
-                wed: { open: "08:00", close: "20:00" },
-                thur: { open: "08:00", close: "20:00" },
-                fri: { open: "14:00", close: "20:00" },
-                sat: { open: "08:00", close: "20:00" },
-                sun: { open: "08:00", close: "18:00" }
-            },
-            contract: {
-                payoutSchedule: "WEEKLY"
-            },
-            bankAccountDetails: {
-                accountHolderName: "",
-                sortCode: "",
-                accountNumber: ""
-            },
-            taxId: "",
-            registrationNumber: ""
-        });
+        setFormData(buildInitialFormData());
         setLogoFiles([]);
         setBannerFiles([]);
         setLicenseFiles([]);
@@ -412,60 +562,8 @@ const BusinessesPage = () => {
         if (!validateForm()) return;
 
         try {
-            const submitData = new FormData();
-
-            // Append basic fields
-            const basicFields = [
-                'ownerName', 'businessName', 'category', 'primaryStaffAccount',
-                'countryCode', 'phoneNumber', 'email', 'description',
-                'taxId', 'registrationNumber', 'defaultLanguage', 'currency', 'timeZone'
-            ];
-
-            basicFields.forEach(field => {
-                if (formData[field] !== undefined && formData[field] !== null) {
-                    submitData.append(field, formData[field]);
-                }
-            });
-
-            // Append address
-            Object.keys(formData.address).forEach(key => {
-                if (key === 'coordinates') {
-                    submitData.append(`address[type]`, formData.address.coordinates.type);
-                    submitData.append(`address[coordinates][0]`, formData.address.coordinates.coordinates[0]);
-                    submitData.append(`address[coordinates][1]`, formData.address.coordinates.coordinates[1]);
-                } else {
-                    submitData.append(`address[${key}]`, formData.address[key]);
-                }
-            });
-
-            // Append opening hours
-            Object.keys(formData.openingHours).forEach(day => {
-                const openTime = formData.openingHours[day]?.open || "08:00";
-                const closeTime = formData.openingHours[day]?.close || "20:00";
-                submitData.append(`openingHours[${day}][open]`, openTime);
-                submitData.append(`openingHours[${day}][close]`, closeTime);
-            });
-
-            // Append contract
-            submitData.append('contract[payoutSchedule]', formData.contract.payoutSchedule);
-
-            // Append bank details
-            Object.keys(formData.bankAccountDetails).forEach(key => {
-                submitData.append(`bankAccountDetails[${key}]`, formData.bankAccountDetails[key]);
-            });
-
-            // Append files
-            if (formData.logo instanceof File) {
-                submitData.append('logo', formData.logo);
-            }
-            if (formData.bannerImage instanceof File) {
-                submitData.append('bannerImage', formData.bannerImage);
-            }
-            if (formData.licenseDocument instanceof File) {
-                submitData.append('licenseDocument', formData.licenseDocument);
-            }
-
-            await dispatch(onCreateOrUpdateBusiness(submitData));
+            const submitData = buildBusinessPayload(formData);
+            await dispatch(onCreateOrUpdateBusiness({ data: submitData })).unwrap();
             handleModalClose();
         } catch (error) {
             console.error("Error creating business:", error);
@@ -479,63 +577,8 @@ const BusinessesPage = () => {
         if (!validateForm() || !selectedBusiness) return;
 
         try {
-            const submitData = new FormData();
-
-            // Append basic fields
-            const basicFields = [
-                'ownerName', 'businessName', 'category', 'primaryStaffAccount',
-                'countryCode', 'phoneNumber', 'email', 'description',
-                'taxId', 'registrationNumber', 'defaultLanguage', 'currency', 'timeZone'
-            ];
-
-            basicFields.forEach(field => {
-                if (formData[field] !== undefined && formData[field] !== null) {
-                    submitData.append(field, formData[field]);
-                }
-            });
-
-            // Append address
-            Object.keys(formData.address).forEach(key => {
-                if (key === 'coordinates') {
-                    submitData.append(`address[type]`, formData.address.coordinates.type);
-                    submitData.append(`address[coordinates][0]`, formData.address.coordinates.coordinates[0]);
-                    submitData.append(`address[coordinates][1]`, formData.address.coordinates.coordinates[1]);
-                } else {
-                    submitData.append(`address[${key}]`, formData.address[key]);
-                }
-            });
-
-            // Append opening hours
-            Object.keys(formData.openingHours).forEach(day => {
-                const openTime = formData.openingHours[day]?.open || "08:00";
-                const closeTime = formData.openingHours[day]?.close || "20:00";
-                submitData.append(`openingHours[${day}][open]`, openTime);
-                submitData.append(`openingHours[${day}][close]`, closeTime);
-            });
-
-            // Append contract
-            submitData.append('contract[payoutSchedule]', formData.contract.payoutSchedule);
-
-            // Append bank details
-            Object.keys(formData.bankAccountDetails).forEach(key => {
-                submitData.append(`bankAccountDetails[${key}]`, formData.bankAccountDetails[key]);
-            });
-
-            // Append files
-            if (formData.logo instanceof File) {
-                submitData.append('logo', formData.logo);
-            }
-            if (formData.bannerImage instanceof File) {
-                submitData.append('bannerImage', formData.bannerImage);
-            }
-            if (formData.licenseDocument instanceof File) {
-                submitData.append('licenseDocument', formData.licenseDocument);
-            }
-
-            // Append ID for update
-            submitData.append('_id', selectedBusiness._id);
-
-            await dispatch(onCreateOrUpdateBusiness(submitData));
+            const submitData = buildBusinessPayload(formData);
+            await dispatch(onCreateOrUpdateBusiness({ id: selectedBusiness.id, data: submitData })).unwrap();
             handleModalClose();
         } catch (error) {
             console.error("Error updating business:", error);
@@ -548,7 +591,7 @@ const BusinessesPage = () => {
         if (!selectedBusiness) return;
 
         try {
-            await dispatch(onDeleteBusiness(selectedBusiness._id));
+            await dispatch(onDeleteBusiness(selectedBusiness.id)).unwrap();
             setDeleteModal(false);
         } catch (error) {
             console.error("Error deleting business:", error);
@@ -561,9 +604,9 @@ const BusinessesPage = () => {
 
         try {
             await dispatch(onToggleBusinessActiveStatus({
-                id: selectedBusiness._id,
-                isActive: !selectedBusiness.isActive
-            }));
+                id: selectedBusiness.id,
+                is_active: !selectedBusiness.isActive
+            })).unwrap();
             setStatusModal(false);
         } catch (error) {
             console.error("Error toggling business status:", error);
@@ -572,68 +615,35 @@ const BusinessesPage = () => {
 
     // Open modal for edit
     const handleEdit = (business) => {
-        const defaultOpeningHours = {
-            mon: { open: "08:00", close: "20:00" },
-            tue: { open: "08:00", close: "20:00" },
-            wed: { open: "08:00", close: "20:00" },
-            thur: { open: "08:00", close: "20:00" },
-            fri: { open: "14:00", close: "20:00" },
-            sat: { open: "08:00", close: "20:00" },
-            sun: { open: "08:00", close: "18:00" }
-        };
+        const normalizedBusiness = normalizeBusiness(business);
+        const mergedOpeningHours = { ...defaultOpeningHours, ...(normalizedBusiness.openingHours || {}) };
 
-        // Merge business openingHours with defaults to ensure all fields are defined
-        const mergedOpeningHours = { ...defaultOpeningHours };
-        if (business.openingHours) {
-            Object.keys(business.openingHours).forEach(day => {
-                if (business.openingHours[day]) {
-                    mergedOpeningHours[day] = {
-                        open: business.openingHours[day].open || defaultOpeningHours[day].open,
-                        close: business.openingHours[day].close || defaultOpeningHours[day].close
-                    };
-                }
-            });
-        }
-
-        setSelectedBusiness(business);
+        setSelectedBusiness(normalizedBusiness);
         setFormData({
-            ownerName: business.ownerName || "",
-            businessName: business.businessName || "",
-            category: business.category || "",
-            primaryStaffAccount: business.primaryStaffAccount._id || "",
-            countryCode: business.countryCode || "+252",
-            phoneNumber: business.phoneNumber || "",
-            email: business.email || "",
-            description: business.description || "",
-            logo: business.logo || "",
-            bannerImage: business.bannerImage || "",
-            licenseDocument: business.licenseDocument || "",
-            address: business.address || {
-                street: "",
-                city: "",
-                state: "",
-                country: "Somalia",
-                postcode: "",
-                coordinates: {
-                    type: "Point",
-                    coordinates: [0, 0]
-                }
-            },
+            ownerName: normalizedBusiness.ownerName || "",
+            businessName: normalizedBusiness.businessName || "",
+            category: normalizedBusiness.category || "",
+            primaryStaffAccount: normalizedBusiness.primaryStaffAccount?._id || "",
+            countryCode: normalizedBusiness.countryCode || "+252",
+            phoneNumber: normalizedBusiness.phoneNumber || "",
+            email: normalizedBusiness.email || "",
+            description: normalizedBusiness.description || "",
+            logo: normalizedBusiness.logo || "",
+            bannerImage: normalizedBusiness.bannerImage || "",
+            licenseDocument: normalizedBusiness.licenseDocument || "",
+            address: normalizedBusiness.address,
             openingHours: mergedOpeningHours,
-            defaultLanguage: business.defaultLanguage || "en",
-            currency: business.currency || "USD",
-            timeZone: business.timeZone || "Africa/Mogadishu",
-            contract: business.contract || {
-                payoutSchedule: "WEEKLY",
-                commissionRate: 10
-            },
-            bankAccountDetails: business.bankAccountDetails || {
+            defaultLanguage: normalizedBusiness.defaultLanguage || "en",
+            currency: normalizedBusiness.currency || "USD",
+            timeZone: normalizedBusiness.timeZone || "Africa/Mogadishu",
+            contract: normalizedBusiness.contract || { payoutSchedule: "WEEKLY" },
+            bankAccountDetails: normalizedBusiness.bankAccountDetails || {
                 accountHolderName: "",
                 sortCode: "",
                 accountNumber: ""
             },
-            taxId: business.taxId || "",
-            registrationNumber: business.registrationNumber || ""
+            taxId: normalizedBusiness.taxId || "",
+            registrationNumber: normalizedBusiness.registrationNumber || ""
         });
         setIsEdit(true);
         setModal(true);
@@ -642,7 +652,7 @@ const BusinessesPage = () => {
 
     // Open modal for view
     const handleView = (business) => {
-        setSelectedBusiness(business);
+        setSelectedBusiness(normalizeBusiness(business));
         setViewModal(true);
         setActiveTab('1');
     };
@@ -736,7 +746,7 @@ const BusinessesPage = () => {
         },
         {
             name: 'Created',
-            cell: row => new Date(row.createdAt).toLocaleDateString(),
+            cell: row => row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A',
             width: '120px'
         },
         {
@@ -1650,7 +1660,7 @@ const BusinessesPage = () => {
                                                 </Col>
                                                 <Col sm={6}>
                                                     <h6>Business Information</h6>
-                                                    <p><strong>Category:</strong> {selectedBusiness.category}</p>
+                                                    <p><strong>Category:</strong> {selectedBusiness.categoryName || selectedBusiness.category || 'N/A'}</p>
                                                     <p><strong>Tax ID:</strong> {selectedBusiness.taxId || 'N/A'}</p>
                                                     <p><strong>Registration:</strong> {selectedBusiness.registrationNumber || 'N/A'}</p>
                                                 </Col>
@@ -1672,10 +1682,10 @@ const BusinessesPage = () => {
                                                 <h6>Metadata</h6>
                                                 <Row>
                                                     <Col sm={6}>
-                                                        <p><strong>Created:</strong> {new Date(selectedBusiness.createdAt).toLocaleDateString()}</p>
+                                                        <p><strong>Created:</strong> {selectedBusiness.createdAt ? new Date(selectedBusiness.createdAt).toLocaleDateString() : 'N/A'}</p>
                                                     </Col>
                                                     <Col sm={6}>
-                                                        <p><strong>Last Updated:</strong> {new Date(selectedBusiness.updatedAt).toLocaleDateString()}</p>
+                                                        <p><strong>Last Updated:</strong> {selectedBusiness.updatedAt ? new Date(selectedBusiness.updatedAt).toLocaleDateString() : 'N/A'}</p>
                                                     </Col>
                                                 </Row>
                                             </div>
