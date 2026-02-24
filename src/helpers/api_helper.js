@@ -10,7 +10,9 @@ axios.defaults.headers.post["Content-Type"] = "application/json";
 const storedAuth = JSON.parse(sessionStorage.getItem("authUser"));
 const token =
   storedAuth?.data?.accessToken ||
+  storedAuth?.data?.access_token ||
   storedAuth?.accessToken ||
+  storedAuth?.access_token ||
   storedAuth?.token ||
   null;
 if (token) axios.defaults.headers.common["Authorization"] = "Bearer " + token;

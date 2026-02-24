@@ -29,7 +29,7 @@ export const loginUser = (user, history) => async (dispatch) => {
       data = finallogin.data;
       console.log("ddd", finallogin);
       if (finallogin.success) {
-        const accessToken = data?.access_token;
+        const accessToken = data?.accessToken || data?.access_token;
         console.log("accessToken is:", accessToken);
         if (accessToken) {
           setAuthorization(accessToken);

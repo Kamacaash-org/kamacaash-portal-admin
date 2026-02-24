@@ -5,7 +5,9 @@ const useProfile = () => {
   const userProfileSession = getLoggedinUser();
   var token =
     userProfileSession?.data?.accessToken ||
+    userProfileSession?.data?.access_token ||
     userProfileSession?.accessToken ||
+    userProfileSession?.access_token ||
     userProfileSession?.token;
   const [loading, setLoading] = useState(userProfileSession ? false : true);
   const [userProfile, setUserProfile] = useState(
@@ -16,7 +18,9 @@ const useProfile = () => {
     const userProfileSession = getLoggedinUser();
     var token =
       userProfileSession?.data?.accessToken ||
+      userProfileSession?.data?.access_token ||
       userProfileSession?.accessToken ||
+      userProfileSession?.access_token ||
       userProfileSession?.token;
     setUserProfile(userProfileSession ? userProfileSession : null);
     setLoading(token ? false : true);
