@@ -213,7 +213,7 @@ const normalizeBusiness = (business = {}) => {
     getEntityId(business.primary_staff);
   const { countryCode, phoneNumber } = splitPhone(
     business.phone_e164 ||
-      `${business.countryCode || ""}${business.phoneNumber || ""}`,
+    `${business.countryCode || ""}${business.phoneNumber || ""}`,
   );
 
   return {
@@ -248,13 +248,13 @@ const normalizeBusiness = (business = {}) => {
         coordinates: [
           Number(
             business.longitude ??
-              business.address?.coordinates?.coordinates?.[0] ??
-              0,
+            business.address?.coordinates?.coordinates?.[0] ??
+            0,
           ),
           Number(
             business.latitude ??
-              business.address?.coordinates?.coordinates?.[1] ??
-              0,
+            business.address?.coordinates?.coordinates?.[1] ??
+            0,
           ),
         ],
       },
@@ -835,7 +835,7 @@ const BusinessesPage = () => {
     {
       name: "Created",
       cell: (row) =>
-        row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "N/A",
+        row.created_at ? new Date(row.created_at).toLocaleDateString() : "N/A",
       width: "120px",
     },
     {
@@ -1056,8 +1056,8 @@ const BusinessesPage = () => {
                         filters.category === "all"
                           ? "All"
                           : categories.find(
-                              (cat) => cat.value === filters.category,
-                            )?.label || "All",
+                            (cat) => cat.value === filters.category,
+                          )?.label || "All",
                     }}
                     onChange={(opt) =>
                       setFilters((prev) => ({ ...prev, category: opt.value }))
@@ -1947,10 +1947,10 @@ const BusinessesPage = () => {
                           <Col sm={6}>
                             <p>
                               <strong>Created:</strong>{" "}
-                              {selectedBusiness.createdAt
+                              {selectedBusiness.created_at
                                 ? new Date(
-                                    selectedBusiness.createdAt,
-                                  ).toLocaleDateString()
+                                  selectedBusiness.created_at,
+                                ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>
@@ -1959,8 +1959,8 @@ const BusinessesPage = () => {
                               <strong>Last Updated:</strong>{" "}
                               {selectedBusiness.updatedAt
                                 ? new Date(
-                                    selectedBusiness.updatedAt,
-                                  ).toLocaleDateString()
+                                  selectedBusiness.updatedAt,
+                                ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>
