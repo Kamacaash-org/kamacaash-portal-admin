@@ -117,20 +117,35 @@ const normalizeList = (payload, keys = []) => {
 
 const buildInitialFormData = () => ({
   ownerName: "",
-  businessName: "",
+  legalName: "",
+  displayName: "",
   category: "",
+  subcategoriesText: "",
+  tagsText: "",
   primaryStaffAccount: "",
   countryCode: "+252",
   phoneNumber: "",
+  secondaryPhone: "",
   email: "",
+  websiteUrl: "",
+  socialLinks: {
+    facebook: "",
+    instagram: "",
+  },
   description: "",
+  shortDescription: "",
+  notes: "",
   logo: "",
   bannerImage: "",
+  galleryImages: [],
+  galleryImageUrlsText: "",
   licenseDocument: "",
   address: {
     street: "",
+    addressLine2: "",
     city: "",
     state: "",
+    district: "",
     country: "Somalia",
     postcode: "",
     coordinates: {
@@ -213,34 +228,67 @@ const normalizeBusiness = (business = {}) => {
     getEntityId(business.primary_staff);
   const { countryCode, phoneNumber } = splitPhone(
     business.phone_e164 ||
-    `${business.countryCode || ""}${business.phoneNumber || ""}`,
+      `${business.countryCode || ""}${business.phoneNumber || ""}`,
   );
+  const galleryImages = Array.isArray(business.gallery_images)
+    ? business.gallery_images
+    : Array.isArray(business.galleryImages)
+      ? business.galleryImages
+      : [];
 
   return {
     ...business,
     id,
     _id: id,
     ownerName: business.owner_name || business.ownerName || "",
+    legalName: business.legal_name || business.legalName || "",
+    displayName:
+      business.display_name ||
+      business.displayName ||
+      business.businessName ||
+      "",
     businessName:
       business.display_name ||
       business.legal_name ||
       business.businessName ||
       "",
     category: resolvedCategoryId,
+    subcategoriesText: Array.isArray(business.subcategories)
+      ? business.subcategories.join(", ")
+      : "",
+    tagsText: Array.isArray(business.tags) ? business.tags.join(", ") : "",
     categoryName: resolvedCategoryName,
     primaryStaffAccount: { _id: staffId },
     countryCode,
     phoneNumber,
+    secondaryPhone: business.secondary_phone || business.secondaryPhone || "",
     email: business.email || "",
+    websiteUrl: business.website_url || business.websiteUrl || "",
+    socialLinks: {
+      facebook:
+        business.social_links?.facebook || business.socialLinks?.facebook || "",
+      instagram:
+        business.social_links?.instagram ||
+        business.socialLinks?.instagram ||
+        "",
+    },
     description: business.description || "",
+    shortDescription:
+      business.short_description || business.shortDescription || "",
+    notes: business.notes || "",
     logo: business.logo_url || business.logo || "",
     bannerImage: business.banner_url || business.bannerImage || "",
+    galleryImages,
+    galleryImageUrlsText: galleryImages.join(", "),
     licenseDocument:
       business.license_document_url || business.licenseDocument || "",
     address: {
       street: business.address_line1 || business.address?.street || "",
+      addressLine2:
+        business.address_line2 || business.address?.addressLine2 || "",
       city: business.city || business.address?.city || "",
       state: business.region || business.address?.state || "",
+      district: business.district || business.address?.district || "",
       country: business.country || business.address?.country || "Somalia",
       postcode: business.postal_code || business.address?.postcode || "",
       coordinates: {
@@ -248,13 +296,13 @@ const normalizeBusiness = (business = {}) => {
         coordinates: [
           Number(
             business.longitude ??
-            business.address?.coordinates?.coordinates?.[0] ??
-            0,
+              business.address?.coordinates?.coordinates?.[0] ??
+              0,
           ),
           Number(
             business.latitude ??
-            business.address?.coordinates?.coordinates?.[1] ??
-            0,
+              business.address?.coordinates?.coordinates?.[1] ??
+              0,
           ),
         ],
       },
@@ -266,6 +314,10 @@ const normalizeBusiness = (business = {}) => {
         business.bank_account?.account_holder_name ||
         business.bankAccountDetails?.accountHolderName ||
         "",
+      bankName:
+        business.bank_account?.bank_name ||
+        business.bankAccountDetails?.bankName ||
+        "",
       sortCode:
         business.bank_account?.sort_code ||
         business.bankAccountDetails?.sortCode ||
@@ -273,6 +325,24 @@ const normalizeBusiness = (business = {}) => {
       accountNumber:
         business.bank_account?.account_number ||
         business.bankAccountDetails?.accountNumber ||
+        "",
+      merchantHolderName:
+        business.bank_account?.merchant_holder_name ||
+        business.bankAccountDetails?.merchantHolderName ||
+        "",
+      merchantName:
+        business.bank_account?.merchant_name ||
+        business.bankAccountDetails?.merchantName ||
+        "",
+      merchantNumber:
+        business.bank_account?.merchant_number ||
+        business.bankAccountDetails?.merchantNumber ||
+        "",
+      iban:
+        business.bank_account?.iban || business.bankAccountDetails?.iban || "",
+      swiftBic:
+        business.bank_account?.swift_bic ||
+        business.bankAccountDetails?.swiftBic ||
         "",
     },
     taxId: business.tax_id || business.taxId || "",
@@ -291,19 +361,44 @@ const buildBusinessPayload = (formData) => {
   const submitData = new FormData();
   const phoneDigits = (formData.phoneNumber || "").replace(/^0+/, "");
   const phoneE164 = `${formData.countryCode || "+252"}${phoneDigits}`;
+  const parseCommaSeparated = (value = "") =>
+    value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const subcategories = parseCommaSeparated(formData.subcategoriesText || "");
+  const tags = parseCommaSeparated(formData.tagsText || "");
+  const galleryFromText = parseCommaSeparated(
+    formData.galleryImageUrlsText || "",
+  );
+  const galleryFromState = Array.isArray(formData.galleryImages)
+    ? formData.galleryImages
+    : [];
+  const galleryUrls = [
+    ...galleryFromState.filter((item) => typeof item === "string" && item),
+    ...galleryFromText,
+  ];
+  const galleryFiles = galleryFromState.filter((item) => item instanceof File);
 
   submitData.append("owner_name", formData.ownerName || "");
-  submitData.append("legal_name", formData.businessName || "");
-  submitData.append("display_name", formData.businessName || "");
+  submitData.append(
+    "legal_name",
+    formData.legalName || formData.displayName || "",
+  );
+  submitData.append(
+    "display_name",
+    formData.displayName || formData.legalName || "",
+  );
   submitData.append("category_id", formData.category || "");
   submitData.append("primary_staff_id", formData.primaryStaffAccount || "");
-  submitData.append("subcategories", JSON.stringify([]));
-  submitData.append("tags", JSON.stringify([]));
+  submitData.append("subcategories", JSON.stringify(subcategories));
+  submitData.append("tags", JSON.stringify(tags));
   submitData.append("city", formData.address.city || "");
   submitData.append("region", formData.address.state || "");
-  submitData.append("district", formData.address.city || "");
+  submitData.append("district", formData.address.district || "");
   submitData.append("address_line1", formData.address.street || "");
-  submitData.append("address_line2", "");
+  submitData.append("address_line2", formData.address.addressLine2 || "");
   submitData.append("postal_code", formData.address.postcode || "");
   submitData.append(
     "latitude",
@@ -314,11 +409,21 @@ const buildBusinessPayload = (formData) => {
     Number(formData.address.coordinates.coordinates[0] || 0),
   );
   submitData.append("phone_e164", phoneE164);
+  submitData.append("secondary_phone", formData.secondaryPhone || "");
   submitData.append("email", formData.email || "");
+  submitData.append("website_url", formData.websiteUrl || "");
+  submitData.append(
+    "social_links",
+    JSON.stringify({
+      facebook: formData.socialLinks.facebook || "",
+      instagram: formData.socialLinks.instagram || "",
+    }),
+  );
   submitData.append("description", formData.description || "");
-  submitData.append("short_description", formData.description || "");
+  submitData.append("short_description", formData.shortDescription || "");
   submitData.append("registration_number", formData.registrationNumber || "");
   submitData.append("tax_id", formData.taxId || "");
+  submitData.append("notes", formData.notes || "");
 
   const openingHours = dayMappings.map(({ key, day_of_week }) => ({
     day_of_week,
@@ -334,14 +439,20 @@ const buildBusinessPayload = (formData) => {
       account_holder_name: formData.bankAccountDetails.accountHolderName || "",
       account_number: formData.bankAccountDetails.accountNumber || "",
       sort_code: formData.bankAccountDetails.sortCode || "",
-      bank_name: "",
-      merchant_holder_name: "",
-      merchant_name: "",
-      merchant_number: "",
-      iban: "",
-      swift_bic: "",
+      bank_name: formData.bankAccountDetails.bankName || "",
+      merchant_holder_name:
+        formData.bankAccountDetails.merchantHolderName || "",
+      merchant_name: formData.bankAccountDetails.merchantName || "",
+      merchant_number: formData.bankAccountDetails.merchantNumber || "",
+      iban: formData.bankAccountDetails.iban || "",
+      swift_bic: formData.bankAccountDetails.swiftBic || "",
     }),
   );
+
+  submitData.append("gallery_images", JSON.stringify(galleryUrls));
+  galleryFiles.forEach((file) => {
+    submitData.append("gallery_image_files", file);
+  });
 
   if (formData.logo instanceof File) {
     submitData.append("logo_url", formData.logo);
@@ -399,6 +510,7 @@ const BusinessesPage = () => {
 
   const [logoFiles, setLogoFiles] = useState([]);
   const [bannerFiles, setBannerFiles] = useState([]);
+  const [galleryFiles, setGalleryFiles] = useState([]);
   const [licenseFiles, setLicenseFiles] = useState([]);
 
   // Fetch data
@@ -587,22 +699,155 @@ const BusinessesPage = () => {
     }
   };
 
+  const handleGalleryFileUpdate = (fileItems) => {
+    setGalleryFiles(fileItems);
+    setFormData((prev) => ({
+      ...prev,
+      galleryImages: fileItems.map((item) => item.file),
+    }));
+  };
+
+  const hasValue = (value) => {
+    if (typeof value === "string") return value.trim() !== "";
+    return value !== null && value !== undefined;
+  };
+
+  const getTabMissingFields = (tabId) => {
+    const missing = [];
+
+    if (tabId === "1") {
+      if (!hasValue(formData.ownerName)) missing.push("Owner Name");
+      if (!hasValue(formData.legalName)) missing.push("Legal Name");
+      if (!hasValue(formData.displayName)) missing.push("Display Name");
+      if (!hasValue(formData.category)) missing.push("Category");
+      if (!hasValue(formData.primaryStaffAccount)) {
+        missing.push("Primary Staff Account");
+      }
+      if (!hasValue(formData.countryCode)) missing.push("Country Code");
+      if (!hasValue(formData.phoneNumber)) missing.push("Phone Number");
+      if (!hasValue(formData.email)) missing.push("Email");
+      if (!hasValue(formData.description)) missing.push("Description");
+      if (!hasValue(formData.shortDescription)) {
+        missing.push("Short Description");
+      }
+    }
+
+    if (tabId === "2") {
+      if (!hasValue(formData.address.street)) missing.push("Address Line 1");
+      if (!hasValue(formData.address.addressLine2))
+        missing.push("Address Line 2");
+      if (!hasValue(formData.address.city)) missing.push("City");
+      if (!hasValue(formData.address.state)) missing.push("Region/State");
+      if (!hasValue(formData.address.district)) missing.push("District");
+      if (!hasValue(formData.address.postcode)) missing.push("Postal Code");
+
+      const latitude = Number(formData.address.coordinates.coordinates[1]);
+      const longitude = Number(formData.address.coordinates.coordinates[0]);
+      if (!Number.isFinite(latitude) || latitude === 0)
+        missing.push("Latitude");
+      if (!Number.isFinite(longitude) || longitude === 0) {
+        missing.push("Longitude");
+      }
+
+      const invalidHours = dayMappings.some(({ key }) => {
+        const open = formData.openingHours?.[key]?.open;
+        const close = formData.openingHours?.[key]?.close;
+        return !hasValue(open) || !hasValue(close);
+      });
+      if (invalidHours) missing.push("Opening Hours (all days)");
+    }
+
+    if (tabId === "3") {
+      if (!hasValue(formData.registrationNumber)) {
+        missing.push("Registration Number");
+      }
+      if (!hasValue(formData.taxId)) missing.push("Tax ID");
+      if (!hasValue(formData.notes)) missing.push("Notes");
+      if (!hasValue(formData.contract?.payoutSchedule)) {
+        missing.push("Payout Schedule");
+      }
+
+      if (!hasValue(formData.bankAccountDetails?.accountHolderName)) {
+        missing.push("Account Holder Name");
+      }
+      if (!hasValue(formData.bankAccountDetails?.bankName)) {
+        missing.push("Bank Name");
+      }
+      if (!hasValue(formData.bankAccountDetails?.accountNumber)) {
+        missing.push("Account Number");
+      }
+      if (!hasValue(formData.bankAccountDetails?.sortCode)) {
+        missing.push("Sort Code");
+      }
+      if (!hasValue(formData.bankAccountDetails?.merchantHolderName)) {
+        missing.push("Merchant Holder Name");
+      }
+      if (!hasValue(formData.bankAccountDetails?.merchantName)) {
+        missing.push("Merchant Name");
+      }
+      if (!hasValue(formData.bankAccountDetails?.merchantNumber)) {
+        missing.push("Merchant Number");
+      }
+      if (!hasValue(formData.bankAccountDetails?.iban)) missing.push("IBAN");
+      if (!hasValue(formData.bankAccountDetails?.swiftBic)) {
+        missing.push("SWIFT/BIC");
+      }
+    }
+
+    if (tabId === "4") {
+      if (!hasValue(formData.logo)) missing.push("Logo");
+      if (!hasValue(formData.bannerImage)) missing.push("Banner Image");
+      if (!hasValue(formData.licenseDocument)) {
+        missing.push("License Document");
+      }
+
+      const hasGalleryUrls = hasValue(formData.galleryImageUrlsText);
+      const hasGalleryUploads =
+        Array.isArray(galleryFiles) && galleryFiles.length > 0;
+      if (!hasGalleryUrls && !hasGalleryUploads) {
+        missing.push("Gallery Images");
+      }
+    }
+
+    return missing;
+  };
+
+  const validateTab = (tabId) => {
+    const missing = getTabMissingFields(tabId);
+    if (!missing.length) return true;
+
+    toast.warning(
+      `Please complete ${missing.slice(0, 4).join(", ")}${missing.length > 4 ? "..." : ""} before continuing.`,
+    );
+    return false;
+  };
+
+  const handleTabChange = (targetTab) => {
+    const current = Number(activeTab);
+    const target = Number(targetTab);
+
+    if (target <= current) {
+      setActiveTab(targetTab);
+      return;
+    }
+
+    for (let tab = current; tab < target; tab += 1) {
+      if (!validateTab(String(tab))) {
+        setActiveTab(String(tab));
+        return;
+      }
+    }
+
+    setActiveTab(targetTab);
+  };
+
   // Validate form
   const validateForm = () => {
-    const requiredFields = [
-      "ownerName",
-      "businessName",
-      "primaryStaffAccount",
-      "category",
-      "phoneNumber",
-    ];
-    const missingFields = requiredFields.filter((field) => !formData[field]);
-
-    if (missingFields.length > 0) {
-      toast.warning(
-        `Please fill all required fields: ${missingFields.join(", ")}`,
-      );
-      return false;
+    for (const tabId of ["1", "2", "3", "4"]) {
+      if (!validateTab(tabId)) {
+        setActiveTab(tabId);
+        return false;
+      }
     }
 
     // Validate email format
@@ -619,6 +864,7 @@ const BusinessesPage = () => {
     setFormData(buildInitialFormData());
     setLogoFiles([]);
     setBannerFiles([]);
+    setGalleryFiles([]);
     setLicenseFiles([]);
     setSelectedBusiness(null);
     setActiveTab("1");
@@ -628,6 +874,7 @@ const BusinessesPage = () => {
   const handleModalClose = () => {
     setLogoFiles([]);
     setBannerFiles([]);
+    setGalleryFiles([]);
     setLicenseFiles([]);
     setModal(false);
     resetForm();
@@ -705,15 +952,28 @@ const BusinessesPage = () => {
     setSelectedBusiness(normalizedBusiness);
     setFormData({
       ownerName: normalizedBusiness.ownerName || "",
-      businessName: normalizedBusiness.businessName || "",
+      legalName: normalizedBusiness.legalName || "",
+      displayName: normalizedBusiness.displayName || "",
       category: normalizedBusiness.category || "",
+      subcategoriesText: normalizedBusiness.subcategoriesText || "",
+      tagsText: normalizedBusiness.tagsText || "",
       primaryStaffAccount: normalizedBusiness.primaryStaffAccount?._id || "",
       countryCode: normalizedBusiness.countryCode || "+252",
       phoneNumber: normalizedBusiness.phoneNumber || "",
+      secondaryPhone: normalizedBusiness.secondaryPhone || "",
       email: normalizedBusiness.email || "",
+      websiteUrl: normalizedBusiness.websiteUrl || "",
+      socialLinks: normalizedBusiness.socialLinks || {
+        facebook: "",
+        instagram: "",
+      },
       description: normalizedBusiness.description || "",
+      shortDescription: normalizedBusiness.shortDescription || "",
+      notes: normalizedBusiness.notes || "",
       logo: normalizedBusiness.logo || "",
       bannerImage: normalizedBusiness.bannerImage || "",
+      galleryImages: normalizedBusiness.galleryImages || [],
+      galleryImageUrlsText: normalizedBusiness.galleryImageUrlsText || "",
       licenseDocument: normalizedBusiness.licenseDocument || "",
       address: normalizedBusiness.address,
       openingHours: mergedOpeningHours,
@@ -723,8 +983,14 @@ const BusinessesPage = () => {
       contract: normalizedBusiness.contract || { payoutSchedule: "WEEKLY" },
       bankAccountDetails: normalizedBusiness.bankAccountDetails || {
         accountHolderName: "",
+        bankName: "",
         sortCode: "",
         accountNumber: "",
+        merchantHolderName: "",
+        merchantName: "",
+        merchantNumber: "",
+        iban: "",
+        swiftBic: "",
       },
       taxId: normalizedBusiness.taxId || "",
       registrationNumber: normalizedBusiness.registrationNumber || "",
@@ -1056,8 +1322,8 @@ const BusinessesPage = () => {
                         filters.category === "all"
                           ? "All"
                           : categories.find(
-                            (cat) => cat.value === filters.category,
-                          )?.label || "All",
+                              (cat) => cat.value === filters.category,
+                            )?.label || "All",
                     }}
                     onChange={(opt) =>
                       setFilters((prev) => ({ ...prev, category: opt.value }))
@@ -1091,14 +1357,6 @@ const BusinessesPage = () => {
                 {filteredBusinesses.length}
               </Badge>
             </h5>
-            <Button
-              color="primary"
-              onClick={handleCreate}
-              className="shadow-sm"
-            >
-              <i className="ri-add-line me-1 align-middle"></i>
-              Add Business
-            </Button>
           </CardHeader>
           <CardBody>
             {loading ? (
@@ -1164,7 +1422,7 @@ const BusinessesPage = () => {
                 <NavItem>
                   <NavLink
                     className={activeTab === "1" ? "active" : ""}
-                    onClick={() => setActiveTab("1")}
+                    onClick={() => handleTabChange("1")}
                   >
                     <i className="ri-user-line me-1" /> Basic Info
                   </NavLink>
@@ -1172,7 +1430,7 @@ const BusinessesPage = () => {
                 <NavItem>
                   <NavLink
                     className={activeTab === "2" ? "active" : ""}
-                    onClick={() => setActiveTab("2")}
+                    onClick={() => handleTabChange("2")}
                   >
                     <i className="ri-map-pin-line me-1" /> Location & Hours
                   </NavLink>
@@ -1180,17 +1438,17 @@ const BusinessesPage = () => {
                 <NavItem>
                   <NavLink
                     className={activeTab === "3" ? "active" : ""}
-                    onClick={() => setActiveTab("3")}
+                    onClick={() => handleTabChange("3")}
                   >
-                    <i className="ri-bank-card-line me-1" /> Business Details
+                    <i className="ri-information-line me-1" /> Information
                   </NavLink>
                 </NavItem>
                 <NavItem>
                   <NavLink
                     className={activeTab === "4" ? "active" : ""}
-                    onClick={() => setActiveTab("4")}
+                    onClick={() => handleTabChange("4")}
                   >
-                    <i className="ri-image-line me-1" /> Media & Documents
+                    <i className="ri-image-line me-1" /> Images & Documents
                   </NavLink>
                 </NavItem>
               </Nav>
@@ -1256,6 +1514,104 @@ const BusinessesPage = () => {
                         </FormGroup>
                       </CardBody>
                     </Card>
+
+                    <Card className="border mt-3">
+                      <CardHeader className="bg-light">
+                        <h6 className="mb-0">Contact Information</h6>
+                      </CardHeader>
+                      <CardBody>
+                        <Row>
+                          <Col sm={4}>
+                            <FormGroup>
+                              <Label className="form-label">Country Code</Label>
+                              <Input
+                                name="countryCode"
+                                value={formData.countryCode}
+                                onChange={handleInputChange}
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                          <Col sm={8}>
+                            <FormGroup>
+                              <Label className="form-label">
+                                Phone Number{" "}
+                                <span className="text-danger">*</span>
+                              </Label>
+                              <Input
+                                name="phoneNumber"
+                                value={formData.phoneNumber}
+                                onChange={handleInputChange}
+                                placeholder="612345678"
+                                className="form-control-lg"
+                                required
+                              />
+                            </FormGroup>
+                          </Col>
+                        </Row>
+
+                        <FormGroup>
+                          <Label className="form-label">Secondary Phone</Label>
+                          <Input
+                            name="secondaryPhone"
+                            value={formData.secondaryPhone}
+                            onChange={handleInputChange}
+                            placeholder="+252615555555"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
+                        <FormGroup>
+                          <Label className="form-label">Website URL</Label>
+                          <Input
+                            name="websiteUrl"
+                            value={formData.websiteUrl}
+                            onChange={handleInputChange}
+                            placeholder="https://ahmedfresh.so"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
+                        <Row>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">Facebook URL</Label>
+                              <Input
+                                value={formData.socialLinks.facebook}
+                                onChange={(e) =>
+                                  handleNestedChange(
+                                    "socialLinks",
+                                    "facebook",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="https://facebook.com/business"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">
+                                Instagram URL
+                              </Label>
+                              <Input
+                                value={formData.socialLinks.instagram}
+                                onChange={(e) =>
+                                  handleNestedChange(
+                                    "socialLinks",
+                                    "instagram",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="https://instagram.com/business"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                        </Row>
+                      </CardBody>
+                    </Card>
                   </Col>
 
                   <Col lg={6}>
@@ -1266,13 +1622,27 @@ const BusinessesPage = () => {
                       <CardBody>
                         <FormGroup>
                           <Label className="form-label">
-                            Business Name <span className="text-danger">*</span>
+                            Legal Name <span className="text-danger">*</span>
                           </Label>
                           <Input
-                            name="businessName"
-                            value={formData.businessName}
+                            name="legalName"
+                            value={formData.legalName}
                             onChange={handleInputChange}
-                            placeholder="Enter business name"
+                            placeholder="Enter legal business name"
+                            className="form-control-lg"
+                            required
+                          />
+                        </FormGroup>
+
+                        <FormGroup>
+                          <Label className="form-label">
+                            Display Name <span className="text-danger">*</span>
+                          </Label>
+                          <Input
+                            name="displayName"
+                            value={formData.displayName}
+                            onChange={handleInputChange}
+                            placeholder="Enter display name"
                             className="form-control-lg"
                             required
                           />
@@ -1311,53 +1681,47 @@ const BusinessesPage = () => {
                             className="form-control-lg"
                           />
                         </FormGroup>
+
+                        <FormGroup>
+                          <Label className="form-label">
+                            Short Description
+                          </Label>
+                          <Input
+                            name="shortDescription"
+                            value={formData.shortDescription}
+                            onChange={handleInputChange}
+                            placeholder="Short summary for listings"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
+                        <FormGroup>
+                          <Label className="form-label">
+                            Subcategories (IDs)
+                          </Label>
+                          <Input
+                            name="subcategoriesText"
+                            value={formData.subcategoriesText}
+                            onChange={handleInputChange}
+                            placeholder="id1, id2, id3"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
+                        <FormGroup className="mb-0">
+                          <Label className="form-label">Tags</Label>
+                          <Input
+                            name="tagsText"
+                            value={formData.tagsText}
+                            onChange={handleInputChange}
+                            placeholder="grocery, fresh, halal"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
                       </CardBody>
                     </Card>
-                  </Col>
-                </Row>
 
-                <Row className="mt-3">
-                  <Col lg={6}>
-                    <Card className="border">
-                      <CardHeader className="bg-light">
-                        <h6 className="mb-0">Contact Information</h6>
-                      </CardHeader>
-                      <CardBody>
-                        <Row>
-                          <Col sm={4}>
-                            <FormGroup>
-                              <Label className="form-label">Country Code</Label>
-                              <Input
-                                name="countryCode"
-                                value={formData.countryCode}
-                                onChange={handleInputChange}
-                                className="form-control-lg"
-                              />
-                            </FormGroup>
-                          </Col>
-                          <Col sm={8}>
-                            <FormGroup>
-                              <Label className="form-label">
-                                Phone Number{" "}
-                                <span className="text-danger">*</span>
-                              </Label>
-                              <Input
-                                name="phoneNumber"
-                                value={formData.phoneNumber}
-                                onChange={handleInputChange}
-                                placeholder="612345678"
-                                className="form-control-lg"
-                                required
-                              />
-                            </FormGroup>
-                          </Col>
-                        </Row>
-                      </CardBody>
-                    </Card>
-                  </Col>
-
-                  <Col lg={6}>
-                    <Card className="border">
+                    <Card className="border mt-3">
                       <CardHeader className="bg-light">
                         <h6 className="mb-0">Legal Information</h6>
                       </CardHeader>
@@ -1412,6 +1776,21 @@ const BusinessesPage = () => {
                           />
                         </FormGroup>
 
+                        <FormGroup>
+                          <Label className="form-label">Address Line 2</Label>
+                          <Input
+                            value={formData.address.addressLine2}
+                            onChange={(e) =>
+                              handleAddressChange(
+                                "addressLine2",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Near landmark"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
                         <Row>
                           <Col sm={6}>
                             <FormGroup>
@@ -1441,6 +1820,18 @@ const BusinessesPage = () => {
                           </Col>
                         </Row>
 
+                        <FormGroup>
+                          <Label className="form-label">District</Label>
+                          <Input
+                            value={formData.address.district}
+                            onChange={(e) =>
+                              handleAddressChange("district", e.target.value)
+                            }
+                            placeholder="Hodan"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
                         <Row>
                           <Col sm={6}>
                             <FormGroup>
@@ -1467,6 +1858,69 @@ const BusinessesPage = () => {
                                   )
                                 }
                                 placeholder="25210"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                        </Row>
+
+                        <Row>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">Latitude</Label>
+                              <Input
+                                type="number"
+                                step="any"
+                                value={
+                                  formData.address.coordinates.coordinates[1]
+                                }
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    address: {
+                                      ...prev.address,
+                                      coordinates: {
+                                        ...prev.address.coordinates,
+                                        coordinates: [
+                                          prev.address.coordinates
+                                            .coordinates[0],
+                                          e.target.value,
+                                        ],
+                                      },
+                                    },
+                                  }))
+                                }
+                                placeholder="2.0469"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">Longitude</Label>
+                              <Input
+                                type="number"
+                                step="any"
+                                value={
+                                  formData.address.coordinates.coordinates[0]
+                                }
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    address: {
+                                      ...prev.address,
+                                      coordinates: {
+                                        ...prev.address.coordinates,
+                                        coordinates: [
+                                          e.target.value,
+                                          prev.address.coordinates
+                                            .coordinates[1],
+                                        ],
+                                      },
+                                    },
+                                  }))
+                                }
+                                placeholder="45.3182"
                                 className="form-control-lg"
                               />
                             </FormGroup>
@@ -1542,7 +1996,7 @@ const BusinessesPage = () => {
                 </Row>
               </TabPane>
 
-              {/* Tab 3: Business Details */}
+              {/* Tab 3: Information */}
               <TabPane tabId="3">
                 <Row>
                   <Col lg={6}>
@@ -1551,6 +2005,30 @@ const BusinessesPage = () => {
                         <h6 className="mb-0">Contract Details</h6>
                       </CardHeader>
                       <CardBody>
+                        <FormGroup>
+                          <Label className="form-label">
+                            Registration Number
+                          </Label>
+                          <Input
+                            name="registrationNumber"
+                            value={formData.registrationNumber}
+                            onChange={handleInputChange}
+                            placeholder="SO-REG-2026-001"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
+                        <FormGroup>
+                          <Label className="form-label">Tax ID</Label>
+                          <Input
+                            name="taxId"
+                            value={formData.taxId}
+                            onChange={handleInputChange}
+                            placeholder="SO-TAX-123456"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
                         <FormGroup>
                           <Label className="form-label">Payout Schedule</Label>
                           <Select
@@ -1574,6 +2052,19 @@ const BusinessesPage = () => {
                             }
                             className="react-select"
                             classNamePrefix="select"
+                          />
+                        </FormGroup>
+
+                        <FormGroup className="mb-0">
+                          <Label className="form-label">Notes</Label>
+                          <Input
+                            type="textarea"
+                            name="notes"
+                            value={formData.notes}
+                            onChange={handleInputChange}
+                            placeholder="Additional onboarding notes"
+                            rows="4"
+                            className="form-control-lg"
                           />
                         </FormGroup>
                       </CardBody>
@@ -1602,6 +2093,22 @@ const BusinessesPage = () => {
                               )
                             }
                             placeholder="Ahmed Ali"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
+
+                        <FormGroup>
+                          <Label className="form-label">Bank Name</Label>
+                          <Input
+                            value={formData.bankAccountDetails.bankName}
+                            onChange={(e) =>
+                              handleNestedChange(
+                                "bankAccountDetails",
+                                "bankName",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Salaam Somali Bank"
                             className="form-control-lg"
                           />
                         </FormGroup>
@@ -1637,13 +2144,113 @@ const BusinessesPage = () => {
                             className="form-control-lg"
                           />
                         </FormGroup>
+
+                        <Row>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">
+                                Merchant Holder Name
+                              </Label>
+                              <Input
+                                value={
+                                  formData.bankAccountDetails.merchantHolderName
+                                }
+                                onChange={(e) =>
+                                  handleNestedChange(
+                                    "bankAccountDetails",
+                                    "merchantHolderName",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="Ahmed Fresh Market"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">
+                                Merchant Name
+                              </Label>
+                              <Input
+                                value={formData.bankAccountDetails.merchantName}
+                                onChange={(e) =>
+                                  handleNestedChange(
+                                    "bankAccountDetails",
+                                    "merchantName",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="WAAFI"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                        </Row>
+
+                        <Row>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">
+                                Merchant Number
+                              </Label>
+                              <Input
+                                value={
+                                  formData.bankAccountDetails.merchantNumber
+                                }
+                                onChange={(e) =>
+                                  handleNestedChange(
+                                    "bankAccountDetails",
+                                    "merchantNumber",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="678899"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                          <Col sm={6}>
+                            <FormGroup>
+                              <Label className="form-label">SWIFT/BIC</Label>
+                              <Input
+                                value={formData.bankAccountDetails.swiftBic}
+                                onChange={(e) =>
+                                  handleNestedChange(
+                                    "bankAccountDetails",
+                                    "swiftBic",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="SSBLSOMS"
+                                className="form-control-lg"
+                              />
+                            </FormGroup>
+                          </Col>
+                        </Row>
+
+                        <FormGroup>
+                          <Label className="form-label">IBAN</Label>
+                          <Input
+                            value={formData.bankAccountDetails.iban}
+                            onChange={(e) =>
+                              handleNestedChange(
+                                "bankAccountDetails",
+                                "iban",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="SO123456789012345678901234"
+                            className="form-control-lg"
+                          />
+                        </FormGroup>
                       </CardBody>
                     </Card>
                   </Col>
                 </Row>
               </TabPane>
 
-              {/* Tab 4: Media & Documents */}
+              {/* Tab 4: Images & Documents */}
               <TabPane tabId="4">
                 <Row>
                   <Col lg={6}>
@@ -1654,6 +2261,17 @@ const BusinessesPage = () => {
                       <CardBody>
                         <FormGroup>
                           <Label className="form-label">Business Logo</Label>
+                          <Input
+                            name="logo"
+                            value={
+                              typeof formData.logo === "string"
+                                ? formData.logo
+                                : ""
+                            }
+                            onChange={handleInputChange}
+                            placeholder="https://cdn.site.com/logo.png"
+                            className="form-control-lg mb-3"
+                          />
                           <FilePond
                             files={logoFiles}
                             onupdatefiles={handleLogoFileUpdate}
@@ -1673,6 +2291,17 @@ const BusinessesPage = () => {
 
                         <FormGroup className="mt-3">
                           <Label className="form-label">Banner Image</Label>
+                          <Input
+                            name="bannerImage"
+                            value={
+                              typeof formData.bannerImage === "string"
+                                ? formData.bannerImage
+                                : ""
+                            }
+                            onChange={handleInputChange}
+                            placeholder="https://cdn.site.com/banner.png"
+                            className="form-control-lg mb-3"
+                          />
                           <FilePond
                             files={bannerFiles}
                             onupdatefiles={handleBannerFileUpdate}
@@ -1687,6 +2316,33 @@ const BusinessesPage = () => {
                           />
                           <small className="text-muted">
                             Recommended size: 1200x400px
+                          </small>
+                        </FormGroup>
+
+                        <FormGroup className="mt-3 mb-0">
+                          <Label className="form-label">Gallery Images</Label>
+                          <Input
+                            name="galleryImageUrlsText"
+                            value={formData.galleryImageUrlsText}
+                            onChange={handleInputChange}
+                            placeholder="https://cdn.site.com/img1.jpg, https://cdn.site.com/img2.jpg"
+                            className="form-control-lg mb-3"
+                          />
+                          <FilePond
+                            files={galleryFiles}
+                            onupdatefiles={handleGalleryFileUpdate}
+                            allowMultiple={true}
+                            maxFiles={10}
+                            name="galleryImages"
+                            labelIdle='<div class="text-center"><i class="ri-gallery-line display-4 text-muted"></i><p class="mt-2">Drag & Drop gallery images or <span class="filepond--label-action">Browse</span></p></div>'
+                            acceptedFileTypes={["image/*"]}
+                            imagePreviewHeight={120}
+                            credits={false}
+                            className="filepond-border"
+                          />
+                          <small className="text-muted">
+                            Enter URLs separated by comma, or upload multiple
+                            images.
                           </small>
                         </FormGroup>
                       </CardBody>
@@ -1767,7 +2423,7 @@ const BusinessesPage = () => {
                   <Button
                     color="primary"
                     onClick={() =>
-                      setActiveTab((parseInt(activeTab) + 1).toString())
+                      handleTabChange((parseInt(activeTab) + 1).toString())
                     }
                   >
                     Next <i className="ri-arrow-right-line ms-1" />
@@ -1949,8 +2605,8 @@ const BusinessesPage = () => {
                               <strong>Created:</strong>{" "}
                               {selectedBusiness.created_at
                                 ? new Date(
-                                  selectedBusiness.created_at,
-                                ).toLocaleDateString()
+                                    selectedBusiness.created_at,
+                                  ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>
@@ -1959,8 +2615,8 @@ const BusinessesPage = () => {
                               <strong>Last Updated:</strong>{" "}
                               {selectedBusiness.updatedAt
                                 ? new Date(
-                                  selectedBusiness.updatedAt,
-                                ).toLocaleDateString()
+                                    selectedBusiness.updatedAt,
+                                  ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>

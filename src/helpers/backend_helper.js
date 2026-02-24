@@ -67,8 +67,18 @@ export const SurPlusCategoryAPI = {
 // Business API with extra endpoints
 export const BusinessAPI = {
   list: () => api.get(url.BUSINESS),
-  create: (payload) => api.post(url.BUSINESS, payload),
-  update: ({ id, payload }) => api.update(`${url.BUSINESS}/${id}`, payload),
+  create: (payload) =>
+    payload instanceof FormData
+      ? axios.post(url.BUSINESS, payload, {
+          headers: { "Content-Type": undefined },
+        })
+      : api.post(url.BUSINESS, payload),
+  update: ({ id, payload }) =>
+    payload instanceof FormData
+      ? axios.put(`${url.BUSINESS}/${id}`, payload, {
+          headers: { "Content-Type": undefined },
+        })
+      : api.update(`${url.BUSINESS}/${id}`, payload),
   delete: (id) => api.delete(`${url.BUSINESS}/${id}`),
 
   // extra endpoints
