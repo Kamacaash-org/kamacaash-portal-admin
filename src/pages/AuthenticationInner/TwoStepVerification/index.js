@@ -54,7 +54,7 @@ const TwosVerify = () => {
         role: user?.role,
         businessId: user?.businessId,
         businessName: user?.businessName,
-        mustChangePassword: user?.mustChangePassword,
+        must_change_password: user?.must_change_password,
       };
 
       const normalizedAuthResponse = {
@@ -77,7 +77,12 @@ const TwosVerify = () => {
         "authUser",
         JSON.stringify(normalizedAuthResponse),
       );
-      navigate("/dashboard");
+
+      if (normalizedStaff?.must_change_password) {
+        navigate("/auth-change-password");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (verifyError) {
       setError(verifyError?.message || "Failed to verify OTP");
     } finally {
@@ -96,7 +101,7 @@ const TwosVerify = () => {
       } else {
         getInputElement(index).blur();
         handleVerify({
-          preventDefault: () => {},
+          preventDefault: () => { },
         });
       }
     }

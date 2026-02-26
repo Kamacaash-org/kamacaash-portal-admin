@@ -228,7 +228,7 @@ const normalizeBusiness = (business = {}) => {
     getEntityId(business.primary_staff);
   const { countryCode, phoneNumber } = splitPhone(
     business.phone_e164 ||
-      `${business.countryCode || ""}${business.phoneNumber || ""}`,
+    `${business.countryCode || ""}${business.phoneNumber || ""}`,
   );
   const galleryImages = Array.isArray(business.gallery_images)
     ? business.gallery_images
@@ -296,13 +296,13 @@ const normalizeBusiness = (business = {}) => {
         coordinates: [
           Number(
             business.longitude ??
-              business.address?.coordinates?.coordinates?.[0] ??
-              0,
+            business.address?.coordinates?.coordinates?.[0] ??
+            0,
           ),
           Number(
             business.latitude ??
-              business.address?.coordinates?.coordinates?.[1] ??
-              0,
+            business.address?.coordinates?.coordinates?.[1] ??
+            0,
           ),
         ],
       },
@@ -449,9 +449,9 @@ const buildBusinessPayload = (formData) => {
     }),
   );
 
-  submitData.append("gallery_images", JSON.stringify(galleryUrls));
+  // submitData.append("gallery_images", JSON.stringify(galleryUrls));
   galleryFiles.forEach((file) => {
-    submitData.append("gallery_image_files", file);
+    submitData.append("gallery_images", file);
   });
 
   if (formData.logo instanceof File) {
@@ -1322,8 +1322,8 @@ const BusinessesPage = () => {
                         filters.category === "all"
                           ? "All"
                           : categories.find(
-                              (cat) => cat.value === filters.category,
-                            )?.label || "All",
+                            (cat) => cat.value === filters.category,
+                          )?.label || "All",
                     }}
                     onChange={(opt) =>
                       setFilters((prev) => ({ ...prev, category: opt.value }))
@@ -2321,13 +2321,13 @@ const BusinessesPage = () => {
 
                         <FormGroup className="mt-3 mb-0">
                           <Label className="form-label">Gallery Images</Label>
-                          <Input
+                          {/* <Input
                             name="galleryImageUrlsText"
                             value={formData.galleryImageUrlsText}
                             onChange={handleInputChange}
                             placeholder="https://cdn.site.com/img1.jpg, https://cdn.site.com/img2.jpg"
                             className="form-control-lg mb-3"
-                          />
+                          /> */}
                           <FilePond
                             files={galleryFiles}
                             onupdatefiles={handleGalleryFileUpdate}
@@ -2341,7 +2341,7 @@ const BusinessesPage = () => {
                             className="filepond-border"
                           />
                           <small className="text-muted">
-                            Enter URLs separated by comma, or upload multiple
+                            you can upload multiple
                             images.
                           </small>
                         </FormGroup>
@@ -2605,8 +2605,8 @@ const BusinessesPage = () => {
                               <strong>Created:</strong>{" "}
                               {selectedBusiness.created_at
                                 ? new Date(
-                                    selectedBusiness.created_at,
-                                  ).toLocaleDateString()
+                                  selectedBusiness.created_at,
+                                ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>
@@ -2615,8 +2615,8 @@ const BusinessesPage = () => {
                               <strong>Last Updated:</strong>{" "}
                               {selectedBusiness.updatedAt
                                 ? new Date(
-                                    selectedBusiness.updatedAt,
-                                  ).toLocaleDateString()
+                                  selectedBusiness.updatedAt,
+                                ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>

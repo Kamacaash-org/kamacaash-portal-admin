@@ -50,7 +50,7 @@ export const loginUser = (user, history) => async (dispatch) => {
         }
 
         dispatch(loginSuccess(data));
-        if (data?.staff?.mustChangePassword) {
+        if (data?.user?.must_change_password) {
           history("/auth-change-password");
         } else {
           history("/dashboard");
