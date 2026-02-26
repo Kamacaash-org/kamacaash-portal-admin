@@ -84,7 +84,7 @@ const ChangePassword = () => {
         if (response?.success) {
           setSuccess(response?.message || "Password changed successfully");
           validation.resetForm();
-          setTimeout(() => navigate("/auth-twostep"), 800);
+          setTimeout(() => navigate("/login"), 800);
         } else {
           setError(response?.message || "Failed to change password");
         }
