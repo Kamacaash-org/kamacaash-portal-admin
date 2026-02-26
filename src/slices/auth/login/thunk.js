@@ -14,34 +14,49 @@ import {
 export const loginUser = (user, history) => async (dispatch) => {
   try {
     dispatch(loginStart());
-    let response;
-    response = login({
+    const response = login({
       username: user.username,
       password: user.password,
     });
-    var data = await response;
+    const loginResponse = await response;
 
-    if (data) {
-      sessionStorage.setItem("authUser", JSON.stringify(data));
+    if (loginResponse) {
+      const normalizedResponse = JSON.parse(JSON.stringify(loginResponse));
+      const data = normalizedResponse?.data || {};
 
-      var finallogin = JSON.stringify(data);
-      finallogin = JSON.parse(finallogin);
-      data = finallogin.data;
-      console.log("ddd", finallogin);
-      if (finallogin.success) {
+      if (normalizedResponse.success) {
+        const requires2fa = Boolean(data?.requires2fa);
+
+        if (requires2fa) {
+          const pending2faSession = {
+            ...normalizedResponse,
+            data: {
+              requires2fa: true,
+              staffId: data?.staffId,
+            },
+          };
+
+          sessionStorage.setItem("authUser", JSON.stringify(pending2faSession));
+          dispatch(loginSuccess(pending2faSession.data));
+          history("/auth-twostep");
+          return;
+        }
+
+        sessionStorage.setItem("authUser", JSON.stringify(normalizedResponse));
+
         const accessToken = data?.accessToken || data?.access_token;
-        console.log("accessToken is:", accessToken);
         if (accessToken) {
           setAuthorization(accessToken);
         }
+
         dispatch(loginSuccess(data));
         if (data?.staff?.mustChangePassword) {
           history("/auth-change-password");
         } else {
-          history("/auth-twostep");
+          history("/dashboard");
         }
       } else {
-        dispatch(apiError(finallogin));
+        dispatch(apiError(normalizedResponse));
       }
     }
   } catch (error) {

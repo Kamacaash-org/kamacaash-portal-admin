@@ -9,6 +9,7 @@ export default function useAuthUser() {
       const parsed = JSON.parse(stored);
       const responseData = parsed?.data || parsed;
       const staff = responseData?.staff || {};
+      const user = responseData?.user || {};
       const token =
         responseData?.accessToken ||
         responseData?.access_token ||
@@ -18,13 +19,18 @@ export default function useAuthUser() {
         null;
 
       return {
-        staffId: staff.staffId,
-        username: staff.username,
-        firstName: staff.firstName,
-        lastName: staff.lastName,
-        role: staff.role,
-        businessId: staff.businessId,
-        businessName: staff.businessName,
+        staffId:
+          staff.staffId ||
+          user.staffId ||
+          user._id ||
+          user.id ||
+          responseData?.staffId,
+        username: staff.username || user.username,
+        firstName: staff.firstName || user.firstName,
+        lastName: staff.lastName || user.lastName,
+        role: staff.role || user.role,
+        businessId: staff.businessId || user.businessId,
+        businessName: staff.businessName || user.businessName,
         token,
         raw: parsed, // full object if needed
       };

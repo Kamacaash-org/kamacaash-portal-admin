@@ -1,4 +1,5 @@
 export const POST_LOGIN = "/staff/login";
+export const VERIFY_2FA = "/staff/verify-2fa";
 export const CHANGE_PASSWORD = "/staff/change-password";
 export const TOGGLE_2FA = "/staff/toggle-2fa";
 export const DASHBOARD_OVERVIEW = "/dashboard/overview";

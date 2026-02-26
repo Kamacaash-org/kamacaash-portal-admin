@@ -1,134 +1,264 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button, Card, Col, Container, Row } from 'reactstrap';
+import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Alert, Button, Card, Col, Container, Row, Spinner } from "reactstrap";
 
 //import images
-import AuthSlider from '../authCarousel';
-import { useNavigate } from 'react-router-dom';
+import AuthSlider from "../authCarousel";
+import { useNavigate } from "react-router-dom";
+import { setAuthorization } from "../../../helpers/api_helper";
+import { verify2FA } from "../../../helpers/backend_helper";
 
 const TwosVerify = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    const getInputElement = (index) => {
-        return document.getElementById('digit' + index + '-input');
+  const staffId = useMemo(() => {
+    try {
+      const stored = JSON.parse(sessionStorage.getItem("authUser"));
+      return stored?.data?.staffId || null;
+    } catch (e) {
+      return null;
+    }
+  }, []);
+
+  const handleVerify = async (event) => {
+    event.preventDefault();
+
+    if (!staffId) {
+      navigate("/login");
+      return;
     }
 
-    const moveToNext = (index) => {
-        if (getInputElement(index).value.length === 1) {
-            if (index !== 4) {
-                getInputElement(index + 1).focus();
-            } else {
-                getInputElement(index).blur();
-                // Submit code
-                navigate('/dashboard')
+    setLoading(true);
+    setError("");
 
-                console.log('submit code');
-            }
-        }
+    try {
+      const response = await verify2FA({
+        staffId,
+        otp: "123456",
+      });
+
+      if (!response?.success) {
+        setError(response?.message || "Failed to verify OTP");
+        return;
+      }
+
+      const responseData = response?.data || {};
+      const user = responseData?.user || {};
+      const normalizedStaff = responseData?.staff || {
+        staffId: user?._id || user?.id || staffId,
+        username: user?.username,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        role: user?.role,
+        businessId: user?.businessId,
+        businessName: user?.businessName,
+        mustChangePassword: user?.mustChangePassword,
+      };
+
+      const normalizedAuthResponse = {
+        ...response,
+        data: {
+          ...responseData,
+          requires2fa: false,
+          staffId,
+          staff: normalizedStaff,
+        },
+      };
+
+      const accessToken =
+        responseData?.accessToken || responseData?.access_token;
+      if (accessToken) {
+        setAuthorization(accessToken);
+      }
+
+      sessionStorage.setItem(
+        "authUser",
+        JSON.stringify(normalizedAuthResponse),
+      );
+      navigate("/dashboard");
+    } catch (verifyError) {
+      setError(verifyError?.message || "Failed to verify OTP");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <React.Fragment>
-            <div className="auth-page-wrapper auth-bg-cover py-5 d-flex justify-content-center align-items-center min-vh-100">
-                <div className="bg-overlay"></div>
-                <div className="auth-page-content overflow-hidden pt-lg-5">
-                    <Container>
-                        <Row>
-                            <Col lg={12}>
-                                <Card className="overflow-hidden card-bg-fill galaxy-border-none">
-                                    <Row className="justify-content-center g-0">
-                                        <AuthSlider />
-                                        <Col lg={6}>
-                                            <div className="p-lg-5 p-4">
-                                                <div className="mb-4">
-                                                    <div className="avatar-lg mx-auto">
-                                                        <div className="avatar-title bg-light text-primary display-5 rounded-circle">
-                                                            <i className="ri-mail-line"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-muted text-center mx-lg-3">
-                                                    <h4 className="">Verify Your Email</h4>
-                                                    <p>Please enter the 4 digit code sent to <span className="fw-semibold">example@abc.com</span></p>
-                                                </div>
+  const getInputElement = (index) => {
+    return document.getElementById("digit" + index + "-input");
+  };
 
-                                                <div className="mt-4">
-                                                    <form>
-                                                        <Row>
-                                                            <Col className="col-3">
-                                                                <div className="mb-3">
-                                                                    <label htmlFor="digit1-input" className="visually-hidden">Digit 1</label>
-                                                                    <input type="text"
-                                                                        className="form-control form-control-lg bg-light border-light text-center"
-                                                                        maxLength="1"
-                                                                        id="digit1-input" onKeyUp={() => moveToNext(1)} />
-                                                                </div>
-                                                            </Col>
+  const moveToNext = (index) => {
+    if (getInputElement(index).value.length === 1) {
+      if (index !== 4) {
+        getInputElement(index + 1).focus();
+      } else {
+        getInputElement(index).blur();
+        handleVerify({
+          preventDefault: () => {},
+        });
+      }
+    }
+  };
 
-                                                            <Col className="col-3">
-                                                                <div className="mb-3">
-                                                                    <label htmlFor="digit2-input" className="visually-hidden">Digit 2</label>
-                                                                    <input type="text"
-                                                                        className="form-control form-control-lg bg-light border-light text-center"
-                                                                        maxLength="1"
-                                                                        id="digit2-input" onKeyUp={() => moveToNext(2)} />
-                                                                </div>
-                                                            </Col>
+  return (
+    <React.Fragment>
+      <div className="auth-page-wrapper auth-bg-cover py-5 d-flex justify-content-center align-items-center min-vh-100">
+        <div className="bg-overlay"></div>
+        <div className="auth-page-content overflow-hidden pt-lg-5">
+          <Container>
+            <Row>
+              <Col lg={12}>
+                <Card className="overflow-hidden card-bg-fill galaxy-border-none">
+                  <Row className="justify-content-center g-0">
+                    <AuthSlider />
+                    <Col lg={6}>
+                      <div className="p-lg-5 p-4">
+                        <div className="mb-4">
+                          <div className="avatar-lg mx-auto">
+                            <div className="avatar-title bg-light text-primary display-5 rounded-circle">
+                              <i className="ri-mail-line"></i>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-muted text-center mx-lg-3">
+                          <h4 className="">Verify Your Email</h4>
+                          <p>Please confirm OTP verification to continue.</p>
+                        </div>
 
-                                                            <Col className="col-3">
-                                                                <div className="mb-3">
-                                                                    <label htmlFor="digit3-input" className="visually-hidden">Digit 3</label>
-                                                                    <input type="text"
-                                                                        className="form-control form-control-lg bg-light border-light text-center"
-                                                                        maxLength="1"
-                                                                        id="digit3-input" onKeyUp={() => moveToNext(3)} />
-                                                                </div>
-                                                            </Col>
-
-                                                            <Col className="col-3">
-                                                                <div className="mb-3">
-                                                                    <label htmlFor="digit4-input" className="visually-hidden">Digit 4</label>
-                                                                    <input type="text"
-                                                                        className="form-control form-control-lg bg-light border-light text-center"
-                                                                        maxLength="1"
-                                                                        id="digit4-input" onKeyUp={() => moveToNext(4)} />
-                                                                </div>
-                                                            </Col>
-                                                        </Row>
-
-                                                        <div className="mt-3">
-                                                            <Button color="success" className="w-100">Confirm</Button>
-                                                        </div>
-
-                                                    </form>
-
-                                                </div>
-
-                                                <div className="mt-5 text-center">
-                                                    <p className="mb-0">Didn't receive a code ? <Link to="/auth-pass-reset-cover" className="fw-semibold text-primary text-decoration-underline">Resend</Link> </p>
-                                                </div>
-                                            </div>
-                                        </Col>
-                                    </Row>
-                                </Card>
-                            </Col>
-                        </Row>
-                    </Container>
-                </div>
-                <footer className="footer">
-                    <Container>
-                        <Row>
-                            <Col lg={12}>
-                                <div className="text-center">
-                                    <p className="mb-0">&copy; {new Date().getFullYear()} Crafted with <i className="mdi mdi-heart text-danger"></i> by Kamacash</p>
+                        <div className="mt-4">
+                          {error ? <Alert color="danger">{error}</Alert> : null}
+                          <form onSubmit={handleVerify}>
+                            <Row>
+                              <Col className="col-3">
+                                <div className="mb-3">
+                                  <label
+                                    htmlFor="digit1-input"
+                                    className="visually-hidden"
+                                  >
+                                    Digit 1
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-lg bg-light border-light text-center"
+                                    maxLength="1"
+                                    id="digit1-input"
+                                    onKeyUp={() => moveToNext(1)}
+                                  />
                                 </div>
-                            </Col>
-                        </Row>
-                    </Container>
-                </footer>
-            </div>
-        </React.Fragment >
-    );
+                              </Col>
+
+                              <Col className="col-3">
+                                <div className="mb-3">
+                                  <label
+                                    htmlFor="digit2-input"
+                                    className="visually-hidden"
+                                  >
+                                    Digit 2
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-lg bg-light border-light text-center"
+                                    maxLength="1"
+                                    id="digit2-input"
+                                    onKeyUp={() => moveToNext(2)}
+                                  />
+                                </div>
+                              </Col>
+
+                              <Col className="col-3">
+                                <div className="mb-3">
+                                  <label
+                                    htmlFor="digit3-input"
+                                    className="visually-hidden"
+                                  >
+                                    Digit 3
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-lg bg-light border-light text-center"
+                                    maxLength="1"
+                                    id="digit3-input"
+                                    onKeyUp={() => moveToNext(3)}
+                                  />
+                                </div>
+                              </Col>
+
+                              <Col className="col-3">
+                                <div className="mb-3">
+                                  <label
+                                    htmlFor="digit4-input"
+                                    className="visually-hidden"
+                                  >
+                                    Digit 4
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-lg bg-light border-light text-center"
+                                    maxLength="1"
+                                    id="digit4-input"
+                                    onKeyUp={() => moveToNext(4)}
+                                  />
+                                </div>
+                              </Col>
+                            </Row>
+
+                            <div className="mt-3">
+                              <Button
+                                color="success"
+                                className="w-100"
+                                type="submit"
+                                disabled={loading}
+                              >
+                                {loading ? (
+                                  <Spinner size="sm" className="me-2">
+                                    {" "}
+                                    Loading...{" "}
+                                  </Spinner>
+                                ) : null}
+                                Confirm
+                              </Button>
+                            </div>
+                          </form>
+                        </div>
+
+                        <div className="mt-5 text-center">
+                          <p className="mb-0">
+                            Didn't receive a code ?{" "}
+                            <Link
+                              to="/auth-pass-reset-cover"
+                              className="fw-semibold text-primary text-decoration-underline"
+                            >
+                              Resend
+                            </Link>{" "}
+                          </p>
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+            </Row>
+          </Container>
+        </div>
+        <footer className="footer">
+          <Container>
+            <Row>
+              <Col lg={12}>
+                <div className="text-center">
+                  <p className="mb-0">
+                    &copy; {new Date().getFullYear()} Crafted with{" "}
+                    <i className="mdi mdi-heart text-danger"></i> by Kamacash
+                  </p>
+                </div>
+              </Col>
+            </Row>
+          </Container>
+        </footer>
+      </div>
+    </React.Fragment>
+  );
 };
 
 export default TwosVerify;

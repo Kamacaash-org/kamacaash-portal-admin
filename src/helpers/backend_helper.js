@@ -27,6 +27,7 @@ const makeCRUD = (endpoint) => ({
 
 // Auth
 export const login = (data) => api.post(url.POST_LOGIN, data);
+export const verify2FA = (data) => api.post(url.VERIFY_2FA, data);
 export const changePassword = (data) => api.post(url.CHANGE_PASSWORD, data);
 export const getDashboardOverview = () => api.get(url.DASHBOARD_OVERVIEW);
 export const getStaffProfile = (staffId) =>
