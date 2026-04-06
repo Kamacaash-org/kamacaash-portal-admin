@@ -53,6 +53,9 @@ export const rejectReviewRequest = (requestId, payload) =>
 
 export const SurPlusCategoryAPI = {
   list: () => api.get(url.CATEGORIES),
+
+  // DDL endpoint for dropdowns
+  ddl: () => api.get(`${url.CATEGORIES}/ddl`),
   create: (payload) =>
     axios.post(url.CATEGORIES, payload, {
       headers: { "Content-Type": undefined },
@@ -71,21 +74,20 @@ export const BusinessAPI = {
   create: (payload) =>
     payload instanceof FormData
       ? axios.post(url.BUSINESS, payload, {
-          headers: { "Content-Type": undefined },
-        })
+        headers: { "Content-Type": undefined },
+      })
       : api.post(url.BUSINESS, payload),
   update: ({ id, payload }) =>
     payload instanceof FormData
       ? axios.put(`${url.BUSINESS}/${id}`, payload, {
-          headers: { "Content-Type": undefined },
-        })
+        headers: { "Content-Type": undefined },
+      })
       : api.update(`${url.BUSINESS}/${id}`, payload),
   delete: (id) => api.delete(`${url.BUSINESS}/${id}`),
 
   // extra endpoints
   archive: (id) => api.post(`${url.BUSINESS}/${id}/archive`),
-  toggleStatus: ({ id, is_active }) =>
-    api.update(`${url.BUSINESS}/${id}`, { is_active }),
+  toggleStatus: ({ id, is_active }) => api.post(`${url.BUSINESS}/${id}/toggleStatus`, { is_active }),
   approve: (id) => api.post(`${url.BUSINESS}/${id}/approve`),
   reject: (id) => api.post(`${url.BUSINESS}/${id}/reject`),
   signContract: (payload) =>

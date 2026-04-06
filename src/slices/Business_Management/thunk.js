@@ -1,49 +1,9 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { SurPlusCategoryAPI, BusinessAPI } from "../../helpers/backend_helper";
-import { makeCRUDThunks } from "../../helpers/thunk_factory";
+import { makeCRUDThunks, makeDDLThunks } from "../../helpers/thunk_factory";
 import { toast } from "react-toastify";
 
-// PDF Generation function
-const generateAgreementPDF = (agreementData) => {
-  // Note: Install jspdf with: npm install jspdf
-  // For now, this is a placeholder that would generate and download the PDF
 
-  const agreementText = `
-Agreement between Kamacaash & ${agreementData.businessName}
-
-Date: ${agreementData.date}
-Agreement Reference: ${agreementData.agreementReference}
-
-Business Details:
-- Owner Name: ${agreementData.ownerName}
-- Business Name: ${agreementData.businessName}
-- Email: ${agreementData.email || "N/A"}
-- Phone: ${agreementData.phone}
-- Category: ${agreementData.category}
-- Description: ${agreementData.description || "N/A"}
-- Registration Number: ${agreementData.registrationNumber || "N/A"}
-- Tax ID: ${agreementData.taxId || "N/A"}
-
-Contract Terms:
-- Commission Rate: ${agreementData.commissionRate}%
-- Currency: ${agreementData.currency}
-- Default Language: ${agreementData.defaultLanguage}
-- Time Zone: ${agreementData.timeZone}
-- Payout Schedule: ${agreementData.payoutSchedule}
-
-Signatures:
-
-Kamacaash Representative: ___________________________ Date: ____________
-
-Business Owner (${agreementData.ownerName}): ___________________________ Date: ____________
-`;
-
-  // Create and download the PDF
-  const { jsPDF } = require("jspdf");
-  const doc = new jsPDF();
-  doc.text(agreementText, 10, 10);
-  doc.save(`Agreement-${agreementData.businessName}.pdf`);
-};
 
 export const {
   list: getCategories,
@@ -51,6 +11,16 @@ export const {
   update: updateCategory,
   delete: deleteCategory,
 } = makeCRUDThunks("business-management/surplusCategory", SurPlusCategoryAPI);
+
+
+// DDL (dropdown) — call the new ddl endpoint
+export const {
+  list: getCategoriesDDL
+} = makeDDLThunks("categories/ddl", SurPlusCategoryAPI.ddl, {
+  labelKey: 'name',
+  valueKey: 'id',
+  metaKeys: ['slug']
+});
 
 export const { list: getBusinessesData } = makeCRUDThunks(
   "business-management/business",
@@ -68,10 +38,6 @@ export const createOrUpdateBusiness = createAsyncThunk(
       if (!res.success) throw res;
       toast.success(res.message);
 
-      // Generate PDF agreement if agreementData is present (new business)
-      // if (res.data?.agreementData) {
-      //     generateAgreementPDF(res.data.agreementData);
-      // }
 
       dispatch(getBusinessesData());
       return res.data;

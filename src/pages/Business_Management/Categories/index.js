@@ -308,11 +308,11 @@ const SurplusCategories = () => {
           "-"
         ),
     },
-    {
-      name: "Parent ID",
-      selector: (row) => row.parent_id || "-",
-      wrap: true,
-    },
+    // {
+    //   name: "Parent ID",
+    //   selector: (row) => row.parent_id || "-",
+    //   wrap: true,
+    // },
     {
       name: "Sort",
       selector: (row) => row.sort_order ?? 0,
@@ -546,7 +546,7 @@ const SurplusCategories = () => {
             </Row>
 
             <Row>
-              <Col md={6}>
+              <Col md={6} style={{ display: "none" }}>
                 <FormGroup>
                   <Label>Parent ID</Label>
                   <Input

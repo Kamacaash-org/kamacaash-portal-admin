@@ -65,7 +65,15 @@ const Staff = () => {
 
     const roleOptions = [
         { value: "", label: "All" },
-        { value: "SUPER_ADMIN", label: "Admin" },
+        { value: "ADMIN", label: "Admin" },
+        { value: "STAFF", label: "Staff" },
+        { value: "BUSINESS_OWNER", label: "Business Owner" }
+    ];
+
+    const formRoleOptions = [
+        { value: "", label: "Select Role" },
+        { value: "ADMIN", label: "Admin" },
+        { value: "STAFF", label: "Staff" },
         { value: "BUSINESS_OWNER", label: "Business Owner" }
     ];
 
@@ -77,6 +85,7 @@ const Staff = () => {
     ];
 
     const formSexOptions = [
+        { value: "", label: "Select Sex" },
         { value: "MALE", label: "Male" },
         { value: "FEMALE", label: "Female" }
 
@@ -233,6 +242,16 @@ const Staff = () => {
         },
     });
 
+    const roleLabels = {
+        SUPER_ADMIN: "Super Admin",
+        ADMIN: "Administrator",
+        BUSINESS_OWNER: "Business Owner",
+        STAFF: "Staff Member",
+        USER: "User"
+    };
+
+    const formatRole = (role) => roleLabels[role] || "User";
+
     // Table columns
     const columns = [
         {
@@ -277,11 +296,12 @@ const Staff = () => {
             cell: row => (
                 <Badge
                     color={
-                        row.role === 'SUPER_ADMIN' ? 'info' :
-                            row.role === 'BUSINESS_OWNER' ? 'warning' : 'secondary'
+                        row.role === 'SUPER_ADMIN' ? 'success' :
+                            row.role === 'ADMIN' ? 'primary' :
+                                row.role === 'BUSINESS_OWNER' ? 'warning' : 'secondary'
                     }
                 >
-                    {row.role}
+                    {formatRole(row.role)}
                 </Badge>
             )
         },
@@ -487,8 +507,9 @@ const Staff = () => {
                                         <FormGroup>
                                             <Label>Role <span className="text-danger">*</span></Label>
                                             <Select
-                                                options={roleOptions.filter(opt => opt.value !== "")}
-                                                value={roleOptions.find(opt => opt.value === validation.values.role)}
+                                                options={formRoleOptions}
+
+                                                value={formRoleOptions.find(opt => opt.value === validation.values.role)}
                                                 onChange={(opt) => validation.setFieldValue('role', opt?.value || "")}
                                                 isClearable
                                                 placeholder="Select role"

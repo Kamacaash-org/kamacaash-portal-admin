@@ -13,6 +13,7 @@ import { useDispatch, useSelector } from "react-redux";
 import avatar1 from "../../assets/images/logo-kamacash.png";
 import useAuthUser from "../Hooks/useAuthUser";
 import { logoutUser } from "../../slices/auth/login/thunk";
+import { use } from "react";
 
 const ProfileDropdown = () => {
   const navigate = useNavigate();
@@ -32,16 +33,24 @@ const ProfileDropdown = () => {
 
   const authUser = useAuthUser();
 
+  const roleLabels = {
+    SUPER_ADMIN: "Super Admin",
+    ADMIN: "Administrator",
+    BUSINESS_OWNER: "Business Owner",
+    STAFF: "Staff Member",
+    USER: "User"
+  };
+
+  const formatRole = (role) => roleLabels[role] || "User";
   useEffect(() => {
     if (sessionStorage.getItem("authUser")) {
       const obj = JSON.parse(sessionStorage.getItem("authUser"));
-      const staffName = obj.data.user.firstName || "Admin";
-      const staffRole = obj.data.user.role || "Admin";
-
+      const staffName = obj.data.user.username || "Admin";
+      const staffRole = obj.data.user.role || "USER";
       setUserName(staffName);
-      setStaffRole(staffRole);
+      setStaffRole(formatRole(staffRole));
     }
-  }, [userName, staffRole, user]);
+  }, []);
 
   //Dropdown Toggle
   const [isProfileDropdown, setIsProfileDropdown] = useState(false);
@@ -70,10 +79,10 @@ const ProfileDropdown = () => {
             />
             <span className="text-start ms-xl-2">
               <span className="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
-                {authUser.firstName}
+                {userName}
               </span>
               <span className="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">
-                {authUser.role}
+                {staffRole}
               </span>
             </span>
           </span>

@@ -53,7 +53,7 @@ import {
   archiveBusiness as onDeleteBusiness,
   createOrUpdateBusiness as onCreateOrUpdateBusiness,
   toggleStatusBusiness as onToggleBusinessActiveStatus,
-  getCategories as onGetCategories,
+  getCategoriesDDL as onGetCategoriesDDL,
   getStaffs as onGetStaffData,
 } from "../../../slices/thunks";
 
@@ -64,7 +64,7 @@ const selectBusinessesData = createSelector(
 );
 const selectCategoriesData = createSelector(
   (state) => state.BusinessManagement,
-  (categoriesData) => categoriesData.categoriesData || [],
+  (categoriesDDL) => categoriesDDL.categoriesDDL || [],
 );
 
 const selectStaffData = createSelector(
@@ -212,10 +212,13 @@ const normalizeBusiness = (business = {}) => {
     });
   }
 
-  const resolvedCategoryId =
+  const resolvedCategoryIdRaw =
     typeof business.category === "object"
       ? getEntityId(business.category)
       : business.category_id || business.category || "";
+  const resolvedCategoryId = resolvedCategoryIdRaw
+    ? String(resolvedCategoryIdRaw)
+    : "";
 
   const resolvedCategoryName =
     business.category?.name ||
@@ -518,7 +521,7 @@ const BusinessesPage = () => {
     setLoading(true);
     try {
       await dispatch(onGetBusinesses());
-      await dispatch(onGetCategories());
+      await dispatch(onGetCategoriesDDL());
       await dispatch(onGetStaffData());
     } catch (error) {
       console.error("Error loading businesses:", error);
@@ -555,17 +558,32 @@ const BusinessesPage = () => {
   }, [staffData]);
 
   useEffect(() => {
-    const initialCategories = normalizeList(categoriesData, [
+    // if (!categoriesData?.data) return;
+    const categoriesRows = normalizeList(categoriesData, [
       "categories",
       "rows",
       "data",
+      "items",
+      "results",
     ]);
-    setCategories([
-      ...(initialCategories || []).map((cat) => ({
-        value: getEntityId(cat),
-        label: cat.name || cat.label || cat.title || "Unknown Category",
+    const mappedCategories = categoriesRows
+      .map((cat) => ({
+        value:
+          cat?.value !== undefined && cat?.value !== null
+            ? String(cat.value)
+            : "",
+        label: cat?.label || cat?.name || "",
+        meta: cat?.meta,
+      }))
+      .filter((cat) => cat.value && cat.label);
+
+    setCategories(
+      mappedCategories.map((cat) => ({
+        value: cat.value,
+        label: cat.label,
+        meta: cat.meta,
       })),
-    ]);
+    );
   }, [categoriesData]);
 
   useEffect(() => {
@@ -580,8 +598,11 @@ const BusinessesPage = () => {
       const matchesStatus =
         filters.status === "all" ||
         (business.status || "").toUpperCase() === filters.status;
+      const businessCategoryValue = String(business.category || "");
+      const selectedCategoryValue = String(filters.category || "");
       const matchesCategory =
-        filters.category === "all" || business.category === filters.category;
+        selectedCategoryValue === "all" ||
+        businessCategoryValue === selectedCategoryValue;
 
       return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -598,6 +619,11 @@ const BusinessesPage = () => {
         value: getEntityId(staff),
         label: `${staff.firstName || ""} ${staff.lastName || ""} (${staff.phone || staff.phone_e164 || "N/A"})`,
       })),
+  ];
+  const categoryFilterOptions = [{ value: "all", label: "All" }, ...categories];
+  const categoryFormOptions = [
+    { value: "", label: "Select Category" },
+    ...categories,
   ];
 
   // Handle filter changes
@@ -1016,22 +1042,24 @@ const BusinessesPage = () => {
   };
 
   // Get status badge color
-  const getStatusBadge = (status) => {
+  const getVerifyStatusBadge = (status) => {
     switch (status) {
-      case "APPROVED":
+      case "VERIFIED":
         return "success";
-      case "PENDING":
+      case "UNVERIFIED":
         return "warning";
       case "REJECTED":
         return "danger";
-      default:
+      case "PENDING":
         return "secondary";
+      default:
+        return "dark";
     }
   };
 
   // Get active status badge
-  const getActiveBadge = (isActive) => {
-    return isActive ? "success" : "danger";
+  const getActiveBadge = (is_active) => {
+    return is_active ? "success" : "danger";
   };
 
   // Table columns
@@ -1039,7 +1067,6 @@ const BusinessesPage = () => {
     {
       name: "#",
       cell: (row, index) => index + 1,
-      width: "60px",
     },
     {
       name: "Logo",
@@ -1058,8 +1085,7 @@ const BusinessesPage = () => {
             </div>
           )}
         </div>
-      ),
-      width: "70px",
+      )
     },
     {
       name: "Business Name",
@@ -1085,11 +1111,11 @@ const BusinessesPage = () => {
       name: "Status",
       cell: (row) => (
         <div>
-          <Badge color={getStatusBadge(row.status)} className="me-1">
-            {row.status}
+          <Badge color={getVerifyStatusBadge(row.verification_status)} className="me-1">
+            {row.verification_status}
           </Badge>
-          <Badge color={getActiveBadge(row.isActive)}>
-            {row.isActive ? "Active" : "Inactive"}
+          <Badge color={getActiveBadge(row.is_active)}>
+            {row.is_active ? "Active" : "Inactive"}
           </Badge>
         </div>
       ),
@@ -1101,8 +1127,7 @@ const BusinessesPage = () => {
     {
       name: "Created",
       cell: (row) =>
-        row.created_at ? new Date(row.created_at).toLocaleDateString() : "N/A",
-      width: "120px",
+        row.created_at ? new Date(row.created_at).toLocaleDateString() : "N/A"
     },
     {
       name: "Actions",
@@ -1144,16 +1169,16 @@ const BusinessesPage = () => {
             )}
           </PDFDownloadLink>
           <Button
-            color={row.isActive ? "outline-warning" : "outline-success"}
+            color={row.is_active ? "outline-warning" : "outline-success"}
             size="sm"
             onClick={() => {
               setSelectedBusiness(row);
               setStatusModal(true);
             }}
-            title={row.isActive ? "Deactivate" : "Activate"}
+            title={row.is_active ? "Deactivate" : "Activate"}
             className="btn-icon"
           >
-            <i className={row.isActive ? "ri-pause-line" : "ri-play-line"} />
+            <i className={row.is_active ? "ri-pause-line" : "ri-play-line"} />
           </Button>
           <Button
             color="outline-danger"
@@ -1168,8 +1193,7 @@ const BusinessesPage = () => {
             <i className="ri-delete-bin-line" />
           </Button>
         </div>
-      ),
-      width: "200px",
+      )
     },
   ];
 
@@ -1315,7 +1339,7 @@ const BusinessesPage = () => {
                 <FormGroup className="mb-0">
                   <Label className="form-label">Category</Label>
                   <Select
-                    options={[{ value: "all", label: "All" }, ...categories]}
+                    options={categoryFilterOptions}
                     value={{
                       value: filters.category,
                       label:
@@ -1653,14 +1677,14 @@ const BusinessesPage = () => {
                             Category <span className="text-danger">*</span>
                           </Label>
                           <Select
-                            options={categories}
-                            value={categories.find(
+                            options={categoryFormOptions}
+                            value={categoryFormOptions.find(
                               (cat) => cat.value === formData.category,
                             )}
                             onChange={(opt) =>
                               setFormData((prev) => ({
                                 ...prev,
-                                category: opt.value,
+                                category: opt?.value || "",
                               }))
                             }
                             placeholder="Select category"
@@ -2529,16 +2553,16 @@ const BusinessesPage = () => {
                       <h4>{selectedBusiness.businessName}</h4>
                       <div className="mb-2">
                         <Badge
-                          color={getStatusBadge(selectedBusiness.status)}
+                          color={getVerifyStatusBadge(selectedBusiness.verification_status)}
                           className="me-1 fs-6"
                         >
-                          {selectedBusiness.status}
+                          {selectedBusiness.verification_status}
                         </Badge>
                         <Badge
-                          color={getActiveBadge(selectedBusiness.isActive)}
+                          color={getActiveBadge(selectedBusiness.is_active)}
                           className="fs-6"
                         >
-                          {selectedBusiness.isActive ? "Active" : "Inactive"}
+                          {selectedBusiness.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </div>
                       <p className="text-muted">

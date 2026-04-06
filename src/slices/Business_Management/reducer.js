@@ -2,13 +2,14 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
     getCategories,
+    getCategoriesDDL,
     getBusinessesData
 } from "./thunk";
 
 export const initialState = {
     categoriesData: [],
+    categoriesDDL: [],
     businessesData: [],
-
     error: {},
 };
 const BusinessManagementSlice = createSlice({
@@ -24,7 +25,15 @@ const BusinessManagementSlice = createSlice({
             state.error = action.payload?.error || null;
         });
 
+        // DDL case for dropdowns   // this is separate because it uses a different endpoint and data structure than the regular list
+        builder.addCase(getCategoriesDDL.fulfilled, (state, action) => {
+            state.categoriesDDL = action.payload;
+        });
+        builder.addCase(getCategoriesDDL.rejected, (state, action) => {
+            state.error = action.payload?.error || null;
+        });
 
+        // === Businesses ===
         builder.addCase(getBusinessesData.fulfilled, (state, action) => {
             state.businessesData = action.payload;
         });
