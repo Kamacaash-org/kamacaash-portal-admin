@@ -6,16 +6,65 @@ import { api } from "../config";
 axios.defaults.baseURL = api.API_URL;
 axios.defaults.headers.post["Content-Type"] = "application/json";
 
+const safeParseAuthUser = () => {
+  try {
+    const stored = sessionStorage.getItem("authUser");
+    return stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const extractTokens = (source) => {
+  const data = source?.data || source || {};
+  const nestedTokens = data?.tokens || source?.tokens || {};
+
+  const accessToken =
+    data?.accessToken ||
+    data?.access_token ||
+    data?.token ||
+    source?.accessToken ||
+    source?.access_token ||
+    source?.token ||
+    nestedTokens?.accessToken ||
+    nestedTokens?.access_token ||
+    nestedTokens?.token ||
+    nestedTokens?.access ||
+    null;
+
+  const refreshToken =
+    data?.refreshToken ||
+    data?.refresh_token ||
+    source?.refreshToken ||
+    source?.refresh_token ||
+    nestedTokens?.refreshToken ||
+    nestedTokens?.refresh_token ||
+    nestedTokens?.refresh ||
+    null;
+
+  return { accessToken, refreshToken };
+};
+
+export const getAuthTokensFromSession = () => {
+  const authData = safeParseAuthUser();
+  return extractTokens(authData);
+};
+
 // Authorization
-const storedAuth = JSON.parse(sessionStorage.getItem("authUser"));
-const token =
-  storedAuth?.data?.accessToken ||
-  storedAuth?.data?.access_token ||
-  storedAuth?.accessToken ||
-  storedAuth?.access_token ||
-  storedAuth?.token ||
-  null;
-if (token) axios.defaults.headers.common["Authorization"] = "Bearer " + token;
+const { accessToken: initialAccessToken } = getAuthTokensFromSession();
+if (initialAccessToken) {
+  axios.defaults.headers.common["Authorization"] =
+    "Bearer " + initialAccessToken;
+}
+
+axios.interceptors.request.use((config) => {
+  const { accessToken } = getAuthTokensFromSession();
+  if (accessToken) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return config;
+});
 
 axios.interceptors.response.use(
   (response) => {

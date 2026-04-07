@@ -23,6 +23,40 @@ export const loginUser = (user, history) => async (dispatch) => {
     if (loginResponse) {
       const normalizedResponse = JSON.parse(JSON.stringify(loginResponse));
       const data = normalizedResponse?.data || {};
+      const tokenBag = data?.tokens || {};
+      const accessToken =
+        data?.accessToken ||
+        data?.access_token ||
+        tokenBag?.accessToken ||
+        tokenBag?.access_token ||
+        tokenBag?.token ||
+        null;
+      const refreshToken =
+        data?.refreshToken ||
+        data?.refresh_token ||
+        tokenBag?.refreshToken ||
+        tokenBag?.refresh_token ||
+        null;
+
+      const normalizedData = {
+        ...data,
+        accessToken: accessToken || data?.accessToken,
+        access_token: accessToken || data?.access_token,
+        refreshToken: refreshToken || data?.refreshToken,
+        refresh_token: refreshToken || data?.refresh_token,
+      };
+
+      const resolvedStaffId =
+        data?.staffId ||
+        data?.staff?.staffId ||
+        data?.staff?._id ||
+        data?.staff?.id ||
+        data?.user?.staffId ||
+        data?.user?._id ||
+        data?.user?.id ||
+        null;
+
+      normalizedData.staffId = resolvedStaffId || normalizedData.staffId;
 
       if (normalizedResponse.success) {
         const requires2fa = Boolean(data?.requires2fa);
@@ -32,7 +66,7 @@ export const loginUser = (user, history) => async (dispatch) => {
             ...normalizedResponse,
             data: {
               requires2fa: true,
-              staffId: data?.staffId,
+              staffId: resolvedStaffId,
             },
           };
 
@@ -42,15 +76,22 @@ export const loginUser = (user, history) => async (dispatch) => {
           return;
         }
 
-        sessionStorage.setItem("authUser", JSON.stringify(normalizedResponse));
+        const normalizedAuthResponse = {
+          ...normalizedResponse,
+          data: normalizedData,
+        };
 
-        const accessToken = data?.accessToken || data?.access_token;
+        sessionStorage.setItem(
+          "authUser",
+          JSON.stringify(normalizedAuthResponse),
+        );
+
         if (accessToken) {
           setAuthorization(accessToken);
         }
 
-        dispatch(loginSuccess(data));
-        if (data?.user?.must_change_password) {
+        dispatch(loginSuccess(normalizedData));
+        if (normalizedData?.user?.must_change_password) {
           history("/auth-change-password");
         } else {
           history("/dashboard");

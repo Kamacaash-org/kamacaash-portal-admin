@@ -12,8 +12,6 @@ module.exports = {
     // API_URL: "http://localhost:5216/api/v1",
 
     // PRODUCTION CONNECTION
-    API_URL: "https://api-kamacaash.onrender.com/api/v1",
-
-
-  }
+    API_URL: "https://api.kamacaash.com/api/v1",
+  },
 };

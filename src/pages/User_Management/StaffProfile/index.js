@@ -35,6 +35,86 @@ import {
   ModalFooter
 } from "reactstrap";
 
+const splitE164Phone = (phoneE164 = "") => {
+  const value = String(phoneE164 || "").trim();
+  if (!value.startsWith("+")) {
+    return { countryCode: "", phone: value };
+  }
+
+  const match = value.match(/^(\+\d{1,4})(\d+)$/);
+  if (!match) {
+    return { countryCode: "", phone: value };
+  }
+
+  return {
+    countryCode: match[1],
+    phone: match[2],
+  };
+};
+
+const normalizeStaffProfile = (raw) => {
+  if (!raw) return null;
+
+  const basePhone = raw.phone_e164 || raw.phoneE164 || "";
+  const parsedPhone = splitE164Phone(basePhone);
+
+  const countryCode =
+    raw.countryCode ||
+    raw.country_code ||
+    raw.phone_country_code ||
+    parsedPhone.countryCode ||
+    "";
+
+  const phone =
+    raw.phone ||
+    raw.phone_number ||
+    raw.phoneNumber ||
+    parsedPhone.phone ||
+    "";
+
+  const firstName = raw.firstName || raw.first_name || "";
+  const lastName = raw.lastName || raw.last_name || "";
+
+  return {
+    ...raw,
+    id: raw.id || raw._id,
+    firstName,
+    lastName,
+    fullName:
+      raw.fullName ||
+      raw.full_name ||
+      `${firstName} ${lastName}`.trim() ||
+      "",
+    username: raw.username || "",
+    email: raw.email || "",
+    countryCode,
+    phone,
+    sex: raw.sex || raw.gender || "",
+    role: raw.role || "",
+    isActive:
+      typeof raw.isActive === "boolean"
+        ? raw.isActive
+        : typeof raw.is_active === "boolean"
+          ? raw.is_active
+          : false,
+    isAdminApproved:
+      typeof raw.isAdminApproved === "boolean"
+        ? raw.isAdminApproved
+        : typeof raw.is_admin_approved === "boolean"
+          ? raw.is_admin_approved
+          : false,
+    twoFactorEnabled:
+      typeof raw.twoFactorEnabled === "boolean"
+        ? raw.twoFactorEnabled
+        : typeof raw.two_factor_enabled === "boolean"
+          ? raw.two_factor_enabled
+          : false,
+    lastLogin: raw.lastLogin || raw.last_login || null,
+    createdAt: raw.createdAt || raw.created_at || null,
+    updatedAt: raw.updatedAt || raw.updated_at || null,
+  };
+};
+
 const StaffProfile = () => {
   document.title = "Staff Profile | Kamacash";
 
@@ -70,9 +150,18 @@ const StaffProfile = () => {
     validationSchema: validationSchema,
     onSubmit: async (values) => {
       try {
+        const phoneE164 = values.phone?.startsWith("+")
+          ? values.phone
+          : `${values.countryCode || ""}${values.phone || ""}`;
+
         const updateData = {
-          _id: staffId,
-          ...values,
+          id: staffId,
+          first_name: values.firstName,
+          last_name: values.lastName,
+          phone_e164: phoneE164,
+          username: values.username,
+          email: values.email,
+          country_code: values.countryCode,
         };
         await dispatch(updateStaff(updateData));
         toast.success("Profile updated successfully");
@@ -80,7 +169,7 @@ const StaffProfile = () => {
         // Refresh profile data
         const freshProfile = await getStaffProfile(staffId);
         if (freshProfile?.success) {
-          setProfile(freshProfile.data);
+          setProfile(normalizeStaffProfile(freshProfile.data));
         }
       } catch (err) {
         toast.error("Failed to update profile");
@@ -106,7 +195,7 @@ const StaffProfile = () => {
         const response = await getStaffProfile(staffId);
         if (response?.success) {
           if (isMounted) {
-            setProfile(response.data || null);
+            setProfile(normalizeStaffProfile(response.data));
           }
         } else {
           if (isMounted) {

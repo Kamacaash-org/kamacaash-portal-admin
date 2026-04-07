@@ -31,7 +31,7 @@ export const verify2FA = (data) => api.post(url.VERIFY_2FA, data);
 export const changePassword = (data) => api.post(url.CHANGE_PASSWORD, data);
 export const getDashboardOverview = () => api.get(url.DASHBOARD_OVERVIEW);
 export const getStaffProfile = (staffId) =>
-  api.get(`${url.STAFF_PROFILE}/${staffId}`);
+  api.get(`${url.STAFFS}/${staffId}`);
 export const getBusinessProfile = (businessId) =>
   api.get(`${url.BUSINESS_PROFILE}/${businessId}`);
 export const updateBusinessProfile = (businessId, payload) =>
@@ -71,27 +71,39 @@ export const SurPlusCategoryAPI = {
 // Business API with extra endpoints
 export const BusinessAPI = {
   list: () => api.get(url.BUSINESS),
+  listByVerificationStatus: (status = "PENDING") =>
+    api.get(`${url.BUSINESS}/verification/${status}`),
   create: (payload) =>
     payload instanceof FormData
       ? axios.post(url.BUSINESS, payload, {
-        headers: { "Content-Type": undefined },
-      })
+          headers: { "Content-Type": undefined },
+        })
       : api.post(url.BUSINESS, payload),
   update: ({ id, payload }) =>
     payload instanceof FormData
       ? axios.put(`${url.BUSINESS}/${id}`, payload, {
-        headers: { "Content-Type": undefined },
-      })
+          headers: { "Content-Type": undefined },
+        })
       : api.update(`${url.BUSINESS}/${id}`, payload),
   delete: (id) => api.delete(`${url.BUSINESS}/${id}`),
 
   // extra endpoints
   archive: (id) => api.post(`${url.BUSINESS}/${id}/archive`),
-  toggleStatus: ({ id, is_active }) => api.post(`${url.BUSINESS}/${id}/toggleStatus`, { is_active }),
-  approve: (id) => api.post(`${url.BUSINESS}/${id}/approve`),
-  reject: (id) => api.post(`${url.BUSINESS}/${id}/reject`),
+  toggleStatus: ({ id, is_active }) =>
+    api.post(`${url.BUSINESS}/${id}/toggleStatus`, { is_active }),
+  approve: (id) => api.patch(`${url.BUSINESS}/${id}/approve`),
+  reject: (id, payload) => api.patch(`${url.BUSINESS}/${id}/reject`, payload),
   signContract: (payload) =>
     axios.post(`${url.BUSINESS}/sign-contract`, payload, {
+      headers: { "Content-Type": undefined },
+    }),
+};
+
+export const BusinessContractAPI = {
+  listWithoutContract: () => api.get("/business-contracts/without-contract"),
+  listWithContract: () => api.get("/business-contracts/with-contract"),
+  uploadContract: ({ businessId, formData }) =>
+    axios.post(`/business-contracts/${businessId}/upload-contract`, formData, {
       headers: { "Content-Type": undefined },
     }),
 };
