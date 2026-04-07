@@ -31,6 +31,7 @@ import "react-toastify/dist/ReactToastify.css";
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import DeleteModal from "../../../Components/Common/DeleteModal";
 import Loader from "../../../Components/Common/Loader";
+import NoDataFound from "../../../Components/Common/NoDataFound";
 
 // Import FilePond for file uploads
 import { FilePond, registerPlugin } from "react-filepond";
@@ -232,7 +233,7 @@ const normalizeBusiness = (business = {}) => {
     getEntityId(business.primary_staff);
   const { countryCode, phoneNumber } = splitPhone(
     business.phone_e164 ||
-    `${business.countryCode || ""}${business.phoneNumber || ""}`,
+      `${business.countryCode || ""}${business.phoneNumber || ""}`,
   );
   const galleryImages = Array.isArray(business.gallery_images)
     ? business.gallery_images
@@ -300,13 +301,13 @@ const normalizeBusiness = (business = {}) => {
         coordinates: [
           Number(
             business.longitude ??
-            business.address?.coordinates?.coordinates?.[0] ??
-            0,
+              business.address?.coordinates?.coordinates?.[0] ??
+              0,
           ),
           Number(
             business.latitude ??
-            business.address?.coordinates?.coordinates?.[1] ??
-            0,
+              business.address?.coordinates?.coordinates?.[1] ??
+              0,
           ),
         ],
       },
@@ -357,9 +358,16 @@ const normalizeBusiness = (business = {}) => {
     currency: business.currency || "USD",
     timeZone: business.time_zone || business.timeZone || "Africa/Mogadishu",
     isActive: business.is_active ?? business.isActive ?? true,
-    verification_status:
-      (business.verification_status || business.status || "PENDING").toUpperCase(),
-    status: (business.verification_status || business.status || "PENDING").toUpperCase(),
+    verification_status: (
+      business.verification_status ||
+      business.status ||
+      "PENDING"
+    ).toUpperCase(),
+    status: (
+      business.verification_status ||
+      business.status ||
+      "PENDING"
+    ).toUpperCase(),
   };
 };
 
@@ -1143,7 +1151,7 @@ const BusinessesPage = () => {
             </div>
           )}
         </div>
-      )
+      ),
     },
     {
       name: "Business Name",
@@ -1169,7 +1177,10 @@ const BusinessesPage = () => {
       name: "Status",
       cell: (row) => (
         <div>
-          <Badge color={getVerifyStatusBadge(row.verification_status)} className="me-1">
+          <Badge
+            color={getVerifyStatusBadge(row.verification_status)}
+            className="me-1"
+          >
             {row.verification_status}
           </Badge>
           <Badge color={getActiveBadge(row.is_active)}>
@@ -1185,7 +1196,7 @@ const BusinessesPage = () => {
     {
       name: "Created",
       cell: (row) =>
-        row.created_at ? new Date(row.created_at).toLocaleDateString() : "N/A"
+        row.created_at ? new Date(row.created_at).toLocaleDateString() : "N/A",
     },
     {
       name: "Actions",
@@ -1251,7 +1262,7 @@ const BusinessesPage = () => {
             <i className="ri-delete-bin-line" />
           </Button>
         </div>
-      )
+      ),
     },
   ];
 
@@ -1344,11 +1355,10 @@ const BusinessesPage = () => {
                     </p>
                     <h4 className="mb-0">
                       {
-                        businesses.filter(
-                          (b) =>
-                            ["VERIFIED", "APPROVED"].includes(
-                              b.verification_status || b.status,
-                            ),
+                        businesses.filter((b) =>
+                          ["VERIFIED", "APPROVED"].includes(
+                            b.verification_status || b.status,
+                          ),
                         ).length
                       }
                     </h4>
@@ -1405,6 +1415,7 @@ const BusinessesPage = () => {
                     onChange={(opt) =>
                       setFilters((prev) => ({ ...prev, status: opt.value }))
                     }
+                    placeholder="Select status"
                     className="react-select"
                     classNamePrefix="select"
                   />
@@ -1421,12 +1432,13 @@ const BusinessesPage = () => {
                         filters.category === "all"
                           ? "All"
                           : categories.find(
-                            (cat) => cat.value === filters.category,
-                          )?.label || "All",
+                              (cat) => cat.value === filters.category,
+                            )?.label || "All",
                     }}
                     onChange={(opt) =>
                       setFilters((prev) => ({ ...prev, category: opt.value }))
                     }
+                    placeholder="Select category"
                     className="react-select"
                     classNamePrefix="select"
                   />
@@ -1468,13 +1480,7 @@ const BusinessesPage = () => {
                 responsive
                 // highlightOnHover
                 noDataComponent={
-                  <div className="text-center py-5">
-                    <i className="ri-inbox-line display-4 text-muted"></i>
-                    <h5 className="mt-3">No businesses found</h5>
-                    <p className="text-muted">
-                      Try adjusting your search criteria or add a new business.
-                    </p>
-                  </div>
+                  <NoDataFound message="Try adjusting your search criteria or add a new business." />
                 }
                 customStyles={{
                   headCells: {
@@ -1610,7 +1616,7 @@ const BusinessesPage = () => {
                                 primaryStaffAccount: opt.value,
                               }))
                             }
-                            placeholder="Select category"
+                            placeholder="Select staff account"
                             className="react-select"
                             classNamePrefix="select"
                           />
@@ -2153,6 +2159,7 @@ const BusinessesPage = () => {
                                 opt.value,
                               )
                             }
+                            placeholder="Select payout schedule"
                             className="react-select"
                             classNamePrefix="select"
                           />
@@ -2444,8 +2451,7 @@ const BusinessesPage = () => {
                             className="filepond-border"
                           />
                           <small className="text-muted">
-                            you can upload multiple
-                            images.
+                            you can upload multiple images.
                           </small>
                         </FormGroup>
                       </CardBody>
@@ -2635,7 +2641,9 @@ const BusinessesPage = () => {
                       <h4>{selectedBusiness.businessName}</h4>
                       <div className="mb-2">
                         <Badge
-                          color={getVerifyStatusBadge(selectedBusiness.verification_status)}
+                          color={getVerifyStatusBadge(
+                            selectedBusiness.verification_status,
+                          )}
                           className="me-1 fs-6"
                         >
                           {selectedBusiness.verification_status}
@@ -2711,8 +2719,8 @@ const BusinessesPage = () => {
                               <strong>Created:</strong>{" "}
                               {selectedBusiness.created_at
                                 ? new Date(
-                                  selectedBusiness.created_at,
-                                ).toLocaleDateString()
+                                    selectedBusiness.created_at,
+                                  ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>
@@ -2721,8 +2729,8 @@ const BusinessesPage = () => {
                               <strong>Last Updated:</strong>{" "}
                               {selectedBusiness.updatedAt
                                 ? new Date(
-                                  selectedBusiness.updatedAt,
-                                ).toLocaleDateString()
+                                    selectedBusiness.updatedAt,
+                                  ).toLocaleDateString()
                                 : "N/A"}
                             </p>
                           </Col>

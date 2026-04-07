@@ -25,6 +25,7 @@ import "react-toastify/dist/ReactToastify.css";
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import DeleteModal from "../../../Components/Common/DeleteModal";
 import Loader from "../../../Components/Common/Loader";
+import NoDataFound from "../../../Components/Common/NoDataFound";
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "reselect";
 
@@ -386,6 +387,7 @@ const SurplusCategories = () => {
                     )}
                     onChange={(opt) => handleSelectFilterChange("status", opt)}
                     isClearable
+                    placeholder="Select status"
                   />
                 </FormGroup>
               </Col>
@@ -419,7 +421,7 @@ const SurplusCategories = () => {
                 pagination
                 highlightOnHover
                 responsive
-                noDataComponent="No categories found"
+                noDataComponent={<NoDataFound message="No categories found" />}
               />
             )}
           </CardBody>
@@ -446,6 +448,7 @@ const SurplusCategories = () => {
                   </Label>
                   <Input
                     name="name"
+                    placeholder="Enter category name"
                     value={validation.values.name}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -463,6 +466,7 @@ const SurplusCategories = () => {
                   </Label>
                   <Input
                     name="slug"
+                    placeholder="enter-category-slug"
                     value={validation.values.slug}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -478,11 +482,12 @@ const SurplusCategories = () => {
             <Row>
               <Col md={12}>
                 <FormGroup>
-                  <Label>Description</Label>
+                  <Label>Description (Optional)</Label>
                   <Input
                     type="textarea"
                     rows="3"
                     name="description"
+                    placeholder="Add a short category description"
                     value={validation.values.description}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -499,7 +504,7 @@ const SurplusCategories = () => {
             <Row>
               <Col md={6}>
                 <FormGroup>
-                  <Label>Icon Image</Label>
+                  <Label>Icon Image (Optional)</Label>
                   <Input
                     type="file"
                     accept="image/*"
@@ -522,7 +527,7 @@ const SurplusCategories = () => {
               </Col>
               <Col md={6}>
                 <FormGroup>
-                  <Label>Category Image</Label>
+                  <Label>Category Image (Optional)</Label>
                   <Input
                     type="file"
                     accept="image/*"
@@ -548,9 +553,10 @@ const SurplusCategories = () => {
             <Row>
               <Col md={6} style={{ display: "none" }}>
                 <FormGroup>
-                  <Label>Parent ID</Label>
+                  <Label>Parent ID (Optional)</Label>
                   <Input
                     name="parent_id"
+                    placeholder="Parent category id"
                     value={validation.values.parent_id}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -571,6 +577,7 @@ const SurplusCategories = () => {
                     type="number"
                     min="0"
                     name="sort_order"
+                    placeholder="0"
                     value={validation.values.sort_order}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}

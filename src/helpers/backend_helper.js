@@ -30,8 +30,7 @@ export const login = (data) => api.post(url.POST_LOGIN, data);
 export const verify2FA = (data) => api.post(url.VERIFY_2FA, data);
 export const changePassword = (data) => api.post(url.CHANGE_PASSWORD, data);
 export const getDashboardOverview = () => api.get(url.DASHBOARD_OVERVIEW);
-export const getStaffProfile = (staffId) =>
-  api.get(`${url.STAFFS}/${staffId}`);
+export const getStaffProfile = (staffId) => api.get(`${url.STAFFS}/${staffId}`);
 export const getBusinessProfile = (businessId) =>
   api.get(`${url.BUSINESS_PROFILE}/${businessId}`);
 export const updateBusinessProfile = (businessId, payload) =>

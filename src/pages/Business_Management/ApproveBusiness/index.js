@@ -187,7 +187,11 @@ const ApproveBusinessPage = () => {
                 size="sm"
                 onClick={() => openApproveModal(row)}
                 className="d-inline-flex align-items-center justify-content-center fw-semibold px-3"
-                style={{ minWidth: 100, whiteSpace: "nowrap", borderRadius: 10 }}
+                style={{
+                  minWidth: 100,
+                  whiteSpace: "nowrap",
+                  borderRadius: 10,
+                }}
               >
                 <i className="ri-check-line me-1" />
                 Approve
@@ -200,7 +204,11 @@ const ApproveBusinessPage = () => {
                 size="sm"
                 onClick={() => openRejectModal(row)}
                 className="d-inline-flex align-items-center justify-content-center fw-semibold px-3"
-                style={{ minWidth: 100, whiteSpace: "nowrap", borderRadius: 10 }}
+                style={{
+                  minWidth: 100,
+                  whiteSpace: "nowrap",
+                  borderRadius: 10,
+                }}
               >
                 <i className="ri-close-line me-1" />
                 Reject
@@ -294,7 +302,8 @@ const ApproveBusinessPage = () => {
                   Boolean(rejectionFormik.errors.reason)
                 }
               />
-              {rejectionFormik.touched.reason && rejectionFormik.errors.reason ? (
+              {rejectionFormik.touched.reason &&
+              rejectionFormik.errors.reason ? (
                 <FormFeedback>{rejectionFormik.errors.reason}</FormFeedback>
               ) : null}
             </div>
@@ -310,7 +319,11 @@ const ApproveBusinessPage = () => {
         </Form>
       </Modal>
 
-      <Modal isOpen={approveModal} toggle={() => setApproveModal(false)} centered>
+      <Modal
+        isOpen={approveModal}
+        toggle={() => setApproveModal(false)}
+        centered
+      >
         <ModalHeader toggle={() => setApproveModal(false)}>
           Approve Business
         </ModalHeader>

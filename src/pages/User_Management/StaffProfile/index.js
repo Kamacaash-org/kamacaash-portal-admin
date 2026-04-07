@@ -17,7 +17,10 @@ import {
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import Loader from "../../../Components/Common/Loader";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
-import { getStaffProfile, toggleStaff2FA } from "../../../helpers/backend_helper";
+import {
+  getStaffProfile,
+  toggleStaff2FA,
+} from "../../../helpers/backend_helper";
 
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -32,7 +35,7 @@ import {
   Label,
   Input,
   FormFeedback,
-  ModalFooter
+  ModalFooter,
 } from "reactstrap";
 
 const splitE164Phone = (phoneE164 = "") => {
@@ -66,11 +69,7 @@ const normalizeStaffProfile = (raw) => {
     "";
 
   const phone =
-    raw.phone ||
-    raw.phone_number ||
-    raw.phoneNumber ||
-    parsedPhone.phone ||
-    "";
+    raw.phone || raw.phone_number || raw.phoneNumber || parsedPhone.phone || "";
 
   const firstName = raw.firstName || raw.first_name || "";
   const lastName = raw.lastName || raw.last_name || "";
@@ -81,10 +80,7 @@ const normalizeStaffProfile = (raw) => {
     firstName,
     lastName,
     fullName:
-      raw.fullName ||
-      raw.full_name ||
-      `${firstName} ${lastName}`.trim() ||
-      "",
+      raw.fullName || raw.full_name || `${firstName} ${lastName}`.trim() || "",
     username: raw.username || "",
     email: raw.email || "",
     countryCode,
@@ -266,7 +262,8 @@ const StaffProfile = () => {
   };
 
   const initials = useMemo(() => {
-    const baseName = fullName && fullName !== "-" ? fullName : profile?.username || "ST";
+    const baseName =
+      fullName && fullName !== "-" ? fullName : profile?.username || "ST";
     return baseName
       .split(" ")
       .filter(Boolean)
@@ -276,9 +273,7 @@ const StaffProfile = () => {
   }, [fullName, profile?.username]);
 
   const getAvatarColor = useMemo(() => {
-    const colors = [
-      "bg-primary",
-    ];
+    const colors = ["bg-primary"];
     if (!profile?.username) return colors[0];
     const index = profile.username.length % colors.length;
     return colors[index];
@@ -291,12 +286,15 @@ const StaffProfile = () => {
       className={`px-3 py-2 ${value ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary"}`}
       style={{ fontSize: "0.75rem", fontWeight: "500" }}
     >
-      <span className={`d-inline-block rounded-circle me-1`} style={{
-        width: "8px",
-        height: "8px",
-        backgroundColor: value ? "#338427" : "#6c757d",
-        boxShadow: value ? "0 0 0 2px rgba(16,185,129,0.2)" : "none"
-      }}></span>
+      <span
+        className={`d-inline-block rounded-circle me-1`}
+        style={{
+          width: "8px",
+          height: "8px",
+          backgroundColor: value ? "#338427" : "#6c757d",
+          boxShadow: value ? "0 0 0 2px rgba(16,185,129,0.2)" : "none",
+        }}
+      ></span>
       {value ? trueLabel : falseLabel}
     </Badge>
   );
@@ -308,13 +306,19 @@ const StaffProfile = () => {
       STAFF: { color: "info", icon: "ri-user-settings-line" },
       SUPER_ADMIN: { color: "primary", icon: "ri-shield-user-line" },
     };
-    const config = roleConfig[role] || { color: "secondary", icon: "ri-user-line" };
+    const config = roleConfig[role] || {
+      color: "secondary",
+      icon: "ri-user-line",
+    };
     return (
       <Badge
         color={config.color}
         pill
         className="px-3 py-2 bg-opacity-10 text-dark border-0"
-        style={{ backgroundColor: `var(--bs-${config.color}-bg-subtle)`, fontWeight: "500" }}
+        style={{
+          backgroundColor: `var(--bs-${config.color}-bg-subtle)`,
+          fontWeight: "500",
+        }}
       >
         <i className={`${config.icon} me-1`}></i>
         {toTitleCase(role)}
@@ -336,7 +340,6 @@ const StaffProfile = () => {
     if (!isEdit) validation.resetForm();
   };
 
-
   return (
     <div className="page-content">
       <Container fluid>
@@ -357,17 +360,39 @@ const StaffProfile = () => {
                 className="position-relative"
                 style={{
                   height: "180px",
-                  background: "linear-gradient(135deg, #338427 0%, #E36814 100%)",
+                  background:
+                    "linear-gradient(135deg, #338427 0%, #E36814 100%)",
                 }}
               >
                 {/* ... decorative svg ... */}
-                <svg className="position-absolute w-100 h-100" preserveAspectRatio="none">
+                <svg
+                  className="position-absolute w-100 h-100"
+                  preserveAspectRatio="none"
+                >
                   <defs>
-                    <pattern id="pattern-1" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                      <circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)" />
+                    <pattern
+                      id="pattern-1"
+                      x="0"
+                      y="0"
+                      width="40"
+                      height="40"
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <circle
+                        cx="20"
+                        cy="20"
+                        r="2"
+                        fill="rgba(255,255,255,0.1)"
+                      />
                     </pattern>
                   </defs>
-                  <rect x="0" y="0" width="100%" height="100%" fill="url(#pattern-1)" />
+                  <rect
+                    x="0"
+                    y="0"
+                    width="100%"
+                    height="100%"
+                    fill="url(#pattern-1)"
+                  />
                 </svg>
 
                 <div className="position-absolute top-0 end-0 p-3">
@@ -382,11 +407,18 @@ const StaffProfile = () => {
                 <div className="d-flex flex-wrap align-items-end justify-content-between">
                   <div className="d-flex align-items-end gap-4">
                     {/* Avatar with ring */}
-                    <div className="position-relative" style={{ marginTop: "-50px" }}>
+                    <div
+                      className="position-relative"
+                      style={{ marginTop: "-50px" }}
+                    >
                       <div className="bg-white rounded-circle p-1 shadow-lg">
                         <div
                           className={`${getAvatarColor} rounded-circle d-flex align-items-center justify-content-center text-white fw-bold`}
-                          style={{ width: "100px", height: "100px", fontSize: "2.5rem" }}
+                          style={{
+                            width: "100px",
+                            height: "100px",
+                            fontSize: "2.5rem",
+                          }}
                         >
                           {initials || "ST"}
                         </div>
@@ -464,7 +496,11 @@ const StaffProfile = () => {
                       <div className="flex-grow-1 ms-3">
                         <h6 className="text-muted mb-1">Admin Approval</h6>
                         <div className="d-flex align-items-center">
-                          {statusBadge(profile?.isAdminApproved, "Approved", "Pending")}
+                          {statusBadge(
+                            profile?.isAdminApproved,
+                            "Approved",
+                            "Pending",
+                          )}
                         </div>
                       </div>
                     </div>
@@ -485,7 +521,11 @@ const StaffProfile = () => {
                       <div className="flex-grow-1 ms-3">
                         <h6 className="text-muted mb-1">Two Factor</h6>
                         <div className="d-flex align-items-center">
-                          {statusBadge(profile?.twoFactorEnabled, "Enabled", "Disabled")}
+                          {statusBadge(
+                            profile?.twoFactorEnabled,
+                            "Enabled",
+                            "Disabled",
+                          )}
                         </div>
                       </div>
                     </div>
@@ -508,7 +548,9 @@ const StaffProfile = () => {
                         <div className="fw-semibold">
                           {formatRelativeTime(profile?.lastLogin)}
                         </div>
-                        <small className="text-muted">{formatDate(profile?.lastLogin).split(",")[1]}</small>
+                        <small className="text-muted">
+                          {formatDate(profile?.lastLogin).split(",")[1]}
+                        </small>
                       </div>
                     </div>
                   </CardBody>
@@ -544,7 +586,9 @@ const StaffProfile = () => {
                           <small className="text-muted d-block mb-1">
                             <i className="ri-user-line me-1"></i> First Name
                           </small>
-                          <div className="fw-semibold fs-6">{profile?.firstName || "-"}</div>
+                          <div className="fw-semibold fs-6">
+                            {profile?.firstName || "-"}
+                          </div>
                         </div>
                       </Col>
                       <Col md={6}>
@@ -552,7 +596,9 @@ const StaffProfile = () => {
                           <small className="text-muted d-block mb-1">
                             <i className="ri-user-line me-1"></i> Last Name
                           </small>
-                          <div className="fw-semibold fs-6">{profile?.lastName || "-"}</div>
+                          <div className="fw-semibold fs-6">
+                            {profile?.lastName || "-"}
+                          </div>
                         </div>
                       </Col>
                       <Col md={6}>
@@ -560,7 +606,9 @@ const StaffProfile = () => {
                           <small className="text-muted d-block mb-1">
                             <i className="ri-at-line me-1"></i> Username
                           </small>
-                          <div className="fw-semibold fs-6">{profile?.username || "-"}</div>
+                          <div className="fw-semibold fs-6">
+                            {profile?.username || "-"}
+                          </div>
                         </div>
                       </Col>
                       <Col md={6}>
@@ -568,7 +616,9 @@ const StaffProfile = () => {
                           <small className="text-muted d-block mb-1">
                             <i className="ri-mail-line me-1"></i> Email Address
                           </small>
-                          <div className="fw-semibold fs-6">{profile?.email || "-"}</div>
+                          <div className="fw-semibold fs-6">
+                            {profile?.email || "-"}
+                          </div>
                         </div>
                       </Col>
                       <Col md={6}>
@@ -599,12 +649,15 @@ const StaffProfile = () => {
                               pill
                               className="px-3 py-2 bg-opacity-10 text-dark border-0"
                             >
-                              <i className={`me-1 ${profile?.sex === "MALE"
-                                ? "ri-men-line"
-                                : profile?.sex === "FEMALE"
-                                  ? "ri-women-line"
-                                  : "ri-user-line"
-                                }`}></i>
+                              <i
+                                className={`me-1 ${
+                                  profile?.sex === "MALE"
+                                    ? "ri-men-line"
+                                    : profile?.sex === "FEMALE"
+                                      ? "ri-women-line"
+                                      : "ri-user-line"
+                                }`}
+                              ></i>
                               {toTitleCase(profile?.sex)}
                             </Badge>
                           </div>
@@ -614,8 +667,13 @@ const StaffProfile = () => {
                         <div className="border-top pt-3 mt-2">
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
-                              <h6 className="mb-1"><i className="ri-shield-keyhole-line me-1"></i> Two-Factor Authentication</h6>
-                              <p className="text-muted small mb-0">Secure your account with 2FA</p>
+                              <h6 className="mb-1">
+                                <i className="ri-shield-keyhole-line me-1"></i>{" "}
+                                Two-Factor Authentication
+                              </h6>
+                              <p className="text-muted small mb-0">
+                                Secure your account with 2FA
+                              </p>
                             </div>
                             <div className="form-check form-switch form-switch-lg">
                               <Input
@@ -628,8 +686,13 @@ const StaffProfile = () => {
                                   const newStatus = e.target.checked;
                                   try {
                                     await toggleStaff2FA(newStatus);
-                                    toast.success(`Two-Factor Authentication ${newStatus ? 'enabled' : 'disabled'}`);
-                                    setProfile(prev => ({ ...prev, twoFactorEnabled: newStatus }));
+                                    toast.success(
+                                      `Two-Factor Authentication ${newStatus ? "enabled" : "disabled"}`,
+                                    );
+                                    setProfile((prev) => ({
+                                      ...prev,
+                                      twoFactorEnabled: newStatus,
+                                    }));
                                   } catch (err) {
                                     toast.error("Failed to update 2FA status");
                                     // Revert switch if failed ?? actually better to just not update state if failed, but here we update state after success
@@ -666,21 +729,41 @@ const StaffProfile = () => {
                       </div>
                       <div className="flex-grow-1 ms-3">
                         <h6 className="mb-1">Activity Timeline</h6>
-                        <p className="text-muted small mb-0">Recent account activity</p>
+                        <p className="text-muted small mb-0">
+                          Recent account activity
+                        </p>
                       </div>
                     </div>
                   </CardHeader>
                   <CardBody className="p-4">
                     <div className="position-relative ps-3">
                       {/* Timeline Line */}
-                      <div className="position-absolute start-0 top-0 bottom-0" style={{ width: "2px", background: "linear-gradient(180deg, #0ab39c 0%, #e9e9e9 100%)" }}></div>
+                      <div
+                        className="position-absolute start-0 top-0 bottom-0"
+                        style={{
+                          width: "2px",
+                          background:
+                            "linear-gradient(180deg, #0ab39c 0%, #e9e9e9 100%)",
+                        }}
+                      ></div>
 
                       {/* Last Login */}
                       <div className="mb-4 position-relative">
-                        <div className="position-absolute start-0 translate-middle-x bg-success rounded-circle" style={{ width: "12px", height: "12px", left: "-5px", top: "5px", border: "2px solid white" }}></div>
+                        <div
+                          className="position-absolute start-0 translate-middle-x bg-success rounded-circle"
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            left: "-5px",
+                            top: "5px",
+                            border: "2px solid white",
+                          }}
+                        ></div>
                         <div className="ms-4">
                           <h6 className="mb-1">Last Login</h6>
-                          <p className="text-muted small mb-1">{formatDate(profile?.lastLogin)}</p>
+                          <p className="text-muted small mb-1">
+                            {formatDate(profile?.lastLogin)}
+                          </p>
                           <Badge color="light" className="text-dark">
                             {formatRelativeTime(profile?.lastLogin)}
                           </Badge>
@@ -689,10 +772,21 @@ const StaffProfile = () => {
 
                       {/* Account Created */}
                       <div className="mb-4 position-relative">
-                        <div className="position-absolute start-0 translate-middle-x bg-primary rounded-circle" style={{ width: "12px", height: "12px", left: "-5px", top: "5px", border: "2px solid white" }}></div>
+                        <div
+                          className="position-absolute start-0 translate-middle-x bg-primary rounded-circle"
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            left: "-5px",
+                            top: "5px",
+                            border: "2px solid white",
+                          }}
+                        ></div>
                         <div className="ms-4">
                           <h6 className="mb-1">Account Created</h6>
-                          <p className="text-muted small mb-1">{formatDate(profile?.createdAt)}</p>
+                          <p className="text-muted small mb-1">
+                            {formatDate(profile?.createdAt)}
+                          </p>
                           <Badge color="light" className="text-dark">
                             {formatRelativeTime(profile?.createdAt)}
                           </Badge>
@@ -701,10 +795,21 @@ const StaffProfile = () => {
 
                       {/* Last Updated */}
                       <div className="position-relative">
-                        <div className="position-absolute start-0 translate-middle-x bg-warning rounded-circle" style={{ width: "12px", height: "12px", left: "-5px", top: "5px", border: "2px solid white" }}></div>
+                        <div
+                          className="position-absolute start-0 translate-middle-x bg-warning rounded-circle"
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            left: "-5px",
+                            top: "5px",
+                            border: "2px solid white",
+                          }}
+                        ></div>
                         <div className="ms-4">
                           <h6 className="mb-1">Last Updated</h6>
-                          <p className="text-muted small mb-1">{formatDate(profile?.updatedAt)}</p>
+                          <p className="text-muted small mb-1">
+                            {formatDate(profile?.updatedAt)}
+                          </p>
                           <Badge color="light" className="text-dark">
                             {formatRelativeTime(profile?.updatedAt)}
                           </Badge>
@@ -721,16 +826,20 @@ const StaffProfile = () => {
         {/* Edit Profile Modal */}
         <Modal isOpen={isEdit} toggle={toggleEdit} centered>
           <ModalHeader toggle={toggleEdit}>Edit Profile</ModalHeader>
-          <Form onSubmit={(e) => {
-            e.preventDefault();
-            validation.handleSubmit();
-            return false;
-          }}>
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              validation.handleSubmit();
+              return false;
+            }}
+          >
             <ModalBody>
               <Row>
                 <Col md={6}>
                   <div className="mb-3">
-                    <Label htmlFor="username" className="form-label">Username</Label>
+                    <Label htmlFor="username" className="form-label">
+                      Username
+                    </Label>
                     <Input
                       id="username"
                       name="username"
@@ -739,16 +848,26 @@ const StaffProfile = () => {
                       onChange={validation.handleChange}
                       onBlur={validation.handleBlur}
                       value={validation.values.username || ""}
-                      invalid={validation.touched.username && validation.errors.username ? true : false}
+                      invalid={
+                        validation.touched.username &&
+                        validation.errors.username
+                          ? true
+                          : false
+                      }
                     />
-                    {validation.touched.username && validation.errors.username ? (
-                      <FormFeedback type="invalid">{validation.errors.username}</FormFeedback>
+                    {validation.touched.username &&
+                    validation.errors.username ? (
+                      <FormFeedback type="invalid">
+                        {validation.errors.username}
+                      </FormFeedback>
                     ) : null}
                   </div>
                 </Col>
                 <Col md={6}>
                   <div className="mb-3">
-                    <Label htmlFor="email" className="form-label">Email</Label>
+                    <Label htmlFor="email" className="form-label">
+                      Email
+                    </Label>
                     <Input
                       id="email"
                       name="email"
@@ -757,16 +876,24 @@ const StaffProfile = () => {
                       onChange={validation.handleChange}
                       onBlur={validation.handleBlur}
                       value={validation.values.email || ""}
-                      invalid={validation.touched.email && validation.errors.email ? true : false}
+                      invalid={
+                        validation.touched.email && validation.errors.email
+                          ? true
+                          : false
+                      }
                     />
                     {validation.touched.email && validation.errors.email ? (
-                      <FormFeedback type="invalid">{validation.errors.email}</FormFeedback>
+                      <FormFeedback type="invalid">
+                        {validation.errors.email}
+                      </FormFeedback>
                     ) : null}
                   </div>
                 </Col>
                 <Col md={6}>
                   <div className="mb-3">
-                    <Label htmlFor="firstName" className="form-label">First Name</Label>
+                    <Label htmlFor="firstName" className="form-label">
+                      First Name
+                    </Label>
                     <Input
                       id="firstName"
                       name="firstName"
@@ -775,16 +902,26 @@ const StaffProfile = () => {
                       onChange={validation.handleChange}
                       onBlur={validation.handleBlur}
                       value={validation.values.firstName || ""}
-                      invalid={validation.touched.firstName && validation.errors.firstName ? true : false}
+                      invalid={
+                        validation.touched.firstName &&
+                        validation.errors.firstName
+                          ? true
+                          : false
+                      }
                     />
-                    {validation.touched.firstName && validation.errors.firstName ? (
-                      <FormFeedback type="invalid">{validation.errors.firstName}</FormFeedback>
+                    {validation.touched.firstName &&
+                    validation.errors.firstName ? (
+                      <FormFeedback type="invalid">
+                        {validation.errors.firstName}
+                      </FormFeedback>
                     ) : null}
                   </div>
                 </Col>
                 <Col md={6}>
                   <div className="mb-3">
-                    <Label htmlFor="lastName" className="form-label">Last Name</Label>
+                    <Label htmlFor="lastName" className="form-label">
+                      Last Name
+                    </Label>
                     <Input
                       id="lastName"
                       name="lastName"
@@ -793,23 +930,33 @@ const StaffProfile = () => {
                       onChange={validation.handleChange}
                       onBlur={validation.handleBlur}
                       value={validation.values.lastName || ""}
-                      invalid={validation.touched.lastName && validation.errors.lastName ? true : false}
+                      invalid={
+                        validation.touched.lastName &&
+                        validation.errors.lastName
+                          ? true
+                          : false
+                      }
                     />
-                    {validation.touched.lastName && validation.errors.lastName ? (
-                      <FormFeedback type="invalid">{validation.errors.lastName}</FormFeedback>
+                    {validation.touched.lastName &&
+                    validation.errors.lastName ? (
+                      <FormFeedback type="invalid">
+                        {validation.errors.lastName}
+                      </FormFeedback>
                     ) : null}
                   </div>
                 </Col>
                 <Col md={12}>
                   <div className="mb-3">
-                    <Label htmlFor="phone" className="form-label">Phone Number</Label>
+                    <Label htmlFor="phone" className="form-label">
+                      Phone Number
+                    </Label>
                     <div className="input-group">
                       <Input
                         id="countryCode"
                         name="countryCode"
                         type="text"
                         className="form-control"
-                        style={{ maxWidth: '80px' }}
+                        style={{ maxWidth: "80px" }}
                         onChange={validation.handleChange}
                         onBlur={validation.handleBlur}
                         value={validation.values.countryCode || ""}
@@ -822,10 +969,16 @@ const StaffProfile = () => {
                         onChange={validation.handleChange}
                         onBlur={validation.handleBlur}
                         value={validation.values.phone || ""}
-                        invalid={validation.touched.phone && validation.errors.phone ? true : false}
+                        invalid={
+                          validation.touched.phone && validation.errors.phone
+                            ? true
+                            : false
+                        }
                       />
                       {validation.touched.phone && validation.errors.phone ? (
-                        <FormFeedback type="invalid">{validation.errors.phone}</FormFeedback>
+                        <FormFeedback type="invalid">
+                          {validation.errors.phone}
+                        </FormFeedback>
                       ) : null}
                     </div>
                   </div>
@@ -833,12 +986,15 @@ const StaffProfile = () => {
               </Row>
             </ModalBody>
             <ModalFooter>
-              <Button color="light" onClick={toggleEdit}>Cancel</Button>
-              <Button color="primary" type="submit">Save Changes</Button>
+              <Button color="light" onClick={toggleEdit}>
+                Cancel
+              </Button>
+              <Button color="primary" type="submit">
+                Save Changes
+              </Button>
             </ModalFooter>
           </Form>
         </Modal>
-
       </Container>
 
       <style jsx>{`
