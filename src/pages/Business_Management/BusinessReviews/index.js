@@ -22,6 +22,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import Loader from "../../../Components/Common/Loader";
+import NoDataFound from "../../../Components/Common/NoDataFound";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
 import { setAuthorization } from "../../../helpers/api_helper";
 import {
@@ -36,7 +37,9 @@ const BusinessReviews = () => {
   const authUser = useAuthUser();
   const businessId = authUser?.businessId;
 
-  const [resolvedBusinessId, setResolvedBusinessId] = useState(businessId || "");
+  const [resolvedBusinessId, setResolvedBusinessId] = useState(
+    businessId || "",
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reviews, setReviews] = useState([]);
@@ -164,12 +167,17 @@ const BusinessReviews = () => {
   const stats = useMemo(() => {
     const total = reviews.length;
     const featured = reviews.filter((review) => review?.isFeatured).length;
-    const positive = reviews.filter((review) => Number(review?.rating || 0) >= 4).length;
+    const positive = reviews.filter(
+      (review) => Number(review?.rating || 0) >= 4,
+    ).length;
     const averageRating =
       total > 0
         ? (
-          reviews.reduce((acc, review) => acc + Number(review?.rating || 0), 0) / total
-        ).toFixed(1)
+            reviews.reduce(
+              (acc, review) => acc + Number(review?.rating || 0),
+              0,
+            ) / total
+          ).toFixed(1)
         : "0.0";
 
     return {
@@ -256,14 +264,7 @@ const BusinessReviews = () => {
     },
     {
       name: "Comment",
-      cell: (row) => (
-        <div
-
-          title={row.comment || "-"}
-        >
-          {row.comment || "-"}
-        </div>
-      ),
+      cell: (row) => <div title={row.comment || "-"}>{row.comment || "-"}</div>,
       grow: 2,
     },
     {
@@ -361,7 +362,9 @@ const BusinessReviews = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Total Reviews</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Total Reviews
+                    </p>
                     <h4 className="mb-0">{stats.total}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -380,7 +383,9 @@ const BusinessReviews = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Featured</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Featured
+                    </p>
                     <h4 className="mb-0">{stats.featured}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -399,7 +404,9 @@ const BusinessReviews = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Avg Rating</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Avg Rating
+                    </p>
                     <h4 className="mb-0">{stats.averageRating}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -418,7 +425,9 @@ const BusinessReviews = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Positive</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Positive
+                    </p>
                     <h4 className="mb-0">{stats.positive}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -446,7 +455,10 @@ const BusinessReviews = () => {
                     placeholder="Search by reviewer, user ID, or comment..."
                     value={filters.search}
                     onChange={(e) =>
-                      setFilters((prev) => ({ ...prev, search: e.target.value }))
+                      setFilters((prev) => ({
+                        ...prev,
+                        search: e.target.value,
+                      }))
                     }
                   />
                 </FormGroup>
@@ -474,6 +486,7 @@ const BusinessReviews = () => {
                         rating: option?.value || "all",
                       }))
                     }
+                    placeholder="Select rating"
                     className="react-select"
                     classNamePrefix="select"
                   />
@@ -514,13 +527,7 @@ const BusinessReviews = () => {
                   data={filteredReviews}
                   pagination
                   noDataComponent={
-                    <div className="text-center py-5">
-                      <i className="ri-inbox-line display-4 text-muted"></i>
-                      <h5 className="mt-3">No reviews found</h5>
-                      <p className="text-muted">
-                        Try adjusting your search or rating filter.
-                      </p>
-                    </div>
+                    <NoDataFound message="Try adjusting your search or rating filter." />
                   }
                   customStyles={customStyles}
                 />
@@ -544,7 +551,8 @@ const BusinessReviews = () => {
             </div>
             <h5 className="mb-2">Send Review For Approval</h5>
             <p className="text-muted mb-0">
-              This will create a featured review request and send it to admin for approval.
+              This will create a featured review request and send it to admin
+              for approval.
             </p>
           </div>
 
@@ -554,7 +562,12 @@ const BusinessReviews = () => {
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button color="light" type="button" onClick={closeConfirm} disabled={requestLoading}>
+          <Button
+            color="light"
+            type="button"
+            onClick={closeConfirm}
+            disabled={requestLoading}
+          >
             Cancel
           </Button>
           <Button

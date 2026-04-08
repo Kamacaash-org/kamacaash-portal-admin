@@ -45,6 +45,7 @@ const TwosVerify = () => {
       }
 
       const responseData = response?.data || {};
+      const tokenBag = responseData?.tokens || {};
       const user = responseData?.user || {};
       const normalizedStaff = responseData?.staff || {
         staffId: user?._id || user?.id || staffId,
@@ -57,18 +58,44 @@ const TwosVerify = () => {
         must_change_password: user?.must_change_password,
       };
 
+      const resolvedStaffId =
+        responseData?.staffId ||
+        responseData?.staff?.staffId ||
+        responseData?.staff?._id ||
+        responseData?.staff?.id ||
+        user?.staffId ||
+        user?._id ||
+        user?.id ||
+        staffId;
+
+      const accessToken =
+        responseData?.accessToken ||
+        responseData?.access_token ||
+        tokenBag?.accessToken ||
+        tokenBag?.access_token ||
+        tokenBag?.token ||
+        null;
+      const refreshToken =
+        responseData?.refreshToken ||
+        responseData?.refresh_token ||
+        tokenBag?.refreshToken ||
+        tokenBag?.refresh_token ||
+        null;
+
       const normalizedAuthResponse = {
         ...response,
         data: {
           ...responseData,
+          accessToken: accessToken || responseData?.accessToken,
+          access_token: accessToken || responseData?.access_token,
+          refreshToken: refreshToken || responseData?.refreshToken,
+          refresh_token: refreshToken || responseData?.refresh_token,
           requires2fa: false,
-          staffId,
+          staffId: resolvedStaffId,
           staff: normalizedStaff,
         },
       };
 
-      const accessToken =
-        responseData?.accessToken || responseData?.access_token;
       if (accessToken) {
         setAuthorization(accessToken);
       }
@@ -101,7 +128,7 @@ const TwosVerify = () => {
       } else {
         getInputElement(index).blur();
         handleVerify({
-          preventDefault: () => { },
+          preventDefault: () => {},
         });
       }
     }

@@ -29,6 +29,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import Loader from "../../../Components/Common/Loader";
+import NoDataFound from "../../../Components/Common/NoDataFound";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
 import { setAuthorization } from "../../../helpers/api_helper";
 import {
@@ -100,10 +101,11 @@ const ReviewRequests = () => {
   // Update stats and apply filters when requests change
   useEffect(() => {
     const total = requests.length;
-    const pending = requests.filter(r => r.status === "PENDING").length;
-    const approved = requests.filter(r => r.status === "APPROVED").length;
-    const rejected = requests.filter(r => r.status === "REJECTED").length;
-    const pendingPercentage = total > 0 ? Math.round((pending / total) * 100) : 0;
+    const pending = requests.filter((r) => r.status === "PENDING").length;
+    const approved = requests.filter((r) => r.status === "APPROVED").length;
+    const rejected = requests.filter((r) => r.status === "REJECTED").length;
+    const pendingPercentage =
+      total > 0 ? Math.round((pending / total) * 100) : 0;
 
     setStats({
       total,
@@ -123,11 +125,16 @@ const ReviewRequests = () => {
     // Search filter
     if (filterSettings.search) {
       const searchTerm = filterSettings.search.toLowerCase();
-      filtered = filtered.filter(request =>
-        request.business?.businessName?.toLowerCase().includes(searchTerm) ||
-        request.requestedByStaff?.fullName?.toLowerCase().includes(searchTerm) ||
-        request.reviewIds?.[0]?.reviewerName?.toLowerCase().includes(searchTerm) ||
-        request.reviewIds?.[0]?.comment?.toLowerCase().includes(searchTerm)
+      filtered = filtered.filter(
+        (request) =>
+          request.business?.businessName?.toLowerCase().includes(searchTerm) ||
+          request.requestedByStaff?.fullName
+            ?.toLowerCase()
+            .includes(searchTerm) ||
+          request.reviewIds?.[0]?.reviewerName
+            ?.toLowerCase()
+            .includes(searchTerm) ||
+          request.reviewIds?.[0]?.comment?.toLowerCase().includes(searchTerm),
       );
     }
 
@@ -138,7 +145,7 @@ const ReviewRequests = () => {
   // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prevFilters => ({ ...prevFilters, [name]: value }));
+    setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
   };
 
   // Handle actions
@@ -217,131 +224,167 @@ const ReviewRequests = () => {
   };
 
   // Table columns
-  const columns = useMemo(() => [
-    {
-      name: "#",
-      cell: (row, index) => index + 1,
-      width: "60px",
-    },
-    {
-      name: "Business",
-      cell: (row) => (
-        <div className="d-flex align-items-center">
-          <div className="avatar-xs me-3">
-            {row.business?.logo ? (
-              <img
-                src={row.business.logo}
-                alt={row.business?.businessName || "Business"}
-                className="avatar-title bg-light rounded-circle"
-                style={{ objectFit: "cover", width: "100%", height: "100%" }}
-              />
-            ) : (
-              <div className="avatar-title bg-light text-secondary rounded-circle">
-                <i className="ri-store-line" />
-              </div>
-            )}
-          </div>
-          <div>
-            <h6 className="mb-0">{row.business?.businessName || "—"}</h6>
-            <small className="text-muted">{row.business?.ownerName || "—"}</small>
-          </div>
-        </div>
-      ),
-      sortable: true,
-    },
-    {
-      name: "Review Details",
-      cell: (row) => {
-        const review = row.reviewIds?.[0];
-        return (
-          <div>
-            <div className="fw-medium">{review?.reviewerName || "—"}</div>
-            {review?.rating && (
-              <Badge color={getRatingBadge(review.rating).color} className="mt-1">
-                {getRatingBadge(review.rating).text}
-              </Badge>
-            )}
-          </div>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        name: "#",
+        cell: (row, index) => index + 1,
+        width: "60px",
       },
-    },
-    {
-      name: "Comment",
-      cell: (row) => {
-        const comment = row.reviewIds?.[0]?.comment;
-        return (
-          <div className="text-truncate" style={{ maxWidth: "200px" }} title={comment}>
-            {comment || "—"}
+      {
+        name: "Business",
+        cell: (row) => (
+          <div className="d-flex align-items-center">
+            <div className="avatar-xs me-3">
+              {row.business?.logo ? (
+                <img
+                  src={row.business.logo}
+                  alt={row.business?.businessName || "Business"}
+                  className="avatar-title bg-light rounded-circle"
+                  style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                />
+              ) : (
+                <div className="avatar-title bg-light text-secondary rounded-circle">
+                  <i className="ri-store-line" />
+                </div>
+              )}
+            </div>
+            <div>
+              <h6 className="mb-0">{row.business?.businessName || "—"}</h6>
+              <small className="text-muted">
+                {row.business?.ownerName || "—"}
+              </small>
+            </div>
           </div>
-        );
+        ),
+        sortable: true,
       },
-    },
-    {
-      name: "Requested By",
-      cell: (row) => (
-        <div>
-          <div>{row.requestedByStaff?.fullName || "—"}</div>
-          {row.requestedByStaff?.phone && (
-            <small className="text-muted">{row.requestedByStaff.phone}</small>
-          )}
-        </div>
-      ),
-    },
-    {
-      name: "Engagement",
-      cell: (row) => {
-        const review = row.reviewIds?.[0];
-        return (
-          <div className="d-flex gap-2">
-            <Badge color="success" className="rounded-pill">
-              <i className="ri-thumb-up-line me-1"></i>
-              {review?.no_of_likes || 0}
-            </Badge>
-            <Badge color="danger" className="rounded-pill">
-              <i className="ri-thumb-down-line me-1"></i>
-              {review?.no_of_dis_likes || 0}
-            </Badge>
-          </div>
-        );
+      {
+        name: "Review Details",
+        cell: (row) => {
+          const review = row.reviewIds?.[0];
+          return (
+            <div>
+              <div className="fw-medium">{review?.reviewerName || "—"}</div>
+              {review?.rating && (
+                <Badge
+                  color={getRatingBadge(review.rating).color}
+                  className="mt-1"
+                >
+                  {getRatingBadge(review.rating).text}
+                </Badge>
+              )}
+            </div>
+          );
+        },
       },
-      width: "140px",
-    },
-    {
-      name: "Status",
-      cell: (row) => {
-        const status = getStatusBadge(row.status);
-        return (
-          <Badge color={status.color} className="d-inline-flex align-items-center">
-            <i className={`${status.icon} me-1`}></i>
-            {status.text}
-          </Badge>
-        );
-      },
-      width: "140px",
-    },
-    {
-      name: "Date",
-      cell: (row) => new Date(row.createdAt || row.updatedAt).toLocaleDateString(),
-      width: "120px",
-    },
-    {
-      name: "Actions",
-      cell: (row) => {
-        const status = getStatusBadge(row.status);
-        return (
-          <div className="d-flex gap-1">
-            <Button
-              color="outline-info"
-              size="sm"
-              onClick={() => handleView(row)}
-              title="View Details"
-              className="btn-icon"
+      {
+        name: "Comment",
+        cell: (row) => {
+          const comment = row.reviewIds?.[0]?.comment;
+          return (
+            <div
+              className="text-truncate"
+              style={{ maxWidth: "200px" }}
+              title={comment}
             >
-              <i className="ri-eye-line" />
-            </Button>
+              {comment || "—"}
+            </div>
+          );
+        },
+      },
+      {
+        name: "Requested By",
+        cell: (row) => (
+          <div>
+            <div>{row.requestedByStaff?.fullName || "—"}</div>
+            {row.requestedByStaff?.phone && (
+              <small className="text-muted">{row.requestedByStaff.phone}</small>
+            )}
+          </div>
+        ),
+      },
+      {
+        name: "Engagement",
+        cell: (row) => {
+          const review = row.reviewIds?.[0];
+          return (
+            <div className="d-flex gap-2">
+              <Badge color="success" className="rounded-pill">
+                <i className="ri-thumb-up-line me-1"></i>
+                {review?.no_of_likes || 0}
+              </Badge>
+              <Badge color="danger" className="rounded-pill">
+                <i className="ri-thumb-down-line me-1"></i>
+                {review?.no_of_dis_likes || 0}
+              </Badge>
+            </div>
+          );
+        },
+        width: "140px",
+      },
+      {
+        name: "Status",
+        cell: (row) => {
+          const status = getStatusBadge(row.status);
+          return (
+            <Badge
+              color={status.color}
+              className="d-inline-flex align-items-center"
+            >
+              <i className={`${status.icon} me-1`}></i>
+              {status.text}
+            </Badge>
+          );
+        },
+        width: "140px",
+      },
+      {
+        name: "Date",
+        cell: (row) =>
+          new Date(row.createdAt || row.updatedAt).toLocaleDateString(),
+        width: "120px",
+      },
+      {
+        name: "Actions",
+        cell: (row) => {
+          const status = getStatusBadge(row.status);
+          return (
+            <div className="d-flex gap-1">
+              <Button
+                color="outline-info"
+                size="sm"
+                onClick={() => handleView(row)}
+                title="View Details"
+                className="btn-icon"
+              >
+                <i className="ri-eye-line" />
+              </Button>
 
-            {row.status === "PENDING" && (
-              <>
+              {row.status === "PENDING" && (
+                <>
+                  <Button
+                    color="outline-success"
+                    size="sm"
+                    onClick={() => handleActionClick("approve", row)}
+                    title="Approve Review"
+                    className="btn-icon"
+                  >
+                    <i className="ri-check-line" />
+                  </Button>
+                  <Button
+                    color="outline-danger"
+                    size="sm"
+                    onClick={() => handleActionClick("reject", row)}
+                    title="Reject Review"
+                    className="btn-icon"
+                  >
+                    <i className="ri-close-line" />
+                  </Button>
+                </>
+              )}
+
+              {row.status === "REJECTED" && (
                 <Button
                   color="outline-success"
                   size="sm"
@@ -351,35 +394,15 @@ const ReviewRequests = () => {
                 >
                   <i className="ri-check-line" />
                 </Button>
-                <Button
-                  color="outline-danger"
-                  size="sm"
-                  onClick={() => handleActionClick("reject", row)}
-                  title="Reject Review"
-                  className="btn-icon"
-                >
-                  <i className="ri-close-line" />
-                </Button>
-              </>
-            )}
-
-            {row.status === "REJECTED" && (
-              <Button
-                color="outline-success"
-                size="sm"
-                onClick={() => handleActionClick("approve", row)}
-                title="Approve Review"
-                className="btn-icon"
-              >
-                <i className="ri-check-line" />
-              </Button>
-            )}
-          </div>
-        );
+              )}
+            </div>
+          );
+        },
+        width: "180px",
       },
-      width: "180px",
-    },
-  ], []);
+    ],
+    [],
+  );
 
   // Custom styles for DataTable
   const customStyles = {
@@ -439,7 +462,9 @@ const ReviewRequests = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Total Requests</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Total Requests
+                    </p>
                     <h4 className="mb-0">{stats.total}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -458,7 +483,9 @@ const ReviewRequests = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Pending Review</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Pending Review
+                    </p>
                     <h4 className="mb-0">{stats.pending}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -477,7 +504,9 @@ const ReviewRequests = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Approved</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Approved
+                    </p>
                     <h4 className="mb-0">{stats.approved}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -496,7 +525,9 @@ const ReviewRequests = () => {
               <CardBody>
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">Rejected</p>
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Rejected
+                    </p>
                     <h4 className="mb-0">{stats.rejected}</h4>
                   </div>
                   <div className="flex-shrink-0">
@@ -563,7 +594,6 @@ const ReviewRequests = () => {
                   <Label className="form-label">Status</Label>
                   <Select
                     styles={customSelectStyles}
-
                     options={[
                       { value: "all", label: "All" },
                       { value: "PENDING", label: "Pending Review" },
@@ -584,6 +614,7 @@ const ReviewRequests = () => {
                     onChange={(opt) =>
                       setFilters((prev) => ({ ...prev, status: opt.value }))
                     }
+                    placeholder="Select status"
                     className="react-select"
                     classNamePrefix="select"
                   />
@@ -593,7 +624,9 @@ const ReviewRequests = () => {
                 <div className="d-grid mb-3">
                   <Button
                     color="primary"
-                    onClick={() => setFilters({ search: "", status: "PENDING" })}
+                    onClick={() =>
+                      setFilters({ search: "", status: "PENDING" })
+                    }
                   >
                     <i className="ri-filter-line me-1"></i>
                     Show Pending
@@ -640,33 +673,31 @@ const ReviewRequests = () => {
                 // responsive
                 // highlightOnHover
                 noDataComponent={
-                  <div className="text-center py-5">
-                    <i className="ri-inbox-line display-4 text-muted"></i>
-                    <h5 className="mt-3">No review requests found</h5>
-                    <p className="text-muted">
-                      {filters.status === "PENDING"
+                  <NoDataFound
+                    message={
+                      filters.status === "PENDING"
                         ? "No pending review requests for review. Great job!"
-                        : "Try adjusting your search criteria."}
-                    </p>
-                  </div>
+                        : "Try adjusting your search criteria."
+                    }
+                  />
                 }
                 customStyles={customStyles}
-              // conditionalRowStyles={[
-              //   {
-              //     when: (row) => row.status === "PENDING",
-              //     style: {
-              //       backgroundColor: "rgba(255, 193, 7, 0.1)",
-              //       borderLeft: "4px solid #ffc107",
-              //     },
-              //   },
-              //   {
-              //     when: (row) => row.status === "REJECTED",
-              //     style: {
-              //       backgroundColor: "rgba(220, 53, 69, 0.05)",
-              //       borderLeft: "4px solid #dc3545",
-              //     },
-              //   },
-              // ]}
+                // conditionalRowStyles={[
+                //   {
+                //     when: (row) => row.status === "PENDING",
+                //     style: {
+                //       backgroundColor: "rgba(255, 193, 7, 0.1)",
+                //       borderLeft: "4px solid #ffc107",
+                //     },
+                //   },
+                //   {
+                //     when: (row) => row.status === "REJECTED",
+                //     style: {
+                //       backgroundColor: "rgba(220, 53, 69, 0.05)",
+                //       borderLeft: "4px solid #dc3545",
+                //     },
+                //   },
+                // ]}
               />
             )}
           </CardBody>
@@ -695,13 +726,23 @@ const ReviewRequests = () => {
                   <h5 className="mb-1">Review Request</h5>
                   <div className="d-flex align-items-center gap-2">
                     <Badge color={getStatusBadge(selectedRequest.status).color}>
-                      <i className={`${getStatusBadge(selectedRequest.status).icon} me-1`} />
+                      <i
+                        className={`${getStatusBadge(selectedRequest.status).icon} me-1`}
+                      />
                       {getStatusBadge(selectedRequest.status).text}
                     </Badge>
 
                     {selectedRequest.reviewIds?.[0]?.rating != null && (
-                      <Badge color={getRatingBadge(selectedRequest.reviewIds[0].rating).color}>
-                        {getRatingBadge(selectedRequest.reviewIds[0].rating).text}
+                      <Badge
+                        color={
+                          getRatingBadge(selectedRequest.reviewIds[0].rating)
+                            .color
+                        }
+                      >
+                        {
+                          getRatingBadge(selectedRequest.reviewIds[0].rating)
+                            .text
+                        }
                       </Badge>
                     )}
                   </div>
@@ -712,7 +753,12 @@ const ReviewRequests = () => {
                   <img
                     src={selectedRequest.business.logo}
                     alt={selectedRequest.business.businessName}
-                    style={{ width: 46, height: 46, borderRadius: 10, objectFit: "cover" }}
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: 10,
+                      objectFit: "cover",
+                    }}
                   />
                 ) : null}
               </div>
@@ -730,7 +776,9 @@ const ReviewRequests = () => {
 
                 <Col md={6}>
                   <div className="border rounded p-3 h-100">
-                    <small className="text-muted d-block mb-1">Requested by</small>
+                    <small className="text-muted d-block mb-1">
+                      Requested by
+                    </small>
                     <div className="fw-semibold">
                       {selectedRequest.requestedByStaff?.fullName || "—"}
                     </div>
@@ -762,7 +810,8 @@ const ReviewRequests = () => {
 
                 <small className="text-muted d-block mb-1">Comment</small>
                 <div className="bg-light rounded p-2">
-                  {selectedRequest.reviewIds?.[0]?.comment || "No comment provided"}
+                  {selectedRequest.reviewIds?.[0]?.comment ||
+                    "No comment provided"}
                 </div>
 
                 <div className="d-flex align-items-center gap-3 mt-3">
@@ -783,14 +832,28 @@ const ReviewRequests = () => {
                   </div>
 
                   <div className="ms-auto">
-                    <Badge color={selectedRequest.reviewIds?.[0]?.isVisible ? "success" : "secondary"}>
-                      {selectedRequest.reviewIds?.[0]?.isVisible ? "Visible" : "Hidden"}
+                    <Badge
+                      color={
+                        selectedRequest.reviewIds?.[0]?.isVisible
+                          ? "success"
+                          : "secondary"
+                      }
+                    >
+                      {selectedRequest.reviewIds?.[0]?.isVisible
+                        ? "Visible"
+                        : "Hidden"}
                     </Badge>
                     <Badge
                       className="ms-2"
-                      color={selectedRequest.reviewIds?.[0]?.isFeatured ? "primary" : "secondary"}
+                      color={
+                        selectedRequest.reviewIds?.[0]?.isFeatured
+                          ? "primary"
+                          : "secondary"
+                      }
                     >
-                      {selectedRequest.reviewIds?.[0]?.isFeatured ? "Featured" : "Not Featured"}
+                      {selectedRequest.reviewIds?.[0]?.isFeatured
+                        ? "Featured"
+                        : "Not Featured"}
                     </Badge>
                   </div>
                 </div>
@@ -800,18 +863,26 @@ const ReviewRequests = () => {
               <Row className="g-3">
                 <Col md={6}>
                   <div className="border rounded p-3">
-                    <small className="text-muted d-block mb-1">Request date</small>
+                    <small className="text-muted d-block mb-1">
+                      Request date
+                    </small>
                     <div className="fw-semibold">
-                      {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : "—"}
+                      {selectedRequest.createdAt
+                        ? new Date(selectedRequest.createdAt).toLocaleString()
+                        : "—"}
                     </div>
                   </div>
                 </Col>
                 <Col md={6}>
                   <div className="border rounded p-3">
-                    <small className="text-muted d-block mb-1">Review date</small>
+                    <small className="text-muted d-block mb-1">
+                      Review date
+                    </small>
                     <div className="fw-semibold">
                       {selectedRequest.reviewIds?.[0]?.createdAt
-                        ? new Date(selectedRequest.reviewIds[0].createdAt).toLocaleString()
+                        ? new Date(
+                            selectedRequest.reviewIds[0].createdAt,
+                          ).toLocaleString()
                         : "—"}
                     </div>
                   </div>
@@ -819,15 +890,16 @@ const ReviewRequests = () => {
               </Row>
 
               {/* Rejection reason only when rejected */}
-              {selectedRequest.status === "REJECTED" && selectedRequest.rejectionReason && (
-                <Alert color="danger" className="mt-3 mb-0">
-                  <div className="fw-semibold mb-1">
-                    <i className="ri-alert-line me-2" />
-                    Rejection reason
-                  </div>
-                  <div>{selectedRequest.rejectionReason}</div>
-                </Alert>
-              )}
+              {selectedRequest.status === "REJECTED" &&
+                selectedRequest.rejectionReason && (
+                  <Alert color="danger" className="mt-3 mb-0">
+                    <div className="fw-semibold mb-1">
+                      <i className="ri-alert-line me-2" />
+                      Rejection reason
+                    </div>
+                    <div>{selectedRequest.rejectionReason}</div>
+                  </Alert>
+                )}
             </>
           )}
         </ModalBody>
@@ -839,7 +911,10 @@ const ReviewRequests = () => {
                 color="success"
                 onClick={() => {
                   setViewModal(false);
-                  setTimeout(() => handleActionClick("approve", selectedRequest), 300);
+                  setTimeout(
+                    () => handleActionClick("approve", selectedRequest),
+                    300,
+                  );
                 }}
               >
                 <i className="ri-check-line me-1"></i>
@@ -850,24 +925,34 @@ const ReviewRequests = () => {
                 color="danger"
                 onClick={() => {
                   setViewModal(false);
-                  setTimeout(() => handleActionClick("reject", selectedRequest), 300);
+                  setTimeout(
+                    () => handleActionClick("reject", selectedRequest),
+                    300,
+                  );
                 }}
               >
                 <i className="ri-close-line me-1"></i>
                 Reject
               </Button>
 
-              <Button color="light" onClick={() => setViewModal(false)} className="ms-auto">
+              <Button
+                color="light"
+                onClick={() => setViewModal(false)}
+                className="ms-auto"
+              >
                 Close
               </Button>
             </>
           ) : (
-            <Button color="light" onClick={() => setViewModal(false)} className="ms-auto">
+            <Button
+              color="light"
+              onClick={() => setViewModal(false)}
+              className="ms-auto"
+            >
               Close
             </Button>
           )}
         </ModalFooter>
-
       </Modal>
 
       {/* Action Confirmation Modal */}
@@ -892,7 +977,8 @@ const ReviewRequests = () => {
               </p>
               <p className="text-muted mb-0">
                 This will change the request status to{" "}
-                <Badge color="success">APPROVED</Badge> and the review will be published.
+                <Badge color="success">APPROVED</Badge> and the review will be
+                published.
               </p>
             </div>
           </ModalBody>
@@ -930,14 +1016,15 @@ const ReviewRequests = () => {
                   required
                 />
                 <small className="text-muted">
-                  This reason will be visible to the staff member who requested the review.
+                  This reason will be visible to the staff member who requested
+                  the review.
                 </small>
               </FormGroup>
 
               <Alert color="warning" className="mt-3">
                 <i className="ri-alert-line me-2"></i>
-                This action cannot be undone. The request status will be changed to{" "}
-                <Badge color="danger">REJECTED</Badge>.
+                This action cannot be undone. The request status will be changed
+                to <Badge color="danger">REJECTED</Badge>.
               </Alert>
             </ModalBody>
             <ModalFooter>

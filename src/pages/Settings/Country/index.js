@@ -25,6 +25,7 @@ import "react-toastify/dist/ReactToastify.css";
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import DeleteModal from "../../../Components/Common/DeleteModal";
 import Loader from "../../../Components/Common/Loader";
+import NoDataFound from "../../../Components/Common/NoDataFound";
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "reselect";
 import { useFormik } from "formik";
@@ -359,6 +360,7 @@ const Country = () => {
                     )}
                     onChange={(opt) => handleSelectFilterChange("status", opt)}
                     isClearable
+                    placeholder="Select status"
                   />
                 </FormGroup>
               </Col>
@@ -392,7 +394,7 @@ const Country = () => {
                 pagination
                 highlightOnHover
                 responsive
-                noDataComponent="No countries found"
+                noDataComponent={<NoDataFound message="No countries found" />}
               />
             )}
           </CardBody>
@@ -418,6 +420,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="iso_code_3166"
+                    placeholder="SO"
                     value={validation.values.iso_code_3166}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -436,6 +439,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="iso_code_3166_3"
+                    placeholder="SOM"
                     value={validation.values.iso_code_3166_3}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -456,6 +460,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="name"
+                    placeholder="Somalia"
                     value={validation.values.name}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -476,6 +481,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="native_name"
+                    placeholder="Soomaaliya"
                     value={validation.values.native_name}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -494,6 +500,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="phone_code"
+                    placeholder="+252"
                     value={validation.values.phone_code}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -514,6 +521,7 @@ const Country = () => {
                     type="number"
                     name="phone_number_length"
                     min="1"
+                    placeholder="9"
                     value={validation.values.phone_number_length}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -537,6 +545,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="currency_code"
+                    placeholder="USD"
                     value={validation.values.currency_code}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -555,6 +564,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="currency_symbol"
+                    placeholder="$"
                     value={validation.values.currency_symbol}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -575,6 +585,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="currency_name"
+                    placeholder="US Dollar"
                     value={validation.values.currency_name}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -596,6 +607,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="default_timezone"
+                    placeholder="Africa/Mogadishu"
                     value={validation.values.default_timezone}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -617,6 +629,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="supported_timezones"
+                    placeholder="Africa/Mogadishu, UTC"
                     value={validation.values.supported_timezones}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -640,6 +653,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="default_language"
+                    placeholder="so"
                     value={validation.values.default_language}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -661,6 +675,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="supported_languages"
+                    placeholder="so, en"
                     value={validation.values.supported_languages}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
@@ -681,6 +696,7 @@ const Country = () => {
                   </Label>
                   <Input
                     name="postal_code_format"
+                    placeholder="#####"
                     value={validation.values.postal_code_format}
                     onChange={validation.handleChange}
                     onBlur={validation.handleBlur}
