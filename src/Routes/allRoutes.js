@@ -13,7 +13,7 @@ import ReviewRequests from "../pages/Business_Management/ReviewRequests";
 
 import Staff from "../pages/User_Management/Staffs";
 import StaffProfile from "../pages/User_Management/StaffProfile";
-import Packages from "../pages/Content_Management/SurplusPackages";
+import Offers from "../pages/Content_Management/SurplusPackages";
 import UploadContract from "../pages/Business_Management/UploadContract";
 import ApproveBusiness from "../pages/Business_Management/ApproveBusiness";
 import Country from "../pages/Settings/Country";
@@ -57,8 +57,8 @@ const authProtectedRoutes = [
   { path: "/users/staff", component: <Staff /> },
   { path: "/users/staff-profile", component: <StaffProfile /> },
 
-  // Content
-  { path: "/content/packages", component: <Packages /> },
+  // Offers
+  { path: "/offers", component: <Offers /> },
 
   // Settings
   { path: "/settings/country", component: <Country /> },

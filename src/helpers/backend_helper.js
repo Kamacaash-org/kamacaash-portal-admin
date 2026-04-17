@@ -113,13 +113,21 @@ export const CountriesAPI = makeCRUD(url.COUNTRIES);
 export const toggleStaff2FA = (enabled) =>
   api.patch(url.TOGGLE_2FA, { enabled });
 
-export const Surplus_PackageAPI = {
-  list: (id) => api.get(url.SURPLUS_PACKAGE, { businessId: id }),
-  delete: (id) => api.delete(`${url.SURPLUS_PACKAGE}/${id}`),
-  createOrUpdate: (payload) =>
-    axios.post(url.SURPLUS_PACKAGE, payload, {
-      headers: { "Content-Type": undefined },
-    }),
+export const OffersAPI = {
+  list: () => api.get(url.OFFERS),
+  create: (payload) =>
+    payload instanceof FormData
+      ? axios.post(url.OFFERS, payload, {
+          headers: { "Content-Type": undefined },
+        })
+      : api.post(url.OFFERS, payload),
+  update: ({ id, payload }) =>
+    payload instanceof FormData
+      ? axios.put(`${url.OFFERS}/${id}`, payload, {
+          headers: { "Content-Type": undefined },
+        })
+      : api.update(`${url.OFFERS}/${id}`, payload),
+  delete: (id) => api.delete(`${url.OFFERS}/${id}`),
 };
 
 export const OrdersAPI = {
