@@ -20,6 +20,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "reselect";
 import DataTable from "react-data-table-component";
+import Select from "react-select";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
@@ -39,7 +40,11 @@ const selectBusinessVerificationState = createSelector(
   }),
 );
 
-const verificationOptions = ["PENDING", "VERIFIED", "REJECTED"];
+const verificationOptions = [
+  { value: "PENDING", label: "Pending" },
+  { value: "VERIFIED", label: "Verified" },
+  { value: "REJECTED", label: "Rejected" },
+];
 
 const ApproveBusinessPage = () => {
   document.title = "Business Verification | Kamacaash";
@@ -53,6 +58,10 @@ const ApproveBusinessPage = () => {
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [approveModal, setApproveModal] = useState(false);
   const [rejectModal, setRejectModal] = useState(false);
+
+  const selectedStatusOption =
+    verificationOptions.find((option) => option.value === statusFilter) ||
+    verificationOptions[0];
 
   useEffect(() => {
     const loadBusinesses = async () => {
@@ -131,95 +140,113 @@ const ApproveBusinessPage = () => {
     setRejectModal(true);
   };
 
-  const columns = useMemo(
-    () => [
-      {
-        name: "Business",
-        cell: (row) => (
-          <div>
-            <div className="fw-semibold">{row.display_name || "-"}</div>
-            <small className="text-muted">Owner: {row.owner_name || "-"}</small>
-          </div>
-        ),
+  const columns = [
+    {
+      name: "#",
+      cell: (row, index) => index + 1,
+      width: "70px",
+    },
+    {
+      name: "Business",
+      cell: (row) => (
+        <div>
+          <div className="fw-semibold">{row.display_name || "-"}</div>
+          <small className="text-muted">Owner: {row.owner_name || "-"}</small>
+        </div>
+      ),
+    },
+    {
+      name: "Category",
+      selector: (row) => row.category_name || "-",
+    },
+    {
+      name: "City",
+      selector: (row) => row.city || "-",
+    },
+    {
+      name: "Phone",
+      selector: (row) => row.phone_e164 || "-",
+    },
+    {
+      name: "Status",
+      cell: (row) => (
+        <Badge
+          color={
+            row.verification_status === "VERIFIED"
+              ? "success"
+              : row.verification_status === "REJECTED"
+                ? "danger"
+                : "warning"
+          }
+        >
+          {row.verification_status}
+        </Badge>
+      ),
+    },
+    {
+      name: "Created",
+      selector: (row) =>
+        row.created_at ? new Date(row.created_at).toLocaleDateString() : "-",
+    },
+    {
+      name: "Actions",
+      width: "140px",
+      cell: (row) => (
+        <div className="d-flex align-items-center gap-1">
+          {row.verification_status !== "VERIFIED" && (
+            <Button
+              color="outline-success"
+              size="sm"
+              className="btn-icon"
+              onClick={() => openApproveModal(row)}
+              title="Approve business"
+            >
+              <i className="ri-check-line" />
+            </Button>
+          )}
+          {row.verification_status !== "REJECTED" && (
+            <Button
+              color="outline-danger"
+              size="sm"
+              className="btn-icon"
+              onClick={() => openRejectModal(row)}
+              title="Reject business"
+            >
+              <i className="ri-close-line" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderColor: state.isFocused ? "#338427" : "#ced4da",
+      boxShadow: state.isFocused ? "0 0 0 1px #338427" : "none",
+      "&:hover": {
+        borderColor: "#338427",
       },
-      {
-        name: "Category",
-        selector: (row) => row.category_name || "-",
+      minHeight: "38px",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#338427"
+        : state.isFocused
+          ? "#e8f8f0"
+          : "#fff",
+      color: state.isSelected ? "#fff" : "#333",
+      "&:active": {
+        backgroundColor: "#338427",
       },
-      {
-        name: "City",
-        selector: (row) => row.city || "-",
-      },
-      {
-        name: "Phone",
-        selector: (row) => row.phone_e164 || "-",
-      },
-      {
-        name: "Status",
-        cell: (row) => (
-          <Badge
-            color={
-              row.verification_status === "VERIFIED"
-                ? "success"
-                : row.verification_status === "REJECTED"
-                  ? "danger"
-                  : "warning"
-            }
-          >
-            {row.verification_status}
-          </Badge>
-        ),
-      },
-      {
-        name: "Created",
-        selector: (row) =>
-          row.created_at ? new Date(row.created_at).toLocaleDateString() : "-",
-      },
-      {
-        name: "Actions",
-        width: "230px",
-        cell: (row) => (
-          <div className="d-flex align-items-center flex-nowrap gap-2">
-            {row.verification_status !== "VERIFIED" && (
-              <Button
-                color="success"
-                outline
-                size="sm"
-                onClick={() => openApproveModal(row)}
-                className="d-inline-flex align-items-center justify-content-center fw-semibold px-3"
-                style={{
-                  minWidth: 100,
-                  whiteSpace: "nowrap",
-                  borderRadius: 10,
-                }}
-              >
-                <i className="ri-check-line me-1" />
-                Approve
-              </Button>
-            )}
-            {row.verification_status !== "REJECTED" && (
-              <Button
-                color="danger"
-                outline
-                size="sm"
-                onClick={() => openRejectModal(row)}
-                className="d-inline-flex align-items-center justify-content-center fw-semibold px-3"
-                style={{
-                  minWidth: 100,
-                  whiteSpace: "nowrap",
-                  borderRadius: 10,
-                }}
-              >
-                <i className="ri-close-line me-1" />
-                Reject
-              </Button>
-            )}
-          </div>
-        ),
-      },
-    ],
-    [statusFilter],
-  );
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontWeight: 500,
+    }),
+  };
 
   return (
     <div className="page-content">
@@ -231,17 +258,17 @@ const ApproveBusinessPage = () => {
             <Row className="g-3 align-items-end">
               <Col md={4}>
                 <Label className="form-label">Verification Status</Label>
-                <Input
-                  type="select"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  {verificationOptions.map((status) => (
-                    <option value={status} key={status}>
-                      {status}
-                    </option>
-                  ))}
-                </Input>
+                <Select
+                  styles={customSelectStyles}
+                  options={verificationOptions}
+                  value={selectedStatusOption}
+                  onChange={(option) =>
+                    setStatusFilter(option?.value || verificationOptions[0].value)
+                  }
+                  placeholder="Select status"
+                  className="react-select"
+                  classNamePrefix="select"
+                />
               </Col>
               <Col md={8}>
                 <Label className="form-label">Search</Label>

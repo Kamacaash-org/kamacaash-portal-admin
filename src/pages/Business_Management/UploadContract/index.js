@@ -20,6 +20,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "reselect";
 import DataTable from "react-data-table-component";
+import Select from "react-select";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
@@ -40,6 +41,11 @@ const selectContractState = createSelector(
   }),
 );
 
+const contractViewOptions = [
+  { value: "without", label: "Without Contract" },
+  { value: "with", label: "With Contract" },
+];
+
 const UploadContractPage = () => {
   document.title = "Business Contracts | Kamacaash";
 
@@ -51,6 +57,10 @@ const UploadContractPage = () => {
   const [activeTab, setActiveTab] = useState("without");
   const [uploadModal, setUploadModal] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
+
+  const selectedContractView =
+    contractViewOptions.find((option) => option.value === activeTab) ||
+    contractViewOptions[0];
 
   const loadContractLists = async () => {
     setLoading(true);
@@ -134,6 +144,11 @@ const UploadContractPage = () => {
 
   const withoutContractColumns = [
     {
+      name: "#",
+      cell: (row, index) => index + 1,
+      width: "70px",
+    },
+    {
       name: "Business",
       cell: (row) => (
         <div>
@@ -157,15 +172,27 @@ const UploadContractPage = () => {
     },
     {
       name: "Action",
+      width: "100px",
       cell: (row) => (
-        <Button color="primary" size="sm" onClick={() => openUploadModal(row)}>
-          Upload Contract
+        <Button
+          color="outline-primary"
+          size="sm"
+          className="btn-icon"
+          onClick={() => openUploadModal(row)}
+          title="Upload contract"
+        >
+          <i className="ri-upload-2-line" />
         </Button>
       ),
     },
   ];
 
   const withContractColumns = [
+    {
+      name: "#",
+      cell: (row, index) => index + 1,
+      width: "70px",
+    },
     {
       name: "Business",
       cell: (row) => (
@@ -199,15 +226,44 @@ const UploadContractPage = () => {
             href={row.contract.agreement_pdf_url}
             target="_blank"
             rel="noreferrer"
-            className="btn btn-sm btn-light"
+            className="btn btn-sm btn-outline-secondary btn-icon"
+            title="View contract PDF"
           >
-            View PDF
+            <i className="ri-file-pdf-line" />
           </a>
         ) : (
           "-"
         ),
     },
   ];
+
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderColor: state.isFocused ? "#338427" : "#ced4da",
+      boxShadow: state.isFocused ? "0 0 0 1px #338427" : "none",
+      "&:hover": {
+        borderColor: "#338427",
+      },
+      minHeight: "38px",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#338427"
+        : state.isFocused
+          ? "#e8f8f0"
+          : "#fff",
+      color: state.isSelected ? "#fff" : "#333",
+      "&:active": {
+        backgroundColor: "#338427",
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontWeight: 500,
+    }),
+  };
 
   return (
     <div className="page-content">
@@ -226,7 +282,21 @@ const UploadContractPage = () => {
                   placeholder="Search by business, owner, city, or phone"
                 />
               </Col>
-              <Col md={4}>
+              <Col md={2}>
+                <Label className="form-label">View</Label>
+                <Select
+                  styles={customSelectStyles}
+                  options={contractViewOptions}
+                  value={selectedContractView}
+                  onChange={(option) =>
+                    setActiveTab(option?.value || contractViewOptions[0].value)
+                  }
+                  placeholder="Select view"
+                  className="react-select"
+                  classNamePrefix="select"
+                />
+              </Col>
+              <Col md={2}>
                 <Button color="light" onClick={loadContractLists} className="w-100">
                   Refresh Lists
                 </Button>
@@ -237,21 +307,11 @@ const UploadContractPage = () => {
 
         <Card>
           <CardHeader className="d-flex justify-content-between align-items-center">
-            <h5 className="card-title mb-0">Contracts</h5>
-            <div className="d-flex gap-2">
-              <Button
-                color={activeTab === "without" ? "primary" : "light"}
-                onClick={() => setActiveTab("without")}
-              >
-                Without Contract ({withoutContractList.length})
-              </Button>
-              <Button
-                color={activeTab === "with" ? "primary" : "light"}
-                onClick={() => setActiveTab("with")}
-              >
-                With Contract ({withContractList.length})
-              </Button>
-            </div>
+            <h5 className="card-title mb-0">
+              {activeTab === "without"
+                ? `Without Contract (${withoutContractList.length})`
+                : `With Contract (${withContractList.length})`}
+            </h5>
           </CardHeader>
           <CardBody>
             {loading ? (
