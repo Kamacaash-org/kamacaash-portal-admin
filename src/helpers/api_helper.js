@@ -15,6 +15,76 @@ const safeParseAuthUser = () => {
   }
 };
 
+let authExpiryTimeoutId = null;
+
+const decodeJwtPayload = (token) => {
+  try {
+    const [, payload = ""] = token.split(".");
+    if (!payload) return null;
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "=",
+    );
+
+    return JSON.parse(window.atob(padded));
+  } catch (error) {
+    return null;
+  }
+};
+
+const getTokenExpiryTime = (token) => {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) return null;
+  return payload.exp * 1000;
+};
+
+const clearAuthSessionAndRedirect = () => {
+  if (authExpiryTimeoutId) {
+    window.clearTimeout(authExpiryTimeoutId);
+    authExpiryTimeoutId = null;
+  }
+
+  delete axios.defaults.headers.common["Authorization"];
+
+  try {
+    sessionStorage.removeItem("authUser");
+  } catch (error) {
+    // Ignore storage cleanup issues and continue redirecting.
+  }
+
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login");
+  }
+};
+
+const scheduleSessionExpiryRedirect = (token) => {
+  if (authExpiryTimeoutId) {
+    window.clearTimeout(authExpiryTimeoutId);
+    authExpiryTimeoutId = null;
+  }
+
+  const expiryTime = getTokenExpiryTime(token);
+  if (!expiryTime) return;
+
+  const remainingMs = expiryTime - Date.now();
+  if (remainingMs <= 0) {
+    clearAuthSessionAndRedirect();
+    return;
+  }
+
+  authExpiryTimeoutId = window.setTimeout(() => {
+    clearAuthSessionAndRedirect();
+  }, remainingMs);
+};
+
+const isTokenExpired = (token) => {
+  const expiryTime = getTokenExpiryTime(token);
+  if (!expiryTime) return false;
+  return expiryTime <= Date.now();
+};
+
 const extractTokens = (source) => {
   const data = source?.data || source || {};
   const nestedTokens = data?.tokens || source?.tokens || {};
@@ -55,13 +125,25 @@ const { accessToken: initialAccessToken } = getAuthTokensFromSession();
 if (initialAccessToken) {
   axios.defaults.headers.common["Authorization"] =
     "Bearer " + initialAccessToken;
+  scheduleSessionExpiryRedirect(initialAccessToken);
 }
 
 axios.interceptors.request.use((config) => {
   const { accessToken } = getAuthTokensFromSession();
   if (accessToken) {
+    if (isTokenExpired(accessToken)) {
+      clearAuthSessionAndRedirect();
+      return Promise.reject({
+        success: false,
+        statusCode: 401,
+        data: null,
+        message: "Session expired",
+      });
+    }
+
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${accessToken}`;
+    scheduleSessionExpiryRedirect(accessToken);
   }
   return config;
 });
@@ -85,6 +167,7 @@ axios.interceptors.response.use(
     switch (status) {
       case 401:
         message = backendMessage || "Invalid credentials";
+        clearAuthSessionAndRedirect();
         break;
       case 404:
         message = backendMessage || "Data not found";
@@ -116,7 +199,13 @@ export const getLoggedinUser = () => {
 export const setAuthorization = (token) => {
   if (token) {
     axios.defaults.headers.common["Authorization"] = "Bearer " + token;
+    scheduleSessionExpiryRedirect(token);
     return;
+  }
+
+  if (authExpiryTimeoutId) {
+    window.clearTimeout(authExpiryTimeoutId);
+    authExpiryTimeoutId = null;
   }
 
   delete axios.defaults.headers.common["Authorization"];

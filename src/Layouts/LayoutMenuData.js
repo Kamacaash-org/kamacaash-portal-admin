@@ -183,23 +183,26 @@ const Navdata = () => {
     },
 
     {
-      id: "CONTENT",
-      label: "Content",
-      icon: "ri-file-list-2-line",
+      id: "OFFERS_SECTION",
+      label: "Offers",
+      icon: "ri-price-tag-3-line",
       link: "/#",
-      stateVariables: menuStates["CONTENT"] || false,
+      stateVariables: menuStates["OFFERS_SECTION"] || false,
       click: function (e) {
         e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, CONTENT: !prev.CONTENT }));
-        setIscurrentState("CONTENT");
+        setMenuStates((prev) => ({
+          ...prev,
+          OFFERS_SECTION: !prev.OFFERS_SECTION,
+        }));
+        setIscurrentState("OFFERS_SECTION");
         updateIconSidebar(e);
       },
       subItems: [
         {
-          id: "Packages",
-          label: "Packages",
-          link: "/content/packages",
-          parentId: "CONTENT",
+          id: "Offers",
+          label: "Offers",
+          link: "/offers",
+          parentId: "OFFERS_SECTION",
         },
       ],
     },
@@ -271,6 +274,12 @@ const Navdata = () => {
           id: "SettingsCountry",
           label: "Country",
           link: "/settings/country",
+          parentId: "SETTINGS",
+        },
+        {
+          id: "SettingsCities",
+          label: "Cities",
+          link: "/settings/cities",
           parentId: "SETTINGS",
         },
       ],

@@ -188,7 +188,6 @@ const SurplusCategories = () => {
       description: selectedCategory?.description || "",
       icon_url: selectedCategory?.icon_url || "",
       image_url: selectedCategory?.image_url || "",
-      parent_id: selectedCategory?.parent_id || "",
       sort_order: selectedCategory?.sort_order ?? 0,
       is_active: selectedCategory?.is_active ?? true,
       is_featured: selectedCategory?.is_featured ?? false,
@@ -199,7 +198,6 @@ const SurplusCategories = () => {
       description: Yup.string().trim(),
       icon_url: Yup.string().nullable().notRequired(),
       image_url: Yup.string().nullable().notRequired(),
-      parent_id: Yup.string().trim(),
       sort_order: Yup.number()
         .required("Sort order is required")
         .integer("Must be an integer")
@@ -214,10 +212,6 @@ const SurplusCategories = () => {
       formData.append("name", values.name);
       formData.append("slug", values.slug);
       formData.append("description", values.description || "");
-      formData.append(
-        "parent_id",
-        values.parent_id?.trim() ? values.parent_id.trim() : "",
-      );
       formData.append("sort_order", Number(values.sort_order));
       formData.append("is_active", values.is_active);
       formData.append("is_featured", values.is_featured);
@@ -299,7 +293,7 @@ const SurplusCategories = () => {
             src={row.image_url}
             alt={row.name || "Image"}
             style={{
-              width: "52px",
+              width: "36px",
               height: "36px",
               objectFit: "cover",
               borderRadius: "6px",
@@ -309,11 +303,6 @@ const SurplusCategories = () => {
           "-"
         ),
     },
-    // {
-    //   name: "Parent ID",
-    //   selector: (row) => row.parent_id || "-",
-    //   wrap: true,
-    // },
     {
       name: "Sort",
       selector: (row) => row.sort_order ?? 0,
@@ -551,23 +540,7 @@ const SurplusCategories = () => {
             </Row>
 
             <Row>
-              <Col md={6} style={{ display: "none" }}>
-                <FormGroup>
-                  <Label>Parent ID (Optional)</Label>
-                  <Input
-                    name="parent_id"
-                    placeholder="Parent category id"
-                    value={validation.values.parent_id}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.parent_id &&
-                      !!validation.errors.parent_id
-                    }
-                  />
-                  <FormFeedback>{validation.errors.parent_id}</FormFeedback>
-                </FormGroup>
-              </Col>
+
               <Col md={6}>
                 <FormGroup>
                   <Label>

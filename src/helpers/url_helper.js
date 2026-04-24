@@ -18,8 +18,9 @@ export const REVIEW_TOP_REQUESTS_REJECT = "/reviews/top-requests";
 export const SURPLUS_CATEGORY = "/surplus-categories";
 export const BUSINESS = "/businesses";
 export const STAFFS = "/staff";
-export const SURPLUS_PACKAGE = "/offers";
+export const OFFERS = "/offers";
 export const COUNTRIES = "/countries";
+export const CITIES = "/cities";
 export const CATEGORIES = "/categories";
 
 export const ORDERS = "/orders";

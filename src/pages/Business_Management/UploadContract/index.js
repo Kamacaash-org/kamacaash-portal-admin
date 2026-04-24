@@ -56,7 +56,9 @@ const UploadContractPage = () => {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("without");
   const [uploadModal, setUploadModal] = useState(false);
+  const [viewModal, setViewModal] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [selectedContractRecord, setSelectedContractRecord] = useState(null);
 
   const selectedContractView =
     contractViewOptions.find((option) => option.value === activeTab) ||
@@ -115,6 +117,11 @@ const UploadContractPage = () => {
     setUploadModal(true);
   };
 
+  const openViewModal = (record) => {
+    setSelectedContractRecord(record);
+    setViewModal(true);
+  };
+
   const filterBySearch = (items) => {
     const term = search.trim().toLowerCase();
     if (!term) return items;
@@ -153,7 +160,6 @@ const UploadContractPage = () => {
       cell: (row) => (
         <div>
           <div className="fw-semibold">{row.display_name || "-"}</div>
-          <small className="text-muted">Owner: {row.owner_name || "-"}</small>
         </div>
       ),
     },
@@ -163,8 +169,21 @@ const UploadContractPage = () => {
     },
     {
       name: "Phone",
-      selector: (row) => row.phone_e164 || "-",
+      selector: (row) => row.phone || "-",
     },
+    {
+      name: "Verified Name",
+      selector: (row) => row.verified_by_name || "-",
+    },
+
+    {
+      name: "Verified At",
+      selector: (row) =>
+        row.verified_at
+          ? new Date(row.verified_at).toLocaleString()
+          : "-",
+    },
+
     {
       name: "Primary Staff",
       cell: (row) =>
@@ -234,6 +253,21 @@ const UploadContractPage = () => {
         ) : (
           "-"
         ),
+    },
+    {
+      name: "Action",
+      width: "100px",
+      cell: (row) => (
+        <Button
+          color="outline-info"
+          size="sm"
+          className="btn-icon"
+          onClick={() => openViewModal(row)}
+          title="View details"
+        >
+          <i className="ri-eye-line" />
+        </Button>
+      ),
     },
   ];
 
@@ -400,7 +434,7 @@ const UploadContractPage = () => {
                 }
               />
               {uploadFormik.touched.contractDocument &&
-              uploadFormik.errors.contractDocument ? (
+                uploadFormik.errors.contractDocument ? (
                 <FormFeedback>{uploadFormik.errors.contractDocument}</FormFeedback>
               ) : null}
             </div>
@@ -414,6 +448,239 @@ const UploadContractPage = () => {
             </Button>
           </ModalFooter>
         </Form>
+      </Modal>
+
+      <Modal isOpen={viewModal} toggle={() => setViewModal(false)} size="xl">
+        <ModalHeader toggle={() => setViewModal(false)}>
+          Contract Details
+        </ModalHeader>
+        <ModalBody>
+          {selectedContractRecord ? (
+            <>
+              <div className="d-flex flex-wrap gap-2 mb-4">
+                <Badge color="primary" pill className="px-3 py-2">
+                  <i className="ri-store-2-line me-1" />
+                  {selectedContractRecord.business?.display_name || "-"}
+                </Badge>
+                <Badge color="dark" pill className="px-3 py-2">
+                  <i className="ri-file-text-line me-1" />
+                  {selectedContractRecord.contract?.contract_number || "-"}
+                </Badge>
+                <Badge color="info" pill className="px-3 py-2">
+                  <i className="ri-calendar-check-line me-1" />
+                  {selectedContractRecord.contract?.payout_schedule || "-"}
+                </Badge>
+                <Badge
+                  color={
+                    selectedContractRecord.contract?.is_signed
+                      ? "success"
+                      : "warning"
+                  }
+                  pill
+                  className="px-3 py-2"
+                >
+                  <i className="ri-shield-check-line me-1" />
+                  {selectedContractRecord.contract?.is_signed ? "Signed" : "Pending"}
+                </Badge>
+              </div>
+
+              <Row className="g-4">
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-building-line me-2 text-primary" />
+                        Business Information
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <p>
+                        <strong>Business:</strong>{" "}
+                        {selectedContractRecord.business?.display_name || "-"}
+                      </p>
+                      <p>
+                        <strong>Phone:</strong>{" "}
+                        {selectedContractRecord.business?.phone || "-"}
+                      </p>
+                      <p>
+                        <strong>City:</strong>{" "}
+                        {selectedContractRecord.business?.city || "-"}
+                      </p>
+                      <p>
+                        <strong>Currency Symbol:</strong>{" "}
+                        {selectedContractRecord.business?.currency_symbol || "-"}
+                      </p>
+                      <p>
+                        <strong>Verified At:</strong>{" "}
+                        {selectedContractRecord.business?.verified_at
+                          ? new Date(
+                              selectedContractRecord.business.verified_at,
+                            ).toLocaleString()
+                          : "-"}
+                      </p>
+                      <p>
+                        <strong>Verified By:</strong>{" "}
+                        {selectedContractRecord.business?.verified_by_name || "-"}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Primary Staff:</strong>{" "}
+                        {selectedContractRecord.business?.primary_staff?.name || "-"}
+                        {" / "}
+                        {selectedContractRecord.business?.primary_staff?.phone || "-"}
+                      </p>
+                    </CardBody>
+                  </Card>
+                </Col>
+
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-file-list-3-line me-2 text-success" />
+                        Contract Information
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <p>
+                        <strong>Contract Number:</strong>{" "}
+                        {selectedContractRecord.contract?.contract_number || "-"}
+                      </p>
+                      <p>
+                        <strong>Version:</strong>{" "}
+                        {selectedContractRecord.contract?.version || "-"}
+                      </p>
+                      <p>
+                        <strong>Signed:</strong>{" "}
+                        <Badge
+                          color={
+                            selectedContractRecord.contract?.is_signed
+                              ? "success"
+                              : "warning"
+                          }
+                        >
+                          {selectedContractRecord.contract?.is_signed ? "Yes" : "No"}
+                        </Badge>
+                      </p>
+                      <p>
+                        <strong>Signed At:</strong>{" "}
+                        {selectedContractRecord.contract?.signed_at
+                          ? new Date(
+                              selectedContractRecord.contract.signed_at,
+                            ).toLocaleString()
+                          : "-"}
+                      </p>
+                      <p>
+                        <strong>Signed IP:</strong>{" "}
+                        {selectedContractRecord.contract?.signed_by_ip || "-"}
+                      </p>
+                      <p className="mb-0">
+                        <strong>PDF:</strong>{" "}
+                        {selectedContractRecord.contract?.agreement_pdf_url ? (
+                          <a
+                            href={selectedContractRecord.contract.agreement_pdf_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View PDF
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </p>
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
+
+              <Row className="g-4 mt-1">
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-coins-line me-2 text-warning" />
+                        Payout & Commission
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <Row className="g-3">
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-primary bg-opacity-10 p-3">
+                            <small className="text-muted d-block">Payout Schedule</small>
+                            <span className="fw-bold text-primary">
+                              {selectedContractRecord.contract?.payout_schedule || "-"}
+                            </span>
+                          </div>
+                        </Col>
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-success bg-opacity-10 p-3">
+                            <small className="text-muted d-block">Commission Rate</small>
+                            <span className="fw-bold text-success">
+                              {selectedContractRecord.contract?.commission_rate || "-"}
+                            </span>
+                          </div>
+                        </Col>
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-info bg-opacity-10 p-3">
+                            <small className="text-muted d-block">Fixed Commission</small>
+                            <span className="fw-bold text-info">
+                              {selectedContractRecord.contract?.fixed_commission || "-"}
+                            </span>
+                          </div>
+                        </Col>
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-warning bg-opacity-10 p-3">
+                            <small className="text-muted d-block">Minimum Payout</small>
+                            <span className="fw-bold text-warning">
+                              {selectedContractRecord.contract?.minimum_payout || "-"}
+                            </span>
+                          </div>
+                        </Col>
+                      </Row>
+                    </CardBody>
+                  </Card>
+                </Col>
+
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-history-line me-2 text-dark" />
+                        Contract Lifecycle
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <p>
+                        <strong>Effective From:</strong>{" "}
+                        {selectedContractRecord.contract?.effective_from
+                          ? new Date(
+                              selectedContractRecord.contract.effective_from,
+                            ).toLocaleString()
+                          : "-"}
+                      </p>
+                      <p>
+                        <strong>Effective To:</strong>{" "}
+                        {selectedContractRecord.contract?.effective_to
+                          ? new Date(
+                              selectedContractRecord.contract.effective_to,
+                            ).toLocaleString()
+                          : "-"}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Auto Renew:</strong>{" "}
+                        {selectedContractRecord.contract?.auto_renew ? "Yes" : "No"}
+                      </p>
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
+            </>
+          ) : null}
+        </ModalBody>
+        <ModalFooter>
+          <Button color="light" onClick={() => setViewModal(false)}>
+            Close
+          </Button>
+        </ModalFooter>
       </Modal>
     </div>
   );

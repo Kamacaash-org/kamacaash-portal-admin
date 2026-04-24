@@ -1,199 +1,472 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import DataTable from "react-data-table-component";
 import Select from "react-select";
 import {
+  Badge,
+  Button,
   Card,
-  CardHeader,
   CardBody,
+  CardHeader,
   Col,
   Container,
-  Row,
   Form,
+  FormFeedback,
+  FormGroup,
   Input,
   Label,
-  FormGroup,
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
-  Button,
-  Badge,
-  FormFeedback,
-  Alert,
+  Row,
 } from "reactstrap";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useDispatch, useSelector } from "react-redux";
+import { createSelector } from "reselect";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import DeleteModal from "../../../Components/Common/DeleteModal";
 import Loader from "../../../Components/Common/Loader";
 import NoDataFound from "../../../Components/Common/NoDataFound";
-import { useDispatch, useSelector } from "react-redux";
-import { createSelector } from "reselect";
-
-// Import FilePond for file uploads
-import { FilePond, registerPlugin } from "react-filepond";
-import "filepond/dist/filepond.min.css";
-import FilePondPluginImageExifOrientation from "filepond-plugin-image-exif-orientation";
-import FilePondPluginImagePreview from "filepond-plugin-image-preview";
-import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
-
-//redux
 import {
-  getSurplusPackages as onGetSurplusPackagesData,
-  createOrUpdateSurplusPackage as onCreateOrUpdateSurplusPackage,
-  deleteSurplusPackage as onDeleteSurplusPackage,
-  activateSurplusPackage as onActivateSurplusPackage,
+  createOffer as onCreateOffer,
+  deleteOffer as onDeleteOffer,
+  getBusinessesData as onGetBusinesses,
+  getOffers as onGetOffers,
+  publishOffer as onPublishOffer,
+  updateOffer as onUpdateOffer,
 } from "../../../slices/thunks";
 
-// Formik
-import * as Yup from "yup";
-import { useFormik } from "formik";
-import useAuthUser from "../../../Components/Hooks/useAuthUser";
+const normalizeArray = (payload, keys = []) => {
+  if (Array.isArray(payload)) return payload;
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) return payload[key];
+  }
+  return [];
+};
 
-// Register the plugins
-registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
+const toCsv = (value) => (Array.isArray(value) ? value.join(", ") : "");
 
-const SurplusPackages = () => {
-  document.title = "Surplus Packages | Kamacash";
+const fromCsv = (value) =>
+  (value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const getEntityId = (item) => item?.id || item?._id || item?.uuid || "";
+
+const normalizeOption = (
+  item,
+  labelKeys = ["name"],
+  valueKeys = ["id", "_id", "uuid"],
+) => {
+  if (!item) return null;
+
+  if (item?.value && item?.label) {
+    return {
+      value: item.value,
+      label: item.label,
+      raw: item,
+    };
+  }
+
+  const value = valueKeys.map((key) => item?.[key]).find(Boolean);
+  const label = labelKeys.map((key) => item?.[key]).find(Boolean);
+
+  if (!value) return null;
+
+  return {
+    value,
+    label: label || String(value),
+    raw: item,
+  };
+};
+
+const formatForDateTimeLocal = (date) => {
+  if (!date) return "";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleString();
+};
+
+const formatMoney = (value) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "-";
+  return `$${amount.toFixed(2)}`;
+};
+
+const getCutoffBadge = (isLimited) =>
+  isLimited
+    ? { color: "warning", label: "Time Limited", icon: "ri-timer-line" }
+    : { color: "success", label: "Open Order", icon: "ri-time-line" };
+
+const buildInitialValues = () => ({
+  business_id: "",
+  title: "",
+  description: "",
+  short_description: "",
+  tags: "",
+  contents: "",
+  is_order_time_limited: true,
+  order_cutoff_at: "",
+  original_price_minor: "",
+  offer_price_minor: "",
+  quantity_total: "",
+  max_per_user: 1,
+  pickup_start: "",
+  pickup_end: "",
+  pickup_instructions: "",
+});
+
+const normalizeOffer = (offer = {}) => ({
+  ...offer,
+  id: getEntityId(offer),
+  business_id: offer.business_id || getEntityId(offer.business) || "",
+  business_name:
+    offer.business?.display_name ||
+    offer.business_name ||
+    offer.display_name ||
+    "-",
+  title: offer.title || "",
+  description: offer.description || "",
+  short_description: offer.short_description || "",
+  tags: Array.isArray(offer.tags) ? offer.tags : [],
+  contents: Array.isArray(offer.contents) ? offer.contents : [],
+  main_image_url: offer.main_image_url || "",
+  gallery_images: Array.isArray(offer.gallery_images) ? offer.gallery_images : [],
+  is_order_time_limited: offer.is_order_time_limited ?? false,
+  order_cutoff_at: offer.order_cutoff_at || "",
+  original_price_minor: offer.original_price_minor ?? "",
+  offer_price_minor: offer.offer_price_minor ?? "",
+  quantity_total: offer.quantity_total ?? "",
+  max_per_user: offer.max_per_user ?? 1,
+  pickup_start: offer.pickup_start || "",
+  pickup_end: offer.pickup_end || "",
+  pickup_instructions: offer.pickup_instructions || "",
+  status: (offer.status || offer.offer_status || "DRAFT").toUpperCase(),
+});
+
+const getOfferStatusBadge = (status) => {
+  switch ((status || "").toUpperCase()) {
+    case "PUBLISHED":
+    case "PUBLISH":
+      return { color: "success", label: "PUBLISHED", icon: "ri-rocket-line" };
+    case "EXPIRED":
+      return { color: "warning", label: "EXPIRED", icon: "ri-time-line" };
+    case "CANCELLED":
+      return { color: "danger", label: "CANCELLED", icon: "ri-close-circle-line" };
+    case "DRAFT":
+    default:
+      return { color: "secondary", label: "DRAFT", icon: "ri-draft-line" };
+  }
+};
+
+const isOfferPublished = (status) => {
+  const normalized = (status || "").toUpperCase();
+  return normalized === "PUBLISHED" || normalized === "PUBLISH";
+};
+
+const Offers = () => {
+  document.title = "Offers | Kamacaash";
 
   const dispatch = useDispatch();
 
-  const selectPackagesData = createSelector(
+  const selectPageData = createSelector(
     (state) => state.ContentManagement,
-    (packagesData) => packagesData.packagesData,
+    (state) => state.BusinessManagement,
+    (contentManagement, businessManagement) => ({
+      offersData: contentManagement.offersData,
+      businessesData: businessManagement.businessesData
+    }),
   );
 
-  const packagesData = useSelector(selectPackagesData);
-  const [packagesList, setPackagesList] = useState([]);
+  const { offersData, businessesData } = useSelector(selectPageData);
+
+  const [offersList, setOffersList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [publishModal, setPublishModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [file, setFile] = useState(null);
-
-  // Static business ID (replace with your actual static business ID)
-  const userAuth = useAuthUser();
-  const businessId = userAuth.businessId;
-  // console.log("businessId", businessId)
-  // Filters state
+  const [selectedOffer, setSelectedOffer] = useState(null);
+  const [mainImageFile, setMainImageFile] = useState(null);
+  const [galleryImageFiles, setGalleryImageFiles] = useState([]);
   const [filters, setFilters] = useState({
     search: "",
-    status: "",
-    businessId: "",
+    limited: "",
   });
+  const deferredSelectedOffer = useDeferredValue(selectedOffer);
 
-  // Options for selects
-  const statusOptions = [
+  const businessOptions = useMemo(
+    () =>
+      normalizeArray(businessesData, ["rows", "data", "businesses"])
+        .map((item) =>
+          normalizeOption(item, ["display_name", "legal_name", "name"], [
+            "id",
+            "_id",
+            "uuid",
+          ]),
+        )
+        .filter(Boolean),
+    [businessesData],
+  );
+
+
+  const limitedOptions = [
     { value: "", label: "All" },
-    { value: "Active", label: "Active" },
-    { value: "Inactive", label: "Inactive" },
+    { value: "limited", label: "Order Time Limited" },
+    { value: "open", label: "No Cutoff" },
   ];
 
-  // Yup Validation Schema
-  const validationSchema = Yup.object({
-    businessId: Yup.string().required("Business is required"),
-    // packageImg: Yup.mixed()
-    //     .test('file-or-url', 'Package image is required', function (value) {
-    //         // Allow if it's a file or if it's a non-empty string (URL)
-    //         if (this.parent.file || (typeof value === 'string' && value.trim() !== '')) {
-    //             return true;
-    //         }
-    //         return false;
-    //     }),
-    title: Yup.string()
-      .required("Title is required")
-      .min(3, "Title must be at least 3 characters")
-      .max(100, "Title must not exceed 100 characters"),
-    description: Yup.string()
-      .required("Description is required")
-      .min(10, "Description must be at least 10 characters")
-      .max(500, "Description must not exceed 500 characters"),
-    originalPrice: Yup.number()
-      .required("Original price is required")
-      .min(0, "Original price must be greater than or equal to 0")
-      .test(
-        "is-decimal",
-        "Original price must have up to 2 decimal places",
-        (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
-      ),
-    offerPrice: Yup.number()
-      .required("Offer price is required")
-      .min(0, "Offer price must be greater than or equal to 0")
-      .test(
-        "is-decimal",
-        "Offer price must have up to 2 decimal places",
-        (value) => !value || /^\d+(\.\d{1,2})?$/.test(value),
-      )
-      .test(
-        "less-than-original",
-        "Offer price must be less than original price",
-        function (value) {
-          const { originalPrice } = this.parent;
-          return !originalPrice || !value || value < originalPrice;
-        },
-      ),
-    quantityAvailable: Yup.number()
-      .required("Quantity available is required")
-      .min(1, "Quantity must be at least 1")
-      .integer("Quantity must be a whole number"),
-    pickupStart: Yup.string()
-      .required("Pickup start time is required")
-      .test(
-        "future-date",
-        "Pickup start must be in the future",
-        function (value) {
-          if (!value) return false;
-          return new Date(value) > new Date();
-        },
-      ),
-    pickupEnd: Yup.string()
-      .required("Pickup end time is required")
-      .test(
-        "after-start",
-        "Pickup end must be after pickup start",
-        function (value) {
-          const { pickupStart } = this.parent;
-          if (!pickupStart || !value) return false;
-          return new Date(value) > new Date(pickupStart);
-        },
-      ),
-    pickupInstructions: Yup.string()
-      .required("Pickup instructions are required")
-      .min(10, "Pickup instructions must be at least 10 characters")
-      .max(500, "Pickup instructions must not exceed 500 characters"),
-    isActive: Yup.boolean(),
-  });
-
-  // Fetch packages with filters
-  const fetchPackages = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      await dispatch(onGetSurplusPackagesData(businessId));
+      await Promise.all([
+        dispatch(onGetOffers()),
+        dispatch(onGetBusinesses()),
+      ]);
     } catch (error) {
-      console.error("Error loading packages:", error);
+      console.error("Error loading offers page data:", error);
     } finally {
       setLoading(false);
     }
   }, [dispatch]);
 
-  // Update data when changes
   useEffect(() => {
-    fetchPackages();
-  }, [fetchPackages]);
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
-    setPackagesList(packagesData || []);
-  }, [packagesData]);
+    setOffersList(
+      normalizeArray(offersData, ["rows", "data", "offers"]).map(normalizeOffer),
+    );
+  }, [offersData]);
 
-  // Handle filter changes
+  const filteredOffers = useMemo(() => {
+    const searchTerm = filters.search.toLowerCase();
+
+    return offersList.filter((offer) => {
+      return (
+        (filters.search === "" ||
+          offer.title?.toLowerCase().includes(searchTerm) ||
+          offer.short_description?.toLowerCase().includes(searchTerm) ||
+          offer.business_name?.toLowerCase().includes(searchTerm)) &&
+        (filters.limited === "" ||
+          (filters.limited === "limited" && offer.is_order_time_limited) ||
+          (filters.limited === "open" && !offer.is_order_time_limited))
+      );
+    });
+  }, [offersList, filters]);
+
+  const validation = useFormik({
+    enableReinitialize: true,
+    initialValues: selectedOffer
+      ? {
+        business_id: selectedOffer.business_id || "",
+        title: selectedOffer.title || "",
+        description: selectedOffer.description || "",
+        short_description: selectedOffer.short_description || "",
+        tags: toCsv(selectedOffer.tags),
+        contents: toCsv(selectedOffer.contents),
+        is_order_time_limited: selectedOffer.is_order_time_limited ?? true,
+        order_cutoff_at: formatForDateTimeLocal(selectedOffer.order_cutoff_at),
+        original_price_minor: selectedOffer.original_price_minor ?? "",
+        offer_price_minor: selectedOffer.offer_price_minor ?? "",
+        quantity_total: selectedOffer.quantity_total ?? "",
+        max_per_user: selectedOffer.max_per_user ?? 1,
+        pickup_start: formatForDateTimeLocal(selectedOffer.pickup_start),
+        pickup_end: formatForDateTimeLocal(selectedOffer.pickup_end),
+        pickup_instructions: selectedOffer.pickup_instructions || "",
+      }
+      : buildInitialValues(),
+    validationSchema: Yup.object({
+      business_id: Yup.string().required("Business is required"),
+      title: Yup.string().required("Title is required").trim(),
+      description: Yup.string().required("Description is required").trim(),
+      short_description: Yup.string()
+        .required("Short description is required")
+        .trim(),
+      tags: Yup.string().required("Tags are required"),
+      contents: Yup.string().required("Contents are required"),
+      is_order_time_limited: Yup.boolean(),
+      order_cutoff_at: Yup.string().when("is_order_time_limited", {
+        is: true,
+        then: (schema) => schema.required("Order cutoff is required"),
+        otherwise: (schema) => schema.nullable(),
+      }),
+      original_price_minor: Yup.number()
+        .typeError("Original price must be a number")
+        .required("Original price is required")
+        .min(0, "Original price must be 0 or greater"),
+      offer_price_minor: Yup.number()
+        .typeError("Offer price must be a number")
+        .required("Offer price is required")
+        .min(0, "Offer price must be 0 or greater"),
+      quantity_total: Yup.number()
+        .typeError("Quantity must be a number")
+        .required("Quantity is required")
+        .integer("Quantity must be whole number")
+        .min(0, "Quantity must be 0 or greater"),
+      max_per_user: Yup.number()
+        .typeError("Max per user must be a number")
+        .required("Max per user is required")
+        .integer("Max per user must be whole number")
+        .min(1, "Max per user must be at least 1"),
+      pickup_start: Yup.string().required("Pickup start is required"),
+      pickup_end: Yup.string()
+        .required("Pickup end is required")
+        .test(
+          "pickup-end-after-start",
+          "Pickup end must be after pickup start",
+          function (value) {
+            return new Date(value) > new Date(this.parent.pickup_start);
+          },
+        ),
+      pickup_instructions: Yup.string()
+        .required("Pickup instructions are required")
+        .trim(),
+    }),
+    onSubmit: async (values) => {
+      setIsSubmitting(true);
+      try {
+        const payload = new FormData();
+        payload.append("business_id", values.business_id);
+        payload.append("title", values.title.trim());
+        payload.append("description", values.description.trim());
+        payload.append("short_description", values.short_description.trim());
+        payload.append("is_order_time_limited", String(values.is_order_time_limited));
+        payload.append("original_price_minor", String(values.original_price_minor));
+        payload.append("offer_price_minor", String(values.offer_price_minor));
+        payload.append("quantity_total", String(values.quantity_total));
+        payload.append("max_per_user", String(values.max_per_user));
+        payload.append("pickup_start", new Date(values.pickup_start).toISOString());
+        payload.append("pickup_end", new Date(values.pickup_end).toISOString());
+        payload.append(
+          "pickup_instructions",
+          values.pickup_instructions.trim(),
+        );
+
+        if (values.is_order_time_limited && values.order_cutoff_at) {
+          payload.append(
+            "order_cutoff_at",
+            new Date(values.order_cutoff_at).toISOString(),
+          );
+        }
+
+        fromCsv(values.tags).forEach((tag, index) => {
+          payload.append(`tags[${index}]`, tag);
+        });
+
+        fromCsv(values.contents).forEach((item, index) => {
+          payload.append(`contents[${index}]`, item);
+        });
+
+        if (mainImageFile) {
+          payload.append("main_image_url", mainImageFile);
+        }
+
+        galleryImageFiles.forEach((file) => {
+          payload.append("gallery_images", file);
+        });
+
+        if (isEdit) {
+          await dispatch(
+            onUpdateOffer({
+              id: selectedOffer?.id,
+              payload,
+            }),
+          );
+        } else {
+          await dispatch(onCreateOffer({ payload }));
+        }
+
+        setModal(false);
+        setSelectedOffer(null);
+        setMainImageFile(null);
+        setGalleryImageFiles([]);
+        validation.resetForm();
+      } catch (error) {
+        console.error("Offer save error:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+  });
+
+  const handleCreate = () => {
+    setSelectedOffer(null);
+    setIsEdit(false);
+    setMainImageFile(null);
+    setGalleryImageFiles([]);
+    setModal(true);
+  };
+
+  const handleEdit = (offer) => {
+    setSelectedOffer(offer);
+    setIsEdit(true);
+    setMainImageFile(null);
+    setGalleryImageFiles([]);
+    setModal(true);
+  };
+
+  const handleView = (offer) => {
+    setViewModal(true);
+    startTransition(() => {
+      setSelectedOffer(offer);
+    });
+  };
+
+  const handleDeleteClick = (offer) => {
+    setSelectedOffer(offer);
+    setDeleteModal(true);
+  };
+
+  const handleDeleteOffer = async () => {
+    const id = selectedOffer?.id;
+    if (!id) return;
+    await dispatch(onDeleteOffer(id));
+    setDeleteModal(false);
+    setSelectedOffer(null);
+  };
+
+  const handlePublishOffer = async () => {
+    const id = selectedOffer?.id;
+    if (!id) return;
+    await dispatch(onPublishOffer(id));
+    setPublishModal(false);
+    setSelectedOffer(null);
+  };
+
+  const openPublishModal = (offer) => {
+    setSelectedOffer(offer);
+    setPublishModal(true);
+  };
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle select filter changes
   const handleSelectFilterChange = (name, selectedOption) => {
     setFilters((prev) => ({
       ...prev,
@@ -201,318 +474,109 @@ const SurplusPackages = () => {
     }));
   };
 
-  // Filter packages based on filters
-  const filteredPackages = packagesList.filter((pkg) => {
-    return (
-      (filters.search === "" ||
-        pkg.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        pkg.description
-          ?.toLowerCase()
-          .includes(filters.search.toLowerCase())) &&
-      (filters.status === "" ||
-        (filters.status === "Active" ? pkg.isActive : !pkg.isActive)) &&
-      (filters.businessId === "" || pkg.businessId === filters.businessId)
-    );
-  });
-
-  // Open modal for view details
-  const handleView = (pkg) => {
-    setSelectedPackage(pkg);
-    setViewModal(true);
-  };
-
-  // Open modal for edit
-  const handleEdit = (pkg) => {
-    setSelectedPackage(pkg);
-    setIsEdit(true);
-    setModal(true);
-  };
-
-  // Open modal for create
-  const handleCreate = () => {
-    setSelectedPackage(null);
-    setIsEdit(false);
-    setModal(true);
-    setFile(null);
-  };
-
-  // Close modal and reset form
-  const handleCloseModal = () => {
-    setModal(false);
-    setFile(null);
-  };
-
-  // Delete Package
-  const onClickDelete = (pkg) => {
-    setSelectedPackage(pkg);
-    setDeleteModal(true);
-  };
-
-  const handleDeletePackage = () => {
-    if (selectedPackage) {
-      dispatch(onDeleteSurplusPackage(selectedPackage._id));
-      setDeleteModal(false);
-    }
-  };
-
-  // Activate Package
-  const handleActivatePackage = (pkg) => {
-    dispatch(onActivateSurplusPackage(pkg._id));
-  };
-
-  // formats JS Date for <input type="datetime-local">
-  const formatForDateTimeLocal = (date) => {
-    if (!date) return "";
-    const d = new Date(date);
-    // adjust for timezone offset so it shows correctly in local time
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-    return local.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
-  };
-
-  // Form validation
-  const validation = useFormik({
-    enableReinitialize: true,
-    initialValues: {
-      businessId: businessId,
-      packageImg:
-        typeof selectedPackage?.packageImg === "string"
-          ? selectedPackage.packageImg
-          : "",
-      title: selectedPackage?.title || "",
-      description: selectedPackage?.description || "",
-      originalPrice: selectedPackage?.originalPrice || "",
-      offerPrice: selectedPackage?.offerPrice || "",
-      quantityAvailable: selectedPackage?.quantityAvailable || "",
-      pickupStart: selectedPackage?.pickupStart
-        ? formatForDateTimeLocal(selectedPackage.pickupStart)
-        : "",
-      pickupEnd: selectedPackage?.pickupEnd
-        ? formatForDateTimeLocal(selectedPackage.pickupEnd)
-        : "",
-      pickupInstructions: selectedPackage?.pickupInstructions || "",
-      isActive: selectedPackage?.isActive ?? true,
-    },
-    validationSchema: validationSchema,
-    onSubmit: async (values, { setSubmitting, resetForm }) => {
-      try {
-        setSubmitting(true);
-        const formData = new FormData();
-
-        // Handle image file
-        if (file) {
-          formData.append("packageImg", file);
-        } else if (
-          typeof values.packageImg === "string" &&
-          values.packageImg.trim() !== ""
-        ) {
-          formData.append("packageImg", values.packageImg);
-        }
-
-        // Append the rest of the fields
-        Object.keys(values).forEach((key) => {
-          if (key !== "packageImg") {
-            formData.append(key, values[key]);
-          }
-        });
-
-        if (isEdit) {
-          formData.append("_id", selectedPackage ? selectedPackage._id : "");
-          formData.append(
-            "updatedBy",
-            userAuth.staffId ? userAuth.username : "",
-          );
-        } else {
-          formData.append(
-            "createdBy",
-            userAuth.staffId ? userAuth.username : "",
-          );
-        }
-
-        await dispatch(onCreateOrUpdateSurplusPackage(formData));
-        setModal(false);
-        setFile(null);
-        resetForm();
-      } catch (err) {
-        console.error("Form submit error:", err);
-      } finally {
-        setSubmitting(false);
-      }
-    },
-  });
-
-  // Format date with time for display
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // Calculate discount percentage
-  const calculateDiscount = (original, offer) => {
-    if (!original || !offer) return 0;
-    return Math.round(((original - offer) / original) * 100);
-  };
-
-  // Table columns
   const columns = [
     {
       name: "#",
       cell: (row, index) => index + 1,
+      width: "70px",
     },
     {
-      name: "Image",
+      name: "Title",
       cell: (row) => (
-        <div className="d-flex align-items-center">
-          {row.packageImg ? (
-            <img
-              src={row.packageImg}
-              alt={row.title}
-              style={{
-                width: "50px",
-                height: "50px",
-                objectFit: "cover",
-                borderRadius: "8px",
-                border: "2px solid #f8f9fa",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "50px",
-                height: "50px",
-                backgroundColor: "#f8f9fa",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "8px",
-                border: "2px dashed #dee2e6",
-              }}
-            >
-              <i
-                className="ri-image-line"
-                style={{ fontSize: "18px", color: "#6c757d" }}
-              ></i>
-            </div>
-          )}
+        <div>
+          <div className="fw-semibold">{row.title || "-"}</div>
+          <small className="text-muted">{row.short_description || "-"}</small>
         </div>
       ),
     },
     {
-      name: "Package Details",
+      name: "Business",
+      cell: (row) => (
+        <div className="d-flex align-items-center gap-2">
+          <span
+            className="d-inline-flex align-items-center justify-content-center rounded-circle bg-soft-primary text-primary"
+            style={{ width: "32px", height: "32px" }}
+          >
+            <i className="ri-store-2-line" />
+          </span>
+          <span className="fw-medium">{row.business_name || "-"}</span>
+        </div>
+      ),
+    },
+    {
+      name: "Offer Price",
       cell: (row) => (
         <div>
-          <div
-            className="fw-semibold text-truncate"
-            style={{ maxWidth: "200px" }}
-          >
-            {row.title}
+          <div className="fw-semibold text-success">
+            {formatMoney(row.offer_price_minor)}
           </div>
-          <small
-            className="text-muted text-truncate d-block"
-            style={{ maxWidth: "200px" }}
-          >
-            {row.description}
+          <small className="text-muted text-decoration-line-through">
+            {formatMoney(row.original_price_minor)}
           </small>
         </div>
       ),
-      grow: 2, // allow it to grow a bit more
-      wrap: true,
-      // minWidth: '250px'
     },
-
     {
-      name: "Pricing",
+      name: "Quantity",
       cell: (row) => (
-        <div>
-          <div className="d-flex align-items-center gap-2">
-            <span className="text-decoration-line-through text-muted small">
-              ${parseFloat(row.originalPrice).toFixed(2)}
-            </span>
-            <span className="text-success fw-bold fs-6">
-              ${parseFloat(row.offerPrice).toFixed(2)}
-            </span>
-          </div>
-          <Badge color="warning" className="mt-1">
-            {calculateDiscount(row.originalPrice, row.offerPrice)}% OFF
+        <Badge color="info" pill>
+          <i className="ri-inbox-archive-line me-1" />
+          {row.quantity_total ?? 0}
+        </Badge>
+      ),
+    },
+    {
+      name: "Cutoff",
+      cell: (row) => {
+        const badge = getCutoffBadge(row.is_order_time_limited);
+        return (
+          <Badge color={badge.color}>
+            <i className={`${badge.icon} me-1`} />
+            {badge.label}
           </Badge>
-        </div>
-      ),
-    },
-    {
-      name: "Qty",
-      selector: (row) => row.quantityAvailable,
-
-      center: true,
-    },
-    {
-      name: "Pickup Window",
-      cell: (row) => (
-        <div className="small">
-          <div className="fw-medium">{formatDateTime(row.pickupStart)}</div>
-          <div className="text-muted">to {formatDateTime(row.pickupEnd)}</div>
-        </div>
-      ),
+        );
+      },
     },
     {
       name: "Status",
-      cell: (row) => (
-        <Badge
-          color={row.isActive ? "success" : "danger"}
-          className="px-3 py-2"
-          style={{
-            borderRadius: "20px",
-            fontSize: "0.75rem",
-            fontWeight: "600",
-          }}
-        >
-          <i
-            className={`ri-${row.isActive ? "check" : "close"}-circle-fill me-1`}
-          ></i>
-          {row.isActive ? "Active" : "Inactive"}
-        </Badge>
-      ),
-
-      center: true,
+      cell: (row) => {
+        const badge = getOfferStatusBadge(row.status);
+        return (
+          <Badge color={badge.color}>
+            <i className={`${badge.icon} me-1`} />
+            {badge.label}
+          </Badge>
+        );
+      },
     },
     {
       name: "Actions",
       cell: (row) => (
-        <div className="d-flex gap-1">
-          <Button
-            color="outline-info"
-            size="sm"
-            onClick={() => handleView(row)}
-            className="btn-icon"
-          >
+        <div className="d-flex gap-2">
+          <Button color="soft-info" size="sm" onClick={() => handleView(row)}>
             <i className="ri-eye-line" />
           </Button>
-          <Button
-            color="outline-primary"
-            size="sm"
-            onClick={() => handleEdit(row)}
-            className="btn-icon"
-          >
+          {!isOfferPublished(row.status) ? (
+            <Button
+              color="soft-success"
+              size="sm"
+              onClick={() => openPublishModal(row)}
+              title="Publish offer"
+            >
+              <i className="ri-megaphone-line" />
+            </Button>
+          ) : (
+            <Button color="soft-secondary" size="sm" disabled title="Already published">
+              <i className="ri-check-double-line" />
+            </Button>
+          )}
+          <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)}>
             <i className="ri-pencil-line" />
           </Button>
-          {/* <Button
-                        color={row.isActive ? "outline-warning" : "outline-success"}
-                        size="sm"
-                        onClick={() => handleActivatePackage(row)}
-                        className="btn-icon"
-                        title={row.isActive ? 'Deactivate' : 'Activate'}
-                    >
-                        <i className={`ri-${row.isActive ? 'pause' : 'play'}-circle-line`} />
-                    </Button> */}
           <Button
-            color="outline-danger"
+            color="soft-danger"
             size="sm"
-            onClick={() => onClickDelete(row)}
-            className="btn-icon"
+            onClick={() => handleDeleteClick(row)}
           >
             <i className="ri-delete-bin-line" />
           </Button>
@@ -524,180 +588,53 @@ const SurplusPackages = () => {
   return (
     <div className="page-content">
       <Container fluid>
-        <BreadCrumb title="Packages" pageTitle="Content" />
+        <BreadCrumb title="Offers" pageTitle="Content" />
 
-        {/* Stats Cards */}
-        <Row className="mb-4">
-          <Col xl={3} md={6}>
-            <Card className="card-animate">
-              <CardBody>
-                <div className="d-flex align-items-center">
-                  <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">
-                      Total Packages
-                    </p>
-                    <h4 className="mb-0">{packagesList.length}</h4>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className="avatar-sm">
-                      <span className="avatar-title bg-primary-subtle text-primary rounded-circle fs-2">
-                        <i className="ri-box-3-line"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col xl={3} md={6}>
-            <Card className="card-animate">
-              <CardBody>
-                <div className="d-flex align-items-center">
-                  <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">
-                      Active Packages
-                    </p>
-                    <h4 className="mb-0">
-                      {packagesList.filter((pkg) => pkg.isActive).length}
-                    </h4>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className="avatar-sm">
-                      <span className="avatar-title bg-success-subtle text-success rounded-circle fs-2">
-                        <i className="ri-checkbox-circle-line"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col xl={3} md={6}>
-            <Card className="card-animate">
-              <CardBody>
-                <div className="d-flex align-items-center">
-                  <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">
-                      Low Stock
-                    </p>
-                    <h4 className="mb-0">
-                      {
-                        packagesList.filter((pkg) => pkg.quantityAvailable < 5)
-                          .length
-                      }
-                    </h4>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className="avatar-sm">
-                      <span className="avatar-title bg-warning-subtle text-warning rounded-circle fs-2">
-                        <i className="ri-alert-line"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col xl={3} md={6}>
-            <Card className="card-animate">
-              <CardBody>
-                <div className="d-flex align-items-center">
-                  <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">
-                      Out of Stock
-                    </p>
-                    <h4 className="mb-0">
-                      {
-                        packagesList.filter(
-                          (pkg) => pkg.quantityAvailable === 0,
-                        ).length
-                      }
-                    </h4>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className="avatar-sm">
-                      <span className="avatar-title bg-danger-subtle text-danger rounded-circle fs-2">
-                        <i className="ri-close-circle-line"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Filter Controls */}
-        <Card className="mb-4">
-          <CardBody className="p-3">
-            <Row className="g-3 align-items-end">
-              <Col md={6}>
-                <FormGroup className="mb-0">
-                  <Label className="form-label">Search Packages</Label>
+        <Card className="mb-3">
+          <CardBody>
+            <Row>
+              <Col md={8}>
+                <FormGroup>
+                  <Label>Search</Label>
                   <Input
                     type="text"
                     name="search"
-                    placeholder="Search by title or description..."
+                    placeholder="Search by title, business, or short description"
                     value={filters.search}
                     onChange={handleFilterChange}
-                    className="form-control"
                   />
                 </FormGroup>
               </Col>
-              <Col md={4}>
-                <FormGroup className="mb-0">
-                  <Label className="form-label">Status</Label>
+              <Col md={3}>
+                <FormGroup>
+                  <Label>Order Cutoff</Label>
                   <Select
-                    options={statusOptions}
-                    value={statusOptions.find(
-                      (opt) => opt.value === filters.status,
+                    options={limitedOptions}
+                    value={limitedOptions.find(
+                      (option) => option.value === filters.limited,
                     )}
-                    onChange={(opt) => handleSelectFilterChange("status", opt)}
+                    onChange={(option) =>
+                      handleSelectFilterChange("limited", option)
+                    }
                     isClearable
-                    placeholder="Select status"
-                    className="react-select"
-                    classNamePrefix="select"
+                    placeholder="Select type"
                   />
                 </FormGroup>
               </Col>
-
-              <Col md={2}>
-                <Button
-                  color="primary"
-                  className="w-100 mb-3"
-                  onClick={() =>
-                    setFilters({
-                      search: "",
-                      status: "",
-                      businessId: "",
-                    })
-                  }
-                >
-                  <i className="ri-refresh-line me-1"></i>
-                  Reset
+              <Col md={1} className="d-flex align-items-end mb-3">
+                <Button color="primary" onClick={fetchData} disabled={loading}>
+                  <i className="ri-refresh-line" />
                 </Button>
               </Col>
             </Row>
           </CardBody>
         </Card>
 
-        {/* Data Table */}
         <Card>
-          <CardHeader className="d-flex justify-content-between align-items-center bg-light">
-            <h5 className="card-title mb-0 flex-grow-1">
-              <i className="ri-box-3-line align-middle me-2"></i>
-              Surplus Packages List
-              <Badge color="primary" className="ms-2">
-                {filteredPackages.length}
-              </Badge>
-            </h5>
-            <Button
-              color="primary"
-              onClick={handleCreate}
-              className="shadow-sm"
-            >
-              <i className="ri-add-line me-1 align-middle"></i>
-              Package
+          <CardHeader className="d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Offers List</h5>
+            <Button color="primary" onClick={handleCreate}>
+              <i className="ri-add-line me-1" /> Add Offer
             </Button>
           </CardHeader>
           <CardBody>
@@ -706,559 +643,665 @@ const SurplusPackages = () => {
             ) : (
               <DataTable
                 columns={columns}
-                data={filteredPackages}
+                data={filteredOffers}
                 pagination
-                // highlightOnHover
                 responsive
-                // striped
-                noDataComponent={
-                  <NoDataFound message="Try adjusting your search criteria or add a new package." />
-                }
-                customStyles={{
-                  headCells: {
-                    style: {
-                      // backgroundColor: '#f8f9fa',
-                      fontWeight: "600",
-                      fontSize: "0.875rem",
-                    },
-                  },
-                  cells: {
-                    style: {
-                      fontSize: "0.875rem",
-                      padding: "12px 8px",
-                    },
-                  },
-                }}
+                highlightOnHover
+                noDataComponent={<NoDataFound message="No offers found" />}
               />
             )}
           </CardBody>
         </Card>
       </Container>
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={modal} toggle={handleCloseModal} size="xl" centered>
-        <ModalHeader toggle={handleCloseModal} className="bg-light">
-          <i className={`ri-${isEdit ? "pencil" : "add"}-line me-2`}></i>
-          {isEdit ? "Edit Surplus Package" : "Create New Surplus Package"}
+      <Modal isOpen={modal} toggle={() => setModal(false)} size="xl">
+        <ModalHeader toggle={() => setModal(false)}>
+          {isEdit ? "Edit Offer" : "Add New Offer"}
         </ModalHeader>
-        <Form onSubmit={validation.handleSubmit}>
-          <ModalBody style={{ maxHeight: "70vh", overflowY: "auto" }}>
+        <Form
+          onSubmit={(e) => {
+            e.preventDefault();
+            validation.handleSubmit();
+          }}
+        >
+          <ModalBody>
             <Row>
-              <Col lg={6}>
-                <Card className="border">
-                  <CardHeader className="bg-light">
-                    <h6 className="mb-0">Package Information</h6>
-                  </CardHeader>
-                  <CardBody>
-                    <FormGroup>
-                      <Label className="form-label">
-                        Package Image <span className="text-danger">*</span>
-                      </Label>
-                      <FilePond
-                        files={file ? [file] : []}
-                        onupdatefiles={(fileItems) => {
-                          setFile(
-                            fileItems.length > 0 ? fileItems[0].file : null,
-                          );
-                        }}
-                        allowMultiple={false}
-                        allowPaste={true}
-                        name="packageImg"
-                        labelIdle='<div class="text-center"><i class="ri-upload-cloud-2-line display-4 text-muted"></i><p class="mt-2">Drag & Drop your image or <span class="filepond--label-action">Browse</span></p></div>'
-                        acceptedFileTypes={["image/*"]}
-                        maxFileSize="5MB"
-                        className="filepond-border"
-                      />
-                      {validation.touched.packageImg &&
-                        validation.errors.packageImg && (
-                          <div className="text-danger small mt-1">
-                            {validation.errors.packageImg}
-                          </div>
-                        )}
-                      {validation.values.packageImg && !file && (
-                        <div className="mt-2">
-                          <small className="text-muted">Current image:</small>
-                          <div className="mt-1">
-                            <img
-                              src={validation.values.packageImg}
-                              alt="Current"
-                              className="img-thumbnail"
-                              style={{ maxHeight: "150px" }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </FormGroup>
-
-                    <FormGroup>
-                      <Label className="form-label">
-                        Title <span className="text-danger">*</span>
-                      </Label>
-                      <Input
-                        name="title"
-                        value={validation.values.title}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.title && !!validation.errors.title
-                        }
-                        placeholder="Enter package title"
-                        className="form-control-lg"
-                      />
-                      <FormFeedback>{validation.errors.title}</FormFeedback>
-                    </FormGroup>
-
-                    <FormGroup>
-                      <Label className="form-label">
-                        Description <span className="text-danger">*</span>
-                      </Label>
-                      <Input
-                        type="textarea"
-                        name="description"
-                        rows="3"
-                        value={validation.values.description}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.description &&
-                          !!validation.errors.description
-                        }
-                        placeholder="Describe the package contents and details"
-                        className="form-control-lg"
-                      />
-                      <FormFeedback>
-                        {validation.errors.description}
-                      </FormFeedback>
-                      <div className="text-end">
-                        <small
-                          className={`text-${validation.values.description.length > 500 ? "danger" : "muted"}`}
-                        >
-                          {validation.values.description.length}/500
-                        </small>
-                      </div>
-                    </FormGroup>
-                  </CardBody>
-                </Card>
+              <Col md={4}>
+                <FormGroup>
+                  <Label>
+                    Business <span className="text-danger">*</span>
+                  </Label>
+                  <Select
+                    options={businessOptions}
+                    value={
+                      businessOptions.find(
+                        (option) => option.value === validation.values.business_id,
+                      ) || null
+                    }
+                    onChange={(option) =>
+                      validation.setFieldValue("business_id", option?.value || "")
+                    }
+                    onBlur={() => validation.setFieldTouched("business_id", true)}
+                    placeholder="Select business"
+                  />
+                  {validation.touched.business_id &&
+                    validation.errors.business_id ? (
+                    <div className="text-danger mt-1 small">
+                      {validation.errors.business_id}
+                    </div>
+                  ) : null}
+                </FormGroup>
               </Col>
 
-              <Col lg={6}>
-                <Card className="border">
-                  <CardHeader className="bg-light">
-                    <h6 className="mb-0">Pricing & Availability</h6>
-                  </CardHeader>
-                  <CardBody>
-                    <Row>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label className="form-label">
-                            Original Price ($){" "}
-                            <span className="text-danger">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            name="originalPrice"
-                            min="0"
-                            step="0.01"
-                            value={validation.values.originalPrice}
-                            onChange={validation.handleChange}
-                            onBlur={validation.handleBlur}
-                            invalid={
-                              validation.touched.originalPrice &&
-                              !!validation.errors.originalPrice
-                            }
-                            placeholder="0.00"
-                            className="form-control-lg"
-                          />
-                          <FormFeedback>
-                            {validation.errors.originalPrice}
-                          </FormFeedback>
-                        </FormGroup>
-                      </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label className="form-label">
-                            Offer Price ($){" "}
-                            <span className="text-danger">*</span>
-                          </Label>
-                          <Input
-                            type="number"
-                            name="offerPrice"
-                            min="0"
-                            step="0.01"
-                            value={validation.values.offerPrice}
-                            onChange={validation.handleChange}
-                            onBlur={validation.handleBlur}
-                            invalid={
-                              validation.touched.offerPrice &&
-                              !!validation.errors.offerPrice
-                            }
-                            placeholder="0.00"
-                            className="form-control-lg"
-                          />
-                          <FormFeedback>
-                            {validation.errors.offerPrice}
-                          </FormFeedback>
-                          {validation.values.originalPrice &&
-                            validation.values.offerPrice && (
-                              <div className="mt-1">
-                                <Badge color="success">
-                                  {calculateDiscount(
-                                    parseFloat(validation.values.originalPrice),
-                                    parseFloat(validation.values.offerPrice),
-                                  )}
-                                  % OFF
-                                </Badge>
-                              </div>
-                            )}
-                        </FormGroup>
-                      </Col>
-                    </Row>
-
-                    <FormGroup>
-                      <Label className="form-label">
-                        Quantity Available{" "}
-                        <span className="text-danger">*</span>
-                      </Label>
-                      <Input
-                        type="number"
-                        name="quantityAvailable"
-                        min="0"
-                        value={validation.values.quantityAvailable}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.quantityAvailable &&
-                          !!validation.errors.quantityAvailable
-                        }
-                        placeholder="Enter available quantity"
-                        className="form-control-lg"
-                      />
-                      <FormFeedback>
-                        {validation.errors.quantityAvailable}
-                      </FormFeedback>
-                    </FormGroup>
-                  </CardBody>
-                </Card>
-
-                <Card className="border mt-3">
-                  <CardHeader className="bg-light">
-                    <h6 className="mb-0">Pickup Details</h6>
-                  </CardHeader>
-                  <CardBody>
-                    <Row>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label className="form-label">
-                            Pickup Start <span className="text-danger">*</span>
-                          </Label>
-                          <Input
-                            type="datetime-local"
-                            name="pickupStart"
-                            value={validation.values.pickupStart}
-                            onChange={validation.handleChange}
-                            onBlur={validation.handleBlur}
-                            invalid={
-                              validation.touched.pickupStart &&
-                              !!validation.errors.pickupStart
-                            }
-                            className="form-control-lg"
-                          />
-                          <FormFeedback>
-                            {validation.errors.pickupStart}
-                          </FormFeedback>
-                        </FormGroup>
-                      </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label className="form-label">
-                            Pickup End <span className="text-danger">*</span>
-                          </Label>
-                          <Input
-                            type="datetime-local"
-                            name="pickupEnd"
-                            value={validation.values.pickupEnd}
-                            onChange={validation.handleChange}
-                            onBlur={validation.handleBlur}
-                            invalid={
-                              validation.touched.pickupEnd &&
-                              !!validation.errors.pickupEnd
-                            }
-                            className="form-control-lg"
-                          />
-                          <FormFeedback>
-                            {validation.errors.pickupEnd}
-                          </FormFeedback>
-                        </FormGroup>
-                      </Col>
-                    </Row>
-
-                    <FormGroup>
-                      <Label className="form-label">
-                        Pickup Instructions{" "}
-                        <span className="text-danger">*</span>
-                      </Label>
-                      <Input
-                        type="textarea"
-                        name="pickupInstructions"
-                        rows="3"
-                        value={validation.values.pickupInstructions}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.pickupInstructions &&
-                          !!validation.errors.pickupInstructions
-                        }
-                        placeholder="Provide detailed pickup instructions for customers..."
-                        className="form-control-lg"
-                      />
-                      <FormFeedback>
-                        {validation.errors.pickupInstructions}
-                      </FormFeedback>
-                      <div className="text-end">
-                        <small
-                          className={`text-${validation.values.pickupInstructions.length > 500 ? "danger" : "muted"}`}
-                        >
-                          {validation.values.pickupInstructions.length}/500
-                        </small>
-                      </div>
-                    </FormGroup>
-                  </CardBody>
-                </Card>
-
-                <FormGroup check className="mt-3">
-                  <Input
-                    type="checkbox"
-                    name="isActive"
-                    checked={validation.values.isActive}
-                    onChange={validation.handleChange}
-                    id="isActive"
-                  />
-                  <Label for="isActive" check className="fw-medium">
-                    <i className="ri-checkbox-circle-line me-1"></i>
-                    Activate this package immediately
+              <Col md={4}>
+                <FormGroup>
+                  <Label>
+                    Title <span className="text-danger">*</span>
                   </Label>
+                  <Input
+                    name="title"
+                    placeholder="Family Lunch Combo"
+                    value={validation.values.title}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={validation.touched.title && !!validation.errors.title}
+                  />
+                  <FormFeedback>{validation.errors.title}</FormFeedback>
                 </FormGroup>
               </Col>
             </Row>
+
+            <Row>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>
+                    Short Description <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    name="short_description"
+                    placeholder="Lunch combo for 2"
+                    value={validation.values.short_description}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.short_description &&
+                      !!validation.errors.short_description
+                    }
+                  />
+                  <FormFeedback>
+                    {validation.errors.short_description}
+                  </FormFeedback>
+                </FormGroup>
+              </Col>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>
+                    Tags (comma separated) <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    name="tags"
+                    placeholder="lunch, combo, family"
+                    value={validation.values.tags}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={validation.touched.tags && !!validation.errors.tags}
+                  />
+                  <FormFeedback>{validation.errors.tags}</FormFeedback>
+                </FormGroup>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>
+                    Description <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="textarea"
+                    rows="4"
+                    name="description"
+                    placeholder="Rice, chicken, salad and juice for two people."
+                    value={validation.values.description}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.description &&
+                      !!validation.errors.description
+                    }
+                  />
+                  <FormFeedback>{validation.errors.description}</FormFeedback>
+                </FormGroup>
+              </Col>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>
+                    Contents (comma separated) <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="textarea"
+                    rows="4"
+                    name="contents"
+                    placeholder="Rice, Chicken, Salad, Juice"
+                    value={validation.values.contents}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.contents && !!validation.errors.contents
+                    }
+                  />
+                  <FormFeedback>{validation.errors.contents}</FormFeedback>
+                </FormGroup>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>Main Image</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setMainImageFile(e.currentTarget.files?.[0] || null)
+                    }
+                  />
+                </FormGroup>
+              </Col>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>Gallery Images</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) =>
+                      setGalleryImageFiles(Array.from(e.currentTarget.files || []))
+                    }
+                  />
+                </FormGroup>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={4}>
+                <FormGroup check className="mt-2">
+                  <Input
+                    type="checkbox"
+                    id="is_order_time_limited"
+                    name="is_order_time_limited"
+                    checked={validation.values.is_order_time_limited}
+                    onChange={validation.handleChange}
+                  />
+                  <Label check for="is_order_time_limited">
+                    Order Time Limited
+                  </Label>
+                </FormGroup>
+              </Col>
+              <Col md={8}>
+                <FormGroup>
+                  <Label>
+                    Order Cutoff At
+                    {validation.values.is_order_time_limited ? (
+                      <span className="text-danger"> *</span>
+                    ) : null}
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    name="order_cutoff_at"
+                    value={validation.values.order_cutoff_at}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    disabled={!validation.values.is_order_time_limited}
+                    invalid={
+                      validation.touched.order_cutoff_at &&
+                      !!validation.errors.order_cutoff_at
+                    }
+                  />
+                  <FormFeedback>{validation.errors.order_cutoff_at}</FormFeedback>
+                </FormGroup>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={3}>
+                <FormGroup>
+                  <Label>
+                    Original Price <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    name="original_price_minor"
+                    value={validation.values.original_price_minor}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.original_price_minor &&
+                      !!validation.errors.original_price_minor
+                    }
+                  />
+                  <FormFeedback>
+                    {validation.errors.original_price_minor}
+                  </FormFeedback>
+                </FormGroup>
+              </Col>
+              <Col md={3}>
+                <FormGroup>
+                  <Label>
+                    Offer Price <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    name="offer_price_minor"
+                    value={validation.values.offer_price_minor}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.offer_price_minor &&
+                      !!validation.errors.offer_price_minor
+                    }
+                  />
+                  <FormFeedback>
+                    {validation.errors.offer_price_minor}
+                  </FormFeedback>
+                </FormGroup>
+              </Col>
+              <Col md={3}>
+                <FormGroup>
+                  <Label>
+                    Quantity Total <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    name="quantity_total"
+                    value={validation.values.quantity_total}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.quantity_total &&
+                      !!validation.errors.quantity_total
+                    }
+                  />
+                  <FormFeedback>{validation.errors.quantity_total}</FormFeedback>
+                </FormGroup>
+              </Col>
+              <Col md={3}>
+                <FormGroup>
+                  <Label>
+                    Max Per User <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    name="max_per_user"
+                    min="1"
+                    value={validation.values.max_per_user}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.max_per_user &&
+                      !!validation.errors.max_per_user
+                    }
+                  />
+                  <FormFeedback>{validation.errors.max_per_user}</FormFeedback>
+                </FormGroup>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>
+                    Pickup Start <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    name="pickup_start"
+                    value={validation.values.pickup_start}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.pickup_start &&
+                      !!validation.errors.pickup_start
+                    }
+                  />
+                  <FormFeedback>{validation.errors.pickup_start}</FormFeedback>
+                </FormGroup>
+              </Col>
+              <Col md={6}>
+                <FormGroup>
+                  <Label>
+                    Pickup End <span className="text-danger">*</span>
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    name="pickup_end"
+                    value={validation.values.pickup_end}
+                    onChange={validation.handleChange}
+                    onBlur={validation.handleBlur}
+                    invalid={
+                      validation.touched.pickup_end &&
+                      !!validation.errors.pickup_end
+                    }
+                  />
+                  <FormFeedback>{validation.errors.pickup_end}</FormFeedback>
+                </FormGroup>
+              </Col>
+            </Row>
+
+            <FormGroup>
+              <Label>
+                Pickup Instructions <span className="text-danger">*</span>
+              </Label>
+              <Input
+                type="textarea"
+                rows="3"
+                name="pickup_instructions"
+                placeholder="Show order code at pickup desk"
+                value={validation.values.pickup_instructions}
+                onChange={validation.handleChange}
+                onBlur={validation.handleBlur}
+                invalid={
+                  validation.touched.pickup_instructions &&
+                  !!validation.errors.pickup_instructions
+                }
+              />
+              <FormFeedback>{validation.errors.pickup_instructions}</FormFeedback>
+            </FormGroup>
           </ModalBody>
-          <ModalFooter className="bg-light">
-            <Button color="light" onClick={handleCloseModal} className="me-2">
-              <i className="ri-close-line me-1"></i>
+
+          <ModalFooter>
+            <Button color="light" onClick={() => setModal(false)}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              type="submit"
-              disabled={validation.isSubmitting}
-              className="px-4"
-            >
-              {validation.isSubmitting ? (
-                <>
-                  <i className="ri-loader-4-line spin me-1"></i>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <i className="ri-save-line me-1"></i>
-                  {isEdit ? "Update Package" : "Create Package"}
-                </>
-              )}
+            <Button color="primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : isEdit ? "Update Offer" : "Create Offer"}
             </Button>
           </ModalFooter>
         </Form>
       </Modal>
 
-      {/* View Details Modal */}
-      <Modal
-        isOpen={viewModal}
-        toggle={() => setViewModal(false)}
-        size="lg"
-        centered
-      >
-        <ModalHeader toggle={() => setViewModal(false)} className="bg-light">
-          <i className="ri-eye-line me-2"></i>
-          Package Details
-        </ModalHeader>
+      <Modal isOpen={viewModal} toggle={() => setViewModal(false)} size="xl">
+        <ModalHeader toggle={() => setViewModal(false)}>Offer Details</ModalHeader>
         <ModalBody>
-          {selectedPackage && (
-            <Row>
-              <Col md={4} className="mb-3">
-                {selectedPackage.packageImg ? (
-                  <img
-                    src={selectedPackage.packageImg}
-                    alt={selectedPackage.title}
-                    style={{
-                      width: "100%",
-                      borderRadius: "12px",
-                      border: "3px solid #f8f9fa",
-                    }}
+          {deferredSelectedOffer ? (
+            <>
+              <div className="d-flex flex-wrap gap-2 mb-4">
+                <Badge color="primary" pill className="px-3 py-2">
+                  <i className="ri-store-2-line me-1" />
+                  {deferredSelectedOffer.business_name || "-"}
+                </Badge>
+                <Badge color="dark" pill className="px-3 py-2">
+                  <i className="ri-price-tag-3-line me-1" />
+                  {deferredSelectedOffer.category_name || "Offer"}
+                </Badge>
+                <Badge
+                  color={getCutoffBadge(deferredSelectedOffer.is_order_time_limited).color}
+                  pill
+                  className="px-3 py-2"
+                >
+                  <i
+                    className={`${getCutoffBadge(deferredSelectedOffer.is_order_time_limited).icon} me-1`}
                   />
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "200px",
-                      backgroundColor: "#f8f9fa",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "12px",
-                      border: "3px dashed #dee2e6",
-                    }}
-                  >
-                    <i
-                      className="ri-image-line"
-                      style={{ fontSize: "48px", color: "#6c757d" }}
-                    ></i>
-                  </div>
-                )}
-              </Col>
-              <Col md={8}>
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <h4 className="mb-0">{selectedPackage.title}</h4>
-                  <Badge
-                    color={selectedPackage.isActive ? "success" : "danger"}
-                    className="px-3 py-2"
-                  >
-                    {selectedPackage.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
+                  {getCutoffBadge(deferredSelectedOffer.is_order_time_limited).label}
+                </Badge>
+              </div>
 
-                <p className="text-muted mb-4">{selectedPackage.description}</p>
+              <Row className="g-4">
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-file-list-3-line me-2 text-primary" />
+                        Offer Information
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <p><strong>Title:</strong> {deferredSelectedOffer.title || "-"}</p>
+                      <p>
+                        <strong>Business:</strong> {deferredSelectedOffer.business_name || "-"}
+                      </p>
+                      <p>
+                        <strong>Short Description:</strong>{" "}
+                        {deferredSelectedOffer.short_description || "-"}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Description:</strong>{" "}
+                        {deferredSelectedOffer.description || "-"}
+                      </p>
+                    </CardBody>
+                  </Card>
+                </Col>
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-coins-line me-2 text-success" />
+                        Pricing & Quantity
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <Row className="g-3">
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-light p-3">
+                            <small className="text-muted d-block">Original Price</small>
+                            <span className="fw-semibold text-muted text-decoration-line-through">
+                              {formatMoney(deferredSelectedOffer.original_price_minor)}
+                            </span>
+                          </div>
+                        </Col>
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-success bg-opacity-10 p-3">
+                            <small className="text-muted d-block">Offer Price</small>
+                            <span className="fw-bold text-success">
+                              {formatMoney(deferredSelectedOffer.offer_price_minor)}
+                            </span>
+                          </div>
+                        </Col>
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-info bg-opacity-10 p-3">
+                            <small className="text-muted d-block">Quantity</small>
+                            <span className="fw-bold text-info">
+                              {deferredSelectedOffer.quantity_total ?? "-"}
+                            </span>
+                          </div>
+                        </Col>
+                        <Col sm={6}>
+                          <div className="rounded-3 border bg-warning bg-opacity-10 p-3">
+                            <small className="text-muted d-block">Max Per User</small>
+                            <span className="fw-bold text-warning">
+                              {deferredSelectedOffer.max_per_user ?? "-"}
+                            </span>
+                          </div>
+                        </Col>
+                      </Row>
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
 
-                <Row className="gy-3">
-                  <Col sm={6}>
-                    <div className="border rounded p-3 bg-light">
-                      <small className="text-muted d-block">
-                        Original Price
-                      </small>
-                      <span className="text-decoration-line-through h5 text-muted">
-                        ${parseFloat(selectedPackage.originalPrice).toFixed(2)}
-                      </span>
-                    </div>
-                  </Col>
-                  <Col sm={6}>
-                    <div className="border rounded p-3 bg-success bg-opacity-10">
-                      <small className="text-muted d-block">Offer Price</small>
-                      <span className="h5 text-success fw-bold">
-                        ${parseFloat(selectedPackage.offerPrice).toFixed(2)}
-                      </span>
-                    </div>
-                  </Col>
-                  <Col sm={6}>
-                    <div className="border rounded p-3 bg-info bg-opacity-10">
-                      <small className="text-muted d-block">Discount</small>
-                      <span className="h6 text-info fw-bold">
-                        {calculateDiscount(
-                          selectedPackage.originalPrice,
-                          selectedPackage.offerPrice,
+              <Row className="g-4 mt-1">
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-calendar-schedule-line me-2 text-warning" />
+                        Schedule
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <p>
+                        <strong>Order Cutoff:</strong>{" "}
+                        {formatDateTime(deferredSelectedOffer.order_cutoff_at)}
+                      </p>
+                      <p>
+                        <strong>Pickup Start:</strong>{" "}
+                        {formatDateTime(deferredSelectedOffer.pickup_start)}
+                      </p>
+                      <p>
+                        <strong>Pickup End:</strong>{" "}
+                        {formatDateTime(deferredSelectedOffer.pickup_end)}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Pickup Instructions:</strong>{" "}
+                        {deferredSelectedOffer.pickup_instructions || "-"}
+                      </p>
+                    </CardBody>
+                  </Card>
+                </Col>
+                <Col md={6}>
+                  <Card className="border shadow-none h-100 mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-price-tag-3-line me-2 text-dark" />
+                        Tags & Contents
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <div className="mb-3">
+                        <strong className="d-block mb-2">Tags</strong>
+                        {deferredSelectedOffer.tags?.length ? (
+                          <div className="d-flex flex-wrap gap-2">
+                            {deferredSelectedOffer.tags.map((tag, index) => (
+                              <Badge color="primary" pill key={`tag-${index}`}>
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted mb-0">-</p>
                         )}
-                        % OFF
-                      </span>
-                    </div>
-                  </Col>
-                  <Col sm={6}>
-                    <div
-                      className={`border rounded p-3 ${
-                        selectedPackage.quantityAvailable === 0
-                          ? "bg-danger bg-opacity-10"
-                          : selectedPackage.quantityAvailable < 5
-                            ? "bg-warning bg-opacity-10"
-                            : "bg-light"
-                      }`}
-                    >
-                      <small className="text-muted d-block">
-                        Quantity Available
-                      </small>
-                      <span
-                        className={`h5 ${
-                          selectedPackage.quantityAvailable === 0
-                            ? "text-danger"
-                            : selectedPackage.quantityAvailable < 5
-                              ? "text-warning"
-                              : "text-dark"
-                        } fw-bold`}
-                      >
-                        {selectedPackage.quantityAvailable}
-                      </span>
-                    </div>
-                  </Col>
-                </Row>
+                      </div>
+                      <div>
+                        <strong className="d-block mb-2">Contents</strong>
+                        {deferredSelectedOffer.contents?.length ? (
+                          <div className="d-flex flex-wrap gap-2">
+                            {deferredSelectedOffer.contents.map((item, index) => (
+                              <Badge color="light" className="text-dark border" key={`content-${index}`}>
+                                <i className="ri-check-line me-1 text-success" />
+                                {item}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted mb-0">-</p>
+                        )}
+                      </div>
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
 
-                <hr className="my-4" />
-
-                <h6 className="mb-3">
-                  <i className="ri-time-line me-2"></i>
-                  Pickup Schedule
-                </h6>
-                <Row className="mb-4">
-                  <Col sm={6}>
-                    <strong>Start:</strong>
-                    <div className="text-muted">
-                      {formatDateTime(selectedPackage.pickupStart)}
-                    </div>
-                  </Col>
-                  <Col sm={6}>
-                    <strong>End:</strong>
-                    <div className="text-muted">
-                      {formatDateTime(selectedPackage.pickupEnd)}
-                    </div>
-                  </Col>
-                </Row>
-
-                {selectedPackage.pickupInstructions && (
-                  <>
-                    <h6 className="mb-3">
-                      <i className="ri-information-line me-2"></i>
-                      Pickup Instructions
-                    </h6>
-                    <div className="border rounded p-3 bg-light">
-                      {selectedPackage.pickupInstructions}
-                    </div>
-                  </>
-                )}
-
-                <hr className="my-4" />
-
-                <Row>
-                  {/* <Col sm={6}>
-                                        <strong>Business:</strong>
-                                        <div className="text-muted">{selectedPackage.businessId?.businessName || 'N/A'}</div>
-                                    </Col> */}
-                  <Col sm={6}>
-                    <strong>Total Orders:</strong>
-                    <div className="text-muted">
-                      {selectedPackage.totalOrders || 0}
-                    </div>
-                  </Col>
-                </Row>
-              </Col>
-            </Row>
+              <Row className="g-4 mt-1">
+                <Col md={12}>
+                  <Card className="border shadow-none mb-0">
+                    <CardHeader>
+                      <h6 className="mb-0">
+                        <i className="ri-image-2-line me-2 text-info" />
+                        Images
+                      </h6>
+                    </CardHeader>
+                    <CardBody>
+                      <Row>
+                        <Col md={4}>
+                          <p className="fw-semibold">Main Image</p>
+                          {deferredSelectedOffer.main_image_url ? (
+                            <img
+                              src={deferredSelectedOffer.main_image_url}
+                              alt={deferredSelectedOffer.title}
+                              loading="lazy"
+                              style={{
+                                width: "100%",
+                                height: "220px",
+                                objectFit: "cover",
+                                borderRadius: "12px",
+                              }}
+                            />
+                          ) : (
+                            <p className="text-muted mb-0">No main image</p>
+                          )}
+                        </Col>
+                        <Col md={8}>
+                          <p className="fw-semibold">Gallery Images</p>
+                          {deferredSelectedOffer.gallery_images?.length ? (
+                            <Row className="g-3">
+                              {deferredSelectedOffer.gallery_images.map((image, index) => (
+                                <Col md={4} key={`gallery-${index}`}>
+                                  <img
+                                    src={image}
+                                    alt={`Gallery ${index + 1}`}
+                                    loading="lazy"
+                                    style={{
+                                      width: "100%",
+                                      height: "140px",
+                                      objectFit: "cover",
+                                      borderRadius: "12px",
+                                    }}
+                                  />
+                                </Col>
+                              ))}
+                            </Row>
+                          ) : (
+                            <p className="text-muted mb-0">No gallery images</p>
+                          )}
+                        </Col>
+                      </Row>
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
+            </>
+          ) : (
+            <div className="py-4 text-center text-muted">
+              <i className="ri-loader-4-line spin me-2" />
+              Loading offer details...
+            </div>
           )}
         </ModalBody>
-        <ModalFooter className="bg-light">
+        <ModalFooter>
           <Button color="light" onClick={() => setViewModal(false)}>
-            <i className="ri-close-line me-1"></i>
             Close
           </Button>
         </ModalFooter>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
       <DeleteModal
         show={deleteModal}
-        onDeleteClick={handleDeletePackage}
+        onDeleteClick={handleDeleteOffer}
         onCloseClick={() => setDeleteModal(false)}
-        confirmationText={
-          selectedPackage
-            ? `Are you sure you want to delete "${selectedPackage.title}"? This action cannot be undone and all associated data will be permanently removed.`
-            : ""
-        }
       />
+
+      <Modal isOpen={publishModal} toggle={() => setPublishModal(false)} centered>
+        <ModalHeader toggle={() => setPublishModal(false)}>
+          Publish Offer
+        </ModalHeader>
+        <ModalBody>
+          <p className="mb-2">
+            Haddii aad publish gareyso
+            <span className="fw-semibold">
+              {` ${selectedOffer?.title || "offer-kan"}`}
+            </span>
+            , si toos ah ayuu App-ka uga soo muuqan doonaa.
+          </p>
+          <p className="mb-0 text-muted">
+            Marka la publish gareeyo, users-ku way arki doonaan waana laga dalban
+            doonaa.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="light" onClick={() => setPublishModal(false)}>
+            Cancel
+          </Button>
+          <Button color="success" onClick={handlePublishOffer}>
+            Yes, Publish
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       <ToastContainer />
     </div>
   );
 };
 
-export default SurplusPackages;
+export default Offers;

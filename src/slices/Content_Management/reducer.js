@@ -1,8 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getSurplusPackages } from "./thunk";
+import { getOffers } from "./thunk";
 
 export const initialState = {
-  packagesData: [],
+  offersData: [],
 
   error: {},
 };
@@ -11,12 +11,12 @@ const ContentManagementSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    // === Packages ===
-    builder.addCase(getSurplusPackages.fulfilled, (state, action) => {
-      state.packagesData = action.payload;
+    // === Offers ===
+    builder.addCase(getOffers.fulfilled, (state, action) => {
+      state.offersData = action.payload;
     });
-    builder.addCase(getSurplusPackages.rejected, (state, action) => {
-      state.error = action.packagesData?.error || null;
+    builder.addCase(getOffers.rejected, (state, action) => {
+      state.error = action.payload?.error || null;
     });
   },
 });

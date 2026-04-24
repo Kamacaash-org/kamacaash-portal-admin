@@ -1,4 +1,4 @@
-import { CountriesAPI } from "../../helpers/backend_helper";
+import { CitiesAPI, CountriesAPI } from "../../helpers/backend_helper";
 import { makeCRUDThunks } from "../../helpers/thunk_factory";
 
 export const {
@@ -7,3 +7,10 @@ export const {
   update: updateCountry,
   delete: deleteCountry,
 } = makeCRUDThunks("settings/country", CountriesAPI);
+
+export const {
+  list: getCities,
+  create: addCity,
+  update: updateCity,
+  delete: deleteCity,
+} = makeCRUDThunks("settings/city", CitiesAPI);

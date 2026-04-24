@@ -32,6 +32,7 @@ import {
   getBusinessesByVerificationStatus,
   rejectBusiness,
 } from "../../../slices/thunks";
+import { ToastContainer } from "react-toastify";
 
 const selectBusinessVerificationState = createSelector(
   (state) => state.BusinessManagement,
@@ -53,6 +54,8 @@ const ApproveBusinessPage = () => {
   const { businesses } = useSelector(selectBusinessVerificationState);
 
   const [loading, setLoading] = useState(false);
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("PENDING");
   const [search, setSearch] = useState("");
   const [selectedBusiness, setSelectedBusiness] = useState(null);
@@ -94,7 +97,7 @@ const ApproveBusinessPage = () => {
   }, [businesses, search]);
 
   const handleApprove = async (business) => {
-    await dispatch(approveBusiness(business.id));
+    await dispatch(approveBusiness(business.id)).unwrap();
     await dispatch(getBusinessesByVerificationStatus(statusFilter));
   };
 
@@ -105,9 +108,17 @@ const ApproveBusinessPage = () => {
 
   const confirmApprove = async () => {
     if (!selectedBusiness) return;
-    await handleApprove(selectedBusiness);
-    setApproveModal(false);
-    setSelectedBusiness(null);
+
+    setApproveLoading(true);
+    try {
+      await handleApprove(selectedBusiness);
+      setApproveModal(false);
+      setSelectedBusiness(null);
+    } catch (error) {
+      console.error("Approve business error:", error);
+    } finally {
+      setApproveLoading(false);
+    }
   };
 
   const rejectionFormik = useFormik({
@@ -120,17 +131,22 @@ const ApproveBusinessPage = () => {
     onSubmit: async (values, { resetForm }) => {
       if (!selectedBusiness) return;
 
-      await dispatch(
-        rejectBusiness({
-          id: selectedBusiness.id,
-          reason: values.reason.trim(),
-        }),
-      );
+      setRejectLoading(true);
+      try {
+        await dispatch(
+          rejectBusiness({
+            id: selectedBusiness.id,
+            reason: values.reason.trim(),
+          }),
+        ).unwrap();
 
-      resetForm();
-      setRejectModal(false);
-      setSelectedBusiness(null);
-      await dispatch(getBusinessesByVerificationStatus(statusFilter));
+        resetForm();
+        setRejectModal(false);
+        setSelectedBusiness(null);
+        await dispatch(getBusinessesByVerificationStatus(statusFilter));
+      } finally {
+        setRejectLoading(false);
+      }
     },
   });
 
@@ -144,28 +160,32 @@ const ApproveBusinessPage = () => {
     {
       name: "#",
       cell: (row, index) => index + 1,
-      width: "70px",
     },
     {
       name: "Business",
       cell: (row) => (
         <div>
           <div className="fw-semibold">{row.display_name || "-"}</div>
-          <small className="text-muted">Owner: {row.owner_name || "-"}</small>
         </div>
       ),
     },
+
+    {
+      name: "Primary Staff",
+      selector: (row) => row.primary_staff_name || "-",
+    },
+
     {
       name: "Category",
       selector: (row) => row.category_name || "-",
     },
     {
       name: "City",
-      selector: (row) => row.city || "-",
+      selector: (row) => row.city_name || "-",
     },
     {
       name: "Phone",
-      selector: (row) => row.phone_e164 || "-",
+      selector: (row) => row.phone || "-",
     },
     {
       name: "Status",
@@ -274,7 +294,7 @@ const ApproveBusinessPage = () => {
                 <Label className="form-label">Search</Label>
                 <Input
                   type="text"
-                  placeholder="Search by business, owner, category, city, or phone"
+                  placeholder="Search by business, category, city, or phone"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -330,17 +350,21 @@ const ApproveBusinessPage = () => {
                 }
               />
               {rejectionFormik.touched.reason &&
-              rejectionFormik.errors.reason ? (
+                rejectionFormik.errors.reason ? (
                 <FormFeedback>{rejectionFormik.errors.reason}</FormFeedback>
               ) : null}
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button color="light" onClick={() => setRejectModal(false)}>
+            <Button
+              color="light"
+              onClick={() => setRejectModal(false)}
+              disabled={rejectLoading}
+            >
               Cancel
             </Button>
-            <Button color="danger" type="submit">
-              Confirm Reject
+            <Button color="danger" type="submit" disabled={rejectLoading}>
+              {rejectLoading ? "Rejecting..." : "Confirm Reject"}
             </Button>
           </ModalFooter>
         </Form>
@@ -364,14 +388,20 @@ const ApproveBusinessPage = () => {
           </p>
         </ModalBody>
         <ModalFooter>
-          <Button color="light" onClick={() => setApproveModal(false)}>
+          <Button
+            color="light"
+            onClick={() => setApproveModal(false)}
+            disabled={approveLoading}
+          >
             No
           </Button>
-          <Button color="success" onClick={confirmApprove}>
-            Yes, Approve
+          <Button color="success" onClick={confirmApprove} disabled={approveLoading}>
+            {approveLoading ? "Approving..." : "Yes, Approve"}
           </Button>
         </ModalFooter>
       </Modal>
+
+      <ToastContainer />
     </div>
   );
 };
