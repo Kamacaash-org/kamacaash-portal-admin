@@ -7,6 +7,7 @@ import AuthSlider from "../authCarousel";
 import { useNavigate } from "react-router-dom";
 import { setAuthorization } from "../../../helpers/api_helper";
 import { verify2FA } from "../../../helpers/backend_helper";
+import { getDefaultRouteForRole } from "../../../helpers/permissions";
 
 const TwosVerify = () => {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ const TwosVerify = () => {
       if (normalizedStaff?.must_change_password) {
         navigate("/auth-change-password");
       } else {
-        navigate("/dashboard");
+        navigate(getDefaultRouteForRole(normalizedStaff?.role));
       }
     } catch (verifyError) {
       setError(verifyError?.message || "Failed to verify OTP");

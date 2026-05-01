@@ -1,184 +1,340 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
+  Badge,
+  Button,
   Card,
-  CardHeader,
   CardBody,
+  CardHeader,
   Col,
   Container,
-  Row,
   Form,
-  Input,
-  Label,
   FormGroup,
+  Input,
+  InputGroup,
+  InputGroupText,
+  Label,
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
-  Button,
-  Badge,
-  Nav,
-  NavItem,
-  NavLink,
-  TabContent,
-  TabPane,
-  Alert,
-  InputGroup,
-  InputGroupText,
+  Row,
 } from "reactstrap";
 import DataTable from "react-data-table-component";
 import Select from "react-select";
-
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import BreadCrumb from "../../../Components/Common/BreadCrumb";
-import DeleteModal from "../../../Components/Common/DeleteModal";
-import Loader from "../../../Components/Common/Loader";
-import NoDataFound from "../../../Components/Common/NoDataFound";
-
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "reselect";
 
-// Redux thunks
+import BreadCrumb from "../../../Components/Common/BreadCrumb";
+import Loader from "../../../Components/Common/Loader";
+import NoDataFound from "../../../Components/Common/NoDataFound";
+import useAuthUser from "../../../Components/Hooks/useAuthUser";
 import {
-  getPendingOrdersByBusinessID as onGetPendingOrders,
   cancelOrder as onCancelOrder,
   completeOrder as onCompleteOrder,
+  getPendingOrdersByBusinessID as onGetPendingOrders,
 } from "../../../slices/thunks";
-import useAuthUser from "../../../Components/Hooks/useAuthUser";
 
-// Selectors
 const selectOrdersData = createSelector(
   (state) => state.Orders,
-  (pendingOrdersData) => pendingOrdersData.pendingOrdersData || [],
+  (ordersState) => ordersState.pendingOrdersData || [],
 );
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+});
+
+const formatCurrency = (value) => currencyFormatter.format(Number(value) || 0);
+
+const formatDateTime = (value, timezone) => {
+  if (!value) return "N/A";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: timezone || "Africa/Mogadishu",
+  }).format(new Date(value));
+};
+
+const formatTimeOnly = (value, timezone) => {
+  if (!value) return "N/A";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: timezone || "Africa/Mogadishu",
+  }).format(new Date(value));
+};
+
+const formatRelativeTime = (value) => {
+  if (!value) return "N/A";
+
+  const now = new Date();
+  const date = new Date(value);
+  const diffMinutes = Math.round((date.getTime() - now.getTime()) / 60000);
+  const absMinutes = Math.abs(diffMinutes);
+
+  if (absMinutes < 1) return "Now";
+  if (absMinutes < 60) {
+    return diffMinutes > 0 ? `In ${absMinutes} min` : `${absMinutes} min ago`;
+  }
+
+  const absHours = Math.round(absMinutes / 60);
+  if (absHours < 24) {
+    return diffMinutes > 0 ? `In ${absHours} hr` : `${absHours} hr ago`;
+  }
+
+  const absDays = Math.round(absHours / 24);
+  return diffMinutes > 0 ? `In ${absDays} day` : `${absDays} day ago`;
+};
+
+const toDisplayPaymentStatus = (status) => {
+  switch (status) {
+    case "CONFIRMED":
+      return "Payment confirmed";
+    case "REFUNDED":
+      return "Payment refunded";
+    case "PENDING":
+      return "Payment pending";
+    case "FAILED":
+      return "Payment failed";
+    default:
+      return status ? status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase()) : "N/A";
+  }
+};
+
+const toDisplayStatus = (status) => {
+  switch (status) {
+    case "PAID":
+      return {
+        color: "primary",
+        icon: "ri-secure-payment-line",
+        text: "Paid",
+      };
+    case "READY_FOR_PICKUP":
+      return {
+        color: "success",
+        icon: "ri-shopping-bag-line",
+        text: "Ready for pickup",
+      };
+    case "COLLECTED":
+      return {
+        color: "success",
+        icon: "ri-checkbox-circle-line",
+        text: "Collected",
+      };
+    case "EXPIRED":
+      return {
+        color: "warning",
+        icon: "ri-time-line",
+        text: "Expired",
+      };
+    case "CANCELLED":
+    case "CANCELLED_BY_USER":
+      return {
+        color: "danger",
+        icon: "ri-close-circle-line",
+        text: "Cancelled by customer",
+      };
+    case "CANCELLED_BY_ADMIN":
+      return {
+        color: "danger",
+        icon: "ri-admin-line",
+        text: "Cancelled by admin",
+      };
+    case "NO_SHOW":
+      return {
+        color: "warning",
+        icon: "ri-user-unfollow-line",
+        text: "Customer did not show",
+      };
+    case "CLOSED":
+      return {
+        color: "dark",
+        icon: "ri-lock-line",
+        text: "Closed",
+      };
+    default:
+      return {
+        color: "secondary",
+        icon: "ri-information-line",
+        text: status
+          ? status
+              .replaceAll("_", " ")
+              .toLowerCase()
+              .replace(/\b\w/g, (char) => char.toUpperCase())
+          : "Unknown",
+      };
+  }
+};
+
+const normalizeOrder = (order) => {
+  const timezone = order?.timezone || "Africa/Mogadishu";
+  const customerName =
+    order?.user?.full_name ||
+    order?.user?.email ||
+    order?.user?.phone ||
+    "Unknown customer";
+
+  return {
+    id: order?.id,
+    orderNumber: order?.order_number || "N/A",
+    quantity: Number(order?.quantity) || 0,
+    unitPrice: Number(order?.unit_price) || 0,
+    subtotal: Number(order?.subtotal) || 0,
+    totalAmount: Number(order?.total_amount) || 0,
+    discount: Number(order?.discount) || 0,
+    taxMinor: Number(order?.tax_minor) || 0,
+    status: order?.status || "UNKNOWN",
+    paymentStatus: order?.payment_status || "N/A",
+    pickupStartTime: order?.pickup_start_time,
+    pickupEndTime: order?.pickup_end_time,
+    timezone,
+    createdAt: order?.created_at,
+    collectedAt: order?.collected_at,
+    cancelledAt: order?.cancelled_at,
+    cancellationReason: order?.cancellation_reason,
+    isUrgent: Boolean(order?.is_urgent),
+    customerName,
+    customerPhone: order?.user?.phone || "N/A",
+    customerEmail: order?.user?.email || "N/A",
+    businessName: order?.business?.display_name || "N/A",
+    offerTitle: order?.offer?.title || "Untitled offer",
+    offerImage: order?.offer?.main_image_url || "",
+    searchText: [
+      order?.order_number,
+      customerName,
+      order?.user?.phone,
+      order?.user?.email,
+      order?.offer?.title,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+  };
+};
 
 const OrdersPage = () => {
   document.title = "Pending Orders | Kamacaash";
 
   const dispatch = useDispatch();
   const ordersData = useSelector(selectOrdersData);
+  const userAuth = useAuthUser();
 
-  // State management
   const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [completeModal, setCompleteModal] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [filteredOrders, setFilteredOrders] = useState([]);
   const [pinCode, setPinCode] = useState("");
   const [cancellationReason, setCancellationReason] = useState("");
-
-  const userAuth = useAuthUser();
-  const completedBy = userAuth.staffId;
-  // Filters state
   const [filters, setFilters] = useState({
     search: "",
-    status: "all", // 'all', 'PAID', 'READY_FOR_PICKUP'
-    urgency: "all", // 'all', 'urgent', 'normal'
+    status: "all",
   });
 
-  // Stats state
-  const [stats, setStats] = useState({
-    total: 0,
-    paid: 0,
-    readyForPickup: 0,
-    urgent: 0,
-    totalAmount: 0,
-  });
+  const businessId = userAuth?.businessId;
 
-  // Fetch data
+  const stats = useMemo(() => {
+    const total = orders.length;
+    const totalAmount = orders.reduce(
+      (sum, order) => sum + (Number(order.totalAmount) || 0),
+      0,
+    );
+    const paid = orders.filter((order) => order.status === "PAID").length;
+    const readyForPickup = orders.filter(
+      (order) => order.status === "READY_FOR_PICKUP",
+    ).length;
+    const urgent = orders.filter((order) => order.isUrgent).length;
+
+    return {
+      total,
+      totalAmount,
+      paid,
+      readyForPickup,
+      urgent,
+    };
+  }, [orders]);
+
+  const applyFilters = useCallback((orderList, filterSettings) => {
+    const searchValue = filterSettings.search.trim().toLowerCase();
+
+    const filtered = orderList.filter((order) => {
+      const matchesSearch = searchValue
+        ? order.searchText.includes(searchValue)
+        : true;
+      const matchesStatus =
+        filterSettings.status === "all"
+          ? true
+          : order.status === filterSettings.status;
+
+      return matchesSearch && matchesStatus;
+    });
+
+    setFilteredOrders(filtered);
+  }, []);
+
   const fetchData = useCallback(async () => {
+    if (!businessId) return;
+
     setLoading(true);
     try {
-      // In a real app, you would get businessId from auth or context
-      const businessId = userAuth.businessId; // Replace with actual business ID
       await dispatch(onGetPendingOrders(businessId));
     } catch (error) {
       console.error("Error loading orders:", error);
     } finally {
       setLoading(false);
     }
-  }, [dispatch]);
+  }, [businessId, dispatch]);
 
-  // Load data
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Update lists and stats when data changes
   useEffect(() => {
-    const initialOrders = Array.isArray(ordersData) ? ordersData : [];
-    setOrders(initialOrders);
+    const normalizedOrders = Array.isArray(ordersData)
+      ? ordersData.map(normalizeOrder)
+      : [];
 
-    // Calculate stats
-    const total = initialOrders.length;
-    const paid = initialOrders.filter((o) => o.status === "PAID").length;
-    const readyForPickup = initialOrders.filter(
-      (o) => o.status === "READY_FOR_PICKUP",
-    ).length;
-    const urgent = initialOrders.filter((o) => o.isUrgent).length;
-    const totalAmount = initialOrders.reduce(
-      (sum, order) => sum + order.amount,
-      0,
-    );
+    setOrders(normalizedOrders);
+  }, [ordersData]);
 
-    setStats({
-      total,
-      paid,
-      readyForPickup,
-      urgent,
-      totalAmount,
-    });
+  useEffect(() => {
+    applyFilters(orders, filters);
+  }, [applyFilters, filters, orders]);
 
-    // Apply filters
-    applyFilters(initialOrders, filters);
-  }, [ordersData, filters]);
-
-  // Apply filters
-  const applyFilters = (orderList, filterSettings) => {
-    let filtered = orderList;
-
-    // Search filter
-    if (filterSettings.search) {
-      const searchTerm = filterSettings.search.toLowerCase();
-      filtered = filtered.filter(
-        (order) =>
-          order.user?.fullName?.toLowerCase().includes(searchTerm) ||
-          order.user?.phoneNumber?.includes(searchTerm) ||
-          order.orderId?.toLowerCase().includes(searchTerm) ||
-          order.package?.title?.toLowerCase().includes(searchTerm),
-      );
-    }
-
-    // Status filter
-    if (filterSettings.status !== "all") {
-      filtered = filtered.filter(
-        (order) => order.status === filterSettings.status,
-      );
-    }
-
-    // Urgency filter
-    if (filterSettings.urgency !== "all") {
-      filtered = filtered.filter((order) =>
-        filterSettings.urgency === "urgent" ? order.isUrgent : !order.isUrgent,
-      );
-    }
-
-    setFilteredOrders(filtered);
+  const handleFilterChange = (event) => {
+    const { name, value } = event.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle filter changes
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
+  const openViewModal = (order) => {
+    setSelectedOrder(order);
+    setViewModal(true);
   };
 
-  // Handle complete order
+  const openCompleteModal = (order) => {
+    setSelectedOrder(order);
+    setPinCode("");
+    setCompleteModal(true);
+  };
+
+  const openCancelModal = (order) => {
+    setSelectedOrder(order);
+    setCancellationReason("");
+    setCancelModal(true);
+  };
+
   const handleComplete = async () => {
-    if (!selectedOrder || !pinCode || !completedBy) {
-      toast.warning("Please fill all required fields");
+    if (!selectedOrder?.id || !pinCode.trim()) {
+      toast.warning("Please enter the PIN code before completing the order.");
       return;
     }
 
@@ -186,15 +342,15 @@ const OrdersPage = () => {
     try {
       await dispatch(
         onCompleteOrder({
-          orderId: selectedOrder.orderId,
-          pinCode: pinCode,
-          completedBy: completedBy,
+          orderId: selectedOrder.id,
+          orderNumber: selectedOrder.orderNumber,
+          orderLabel: selectedOrder.orderNumber,
+          pinCode: pinCode.trim(),
         }),
       );
 
       setCompleteModal(false);
       setPinCode("");
-
       fetchData();
     } catch (error) {
       console.error("Error completing order:", error);
@@ -203,10 +359,9 @@ const OrdersPage = () => {
     }
   };
 
-  // Handle cancel order
   const handleCancel = async () => {
-    if (!selectedOrder || !cancellationReason.trim()) {
-      toast.warning("Please provide a cancellation reason");
+    if (!selectedOrder?.id || !cancellationReason.trim()) {
+      toast.warning("Please provide a reason for cancelling this order.");
       return;
     }
 
@@ -214,7 +369,9 @@ const OrdersPage = () => {
     try {
       await dispatch(
         onCancelOrder({
-          orderId: selectedOrder.orderId,
+          orderId: selectedOrder.id,
+          orderNumber: selectedOrder.orderNumber,
+          orderLabel: selectedOrder.orderNumber,
           cancellationReason: cancellationReason.trim(),
         }),
       );
@@ -229,237 +386,156 @@ const OrdersPage = () => {
     }
   };
 
-  // Open modal for complete
-  const handleCompleteClick = (order) => {
-    setSelectedOrder(order);
-    setPinCode("");
-    setCompleteModal(true);
-  };
-
-  // Open modal for cancel
-  const handleCancelClick = (order) => {
-    setSelectedOrder(order);
-    setCancellationReason("");
-    setCancelModal(true);
-  };
-
-  // Open modal for view
-  const handleView = (order) => {
-    setSelectedOrder(order);
-    setViewModal(true);
-  };
-
-  // Get status badge color and icon
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "PAID":
-        return {
-          color: "primary",
-          icon: "ri-money-dollar-circle-line",
-          text: "ORDER PLACED",
-        };
-      case "READY_FOR_PICKUP":
-        return {
-          color: "success",
-          icon: "ri-shopping-bag-line",
-          text: "READY FOR PICKUP",
-        };
-      case "COMPLETED":
-        return {
-          color: "success",
-          icon: "ri-checkbox-circle-line",
-          text: "COMPLETED",
-        };
-      case "CANCELLED":
-        return {
-          color: "danger",
-          icon: "ri-close-circle-line",
-          text: "CANCELLED",
-        };
-      default:
-        return {
-          color: "secondary",
-          icon: "ri-question-line",
-          text: status,
-        };
-    }
-  };
-
-  // Get urgency badge
-  const getUrgencyBadge = (order) => {
-    if (order.isUrgent) {
-      return (
-        <Badge color="danger" className="ms-1">
-          <i className="ri-alarm-warning-line me-1"></i>
-          URGENT
-        </Badge>
-      );
-    }
-    return null;
-  };
-
-  // Format time remaining
-  const formatTimeRemaining = (order) => {
-    if (order.remainingTimeMinutes === null) return "N/A";
-
-    if (order.remainingTimeMinutes <= 0) {
-      return (
-        <Badge color="warning" className="ms-1">
-          <i className="ri-time-line me-1"></i>
-          PICKUP TIME STARTED
-        </Badge>
-      );
-    }
-
-    const hours = Math.floor(order.remainingTimeMinutes / 60);
-    const minutes = order.remainingTimeMinutes % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m left`;
-    }
-    return `${minutes}m left`;
-  };
-
-  // Table columns
   const columns = [
     {
       name: "#",
-      cell: (row, index) => index + 1,
+      width: "70px",
+      cell: (_, index) => index + 1,
     },
     {
-      name: "ORDER ID",
-      selector: (row) => row.orderId,
+      name: "Order",
+      grow: 1.5,
       cell: (row) => (
-        <div>
-          <strong className="text-primary">#{row.orderId}</strong>
-          {getUrgencyBadge(row)}
+        <div className="py-2">
+          <div className="fw-semibold text-primary">{row.orderNumber}</div>
+          <small className="text-muted">
+            Placed: {formatDateTime(row.createdAt, row.timezone)}
+          </small>
         </div>
       ),
     },
     {
-      name: "CUSTOMER",
+      name: "Customer",
+      grow: 1.4,
       cell: (row) => (
-        <div>
-          <div className="fw-semibold">{row.user?.fullName || "N/A"}</div>
-          <small className="text-muted">{row.user?.phoneNumber || "N/A"}</small>
+        <div className="py-2">
+          <div className="fw-semibold">{row.customerName}</div>
+          <small className="text-muted">{row.customerPhone}</small>
         </div>
       ),
     },
     {
-      name: "PACKAGE",
+      name: "Offer",
+      grow: 1.8,
       cell: (row) => (
-        <div className="d-flex align-items-center">
-          {row.package?.packageImg ? (
+        <div className="d-flex align-items-center py-2">
+          {row.offerImage ? (
             <img
-              src={row.package.packageImg}
-              alt={row.package.title}
+              src={row.offerImage}
+              alt={row.offerTitle}
               className="rounded me-3"
-              style={{ width: "40px", height: "40px", objectFit: "cover" }}
+              style={{ width: "44px", height: "44px", objectFit: "cover" }}
             />
           ) : (
             <div
               className="rounded bg-light d-flex align-items-center justify-content-center me-3"
-              style={{ width: "40px", height: "40px" }}
+              style={{ width: "44px", height: "44px" }}
             >
-              <i className="ri-gift-line text-muted"></i>
+              <i className="ri-image-line text-muted"></i>
             </div>
           )}
           <div>
-            <div
-              className="fw-semibold text-truncate"
-              style={{ maxWidth: "200px" }}
-            >
-              {row.package?.title || "N/A"}
-            </div>
+            <div className="fw-semibold">{row.offerTitle}</div>
             <small className="text-muted">Qty: {row.quantity}</small>
           </div>
         </div>
       ),
     },
     {
-      name: "AMOUNT",
-      cell: (row) => `$${row.amount}`,
+      name: "Pickup Time",
+      grow: 1.4,
+      cell: (row) => (
+        <div className="py-2">
+          <div className="fw-semibold">
+            {formatTimeOnly(row.pickupStartTime, row.timezone)} -{" "}
+            {formatTimeOnly(row.pickupEndTime, row.timezone)}
+          </div>
+          <small className="text-muted">
+            Starts {formatRelativeTime(row.pickupStartTime)}
+          </small>
+        </div>
+      ),
     },
     {
-      name: "STATUS",
+      name: "Amount",
+      minWidth: "140px",
+      cell: (row) => (
+        <div className="py-2">
+          <div className="fw-semibold">{formatCurrency(row.totalAmount)}</div>
+          <small className="text-muted">
+            {formatCurrency(row.unitPrice)} each
+          </small>
+        </div>
+      ),
+    },
+    {
+      name: "Status",
+      minWidth: "170px",
       cell: (row) => {
-        const status = getStatusBadge(row.status);
+        const status = toDisplayStatus(row.status);
+
         return (
-          <Badge color={status.color} className="fs-6">
-            <i className={`${status.icon} me-1`}></i>
-            {status.text}
-          </Badge>
+          <div className="py-2">
+            <Badge color={status.color} className="fs-6">
+              <i className={`${status.icon} me-1`}></i>
+              {status.text}
+            </Badge>
+            <div className="mt-1">
+              <small className="text-muted">
+                {toDisplayPaymentStatus(row.paymentStatus)}
+              </small>
+              {row.isUrgent ? (
+                <Badge color="danger" pill className="ms-2">
+                  Urgent
+                </Badge>
+              ) : null}
+            </div>
+          </div>
         );
       },
     },
     {
-      name: "TIME REMAINING",
-      cell: (row) => (
-        <div className="text-center">
-          <div
-            className={`fw-bold ${row.isUrgent ? "text-danger" : "text-success"}`}
-          >
-            {formatTimeRemaining(row)}
-          </div>
-          {row.package?.pickupStart && (
-            <small className="text-muted">
-              {new Date(row.package.pickupStart).toLocaleTimeString()}
-            </small>
-          )}
-        </div>
-      ), //         width: '160px'
-    },
-    {
-      name: "ORDER AGE",
-      cell: (row) => `${row.orderAge}`,
-      // width: '120px'
-    },
-    {
-      name: "ACTIONS",
+      name: "Actions",
+      minWidth: "180px",
       cell: (row) => (
         <div className="d-flex gap-1">
           <Button
             color="outline-info"
             size="sm"
-            onClick={() => handleView(row)}
-            title="View Details"
+            onClick={() => openViewModal(row)}
+            title="View order"
             className="btn-icon"
           >
             <i className="ri-eye-line" />
           </Button>
-
           <Button
             color="outline-success"
             size="sm"
-            onClick={() => handleCompleteClick(row)}
-            title="Complete Order"
+            onClick={() => openCompleteModal(row)}
+            title="Complete order"
             className="btn-icon"
           >
             <i className="ri-check-double-line" />
           </Button>
-
           <Button
             color="outline-danger"
             size="sm"
-            onClick={() => handleCancelClick(row)}
-            title="Cancel Order"
+            onClick={() => openCancelModal(row)}
+            title="Cancel order"
             className="btn-icon"
           >
             <i className="ri-close-line" />
           </Button>
         </div>
       ),
-      //  width: '180px'
     },
   ];
 
-  // Custom styles for DataTable
   const customStyles = {
     headCells: {
       style: {
         fontWeight: "600",
         fontSize: "0.875rem",
-        //    backgroundColor: '#f8f9fa',
       },
     },
     cells: {
@@ -475,7 +551,6 @@ const OrdersPage = () => {
       <Container fluid>
         <BreadCrumb title="Pending Orders" pageTitle="Orders" />
 
-        {/* Stats Cards */}
         <Row className="mb-4">
           <Col xl={3} md={6}>
             <Card className="card-animate">
@@ -498,6 +573,29 @@ const OrdersPage = () => {
               </CardBody>
             </Card>
           </Col>
+
+          <Col xl={3} md={6}>
+            <Card className="card-animate">
+              <CardBody>
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1">
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      Paid Orders
+                    </p>
+                    <h4 className="mb-0">{stats.paid}</h4>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <div className="avatar-sm">
+                      <span className="avatar-title bg-success-subtle text-success rounded-circle fs-2">
+                        <i className="ri-secure-payment-line"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </Col>
+
           <Col xl={3} md={6}>
             <Card className="card-animate">
               <CardBody>
@@ -510,7 +608,7 @@ const OrdersPage = () => {
                   </div>
                   <div className="flex-shrink-0">
                     <div className="avatar-sm">
-                      <span className="avatar-title bg-success-subtle text-success rounded-circle fs-2">
+                      <span className="avatar-title bg-info-subtle text-info rounded-circle fs-2">
                         <i className="ri-shopping-bag-line"></i>
                       </span>
                     </div>
@@ -519,27 +617,7 @@ const OrdersPage = () => {
               </CardBody>
             </Card>
           </Col>
-          <Col xl={3} md={6}>
-            <Card className="card-animate">
-              <CardBody>
-                <div className="d-flex align-items-center">
-                  <div className="flex-grow-1">
-                    <p className="text-uppercase fw-medium text-muted mb-0">
-                      Urgent Orders
-                    </p>
-                    <h4 className="mb-0">{stats.urgent}</h4>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className="avatar-sm">
-                      <span className="avatar-title bg-danger-subtle text-danger rounded-circle fs-2">
-                        <i className="ri-alarm-warning-line"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </Col>
+
           <Col xl={3} md={6}>
             <Card className="card-animate">
               <CardBody>
@@ -548,11 +626,11 @@ const OrdersPage = () => {
                     <p className="text-uppercase fw-medium text-muted mb-0">
                       Total Amount
                     </p>
-                    <h4 className="mb-0">${stats.totalAmount}</h4>
+                    <h4 className="mb-0">{formatCurrency(stats.totalAmount)}</h4>
                   </div>
                   <div className="flex-shrink-0">
                     <div className="avatar-sm">
-                      <span className="avatar-title bg-info-subtle text-info rounded-circle fs-2">
+                      <span className="avatar-title bg-warning-subtle text-warning rounded-circle fs-2">
                         <i className="ri-money-dollar-circle-line"></i>
                       </span>
                     </div>
@@ -563,149 +641,96 @@ const OrdersPage = () => {
           </Col>
         </Row>
 
-        {/* Quick Actions */}
         <Card className="mb-4">
           <CardBody>
-            <Row className="g-3 align-items-center">
-              <Col md={6}>
-                <h6 className="card-title mb-0">Orders</h6>
-                <p className="text-muted mb-0">
-                  Manage pending orders, complete pickups, or cancel orders as
-                  needed
-                </p>
-              </Col>
-              <Col md={6} className="text-end">
-                <Button
-                  color="light"
-                  onClick={fetchData}
-                  disabled={loading}
-                  className="me-2"
-                >
-                  <i className="ri-refresh-line me-1"></i>
-                  Refresh Orders
-                </Button>
-                <Badge color="primary" className="fs-6 p-2">
-                  <i className="ri-information-line me-1"></i>
-                  {stats.urgent} Urgent Orders
-                </Badge>
-              </Col>
-            </Row>
-          </CardBody>
-        </Card>
-
-        {/* Filter Controls */}
-        <Card className="mb-4">
-          <CardBody className="p-3">
             <Row className="g-3 align-items-end">
-              <Col md={4}>
+              <Col md={6}>
                 <FormGroup className="mb-0">
                   <Label className="form-label">Search Orders</Label>
                   <Input
                     type="text"
                     name="search"
-                    placeholder="Search by customer name, phone, order ID, or package..."
+                    placeholder="Search by order number, customer, phone, email, or offer..."
                     value={filters.search}
                     onChange={handleFilterChange}
-                    className="form-control"
                   />
                 </FormGroup>
               </Col>
-              <Col md={3}>
+
+              <Col md={4}>
                 <FormGroup className="mb-0">
                   <Label className="form-label">Order Status</Label>
                   <Select
                     options={[
-                      { value: "all", label: "All" },
+                      { value: "all", label: "All statuses" },
                       { value: "PAID", label: "Paid" },
-                      { value: "READY_FOR_PICKUP", label: "Ready for Pickup" },
+                      { value: "READY_FOR_PICKUP", label: "Ready for pickup" },
                     ]}
                     value={{
                       value: filters.status,
                       label:
                         filters.status === "all"
-                          ? "All"
+                          ? "All statuses"
                           : filters.status === "PAID"
                             ? "Paid"
-                            : "Ready for Pickup",
+                            : "Ready for pickup",
                     }}
-                    onChange={(opt) =>
-                      setFilters((prev) => ({ ...prev, status: opt.value }))
+                    onChange={(option) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        status: option?.value || "all",
+                      }))
                     }
-                    placeholder="Select order status"
                     className="react-select"
                     classNamePrefix="select"
                   />
                 </FormGroup>
               </Col>
-              <Col md={3}>
-                <FormGroup className="mb-0">
-                  <Label className="form-label">Urgency</Label>
-                  <Select
-                    options={[
-                      { value: "all", label: "All" },
-                      { value: "urgent", label: "Urgent Only" },
-                      { value: "normal", label: "Normal Only" },
-                    ]}
-                    value={{
-                      value: filters.urgency,
-                      label:
-                        filters.urgency === "all"
-                          ? "All"
-                          : filters.urgency === "urgent"
-                            ? "Urgent Only"
-                            : "Normal Only",
-                    }}
-                    onChange={(opt) =>
-                      setFilters((prev) => ({ ...prev, urgency: opt.value }))
-                    }
-                    placeholder="Select urgency"
-                    className="react-select"
-                    classNamePrefix="select"
-                  />
-                </FormGroup>
+
+              <Col md={1}>
+                <div className="d-grid gap-2  mb-3">
+                  <Button color="light" onClick={fetchData} disabled={loading}>
+                    <i className="ri-refresh-line me-1"></i>
+                    Refresh
+                  </Button>
+
+                </div>
               </Col>
-              <Col md={2}>
-                <div className="d-grid mb-3">
+
+              <Col md={1}>
+                <div className="d-grid gap-2 mb-3">
+
                   <Button
-                    color="primary"
-                    onClick={() =>
-                      setFilters({
-                        search: "",
-                        status: "all",
-                        urgency: "urgent",
-                      })
-                    }
+                    color="light"
+                    onClick={() => setFilters({ search: "", status: "all" })}
                   >
-                    <i className="ri-alarm-warning-line me-1"></i>
-                    Show Urgent
+                    <i className="ri-eraser-line me-1"></i>
+                    Clear
                   </Button>
                 </div>
               </Col>
+
             </Row>
           </CardBody>
         </Card>
 
-        {/* Orders Table */}
         <Card>
           <CardHeader className="d-flex justify-content-between align-items-center bg-light">
             <h5 className="card-title mb-0 flex-grow-1">
               <i className="ri-shopping-cart-line align-middle me-2"></i>
-              Pending Orders
+              Today's Pending Orders
               <Badge color="primary" className="ms-2">
                 {filteredOrders.length}
               </Badge>
             </h5>
             <div className="d-flex gap-2">
               <Badge color="primary" className="fs-6">
-                <i className="ri-money-dollar-circle-line me-1"></i>
                 Paid: {stats.paid}
               </Badge>
-              <Badge color="success" className="fs-6">
-                <i className="ri-shopping-bag-line me-1"></i>
+              <Badge color="info" className="fs-6">
                 Ready: {stats.readyForPickup}
               </Badge>
               <Badge color="danger" className="fs-6">
-                <i className="ri-alarm-warning-line me-1"></i>
                 Urgent: {stats.urgent}
               </Badge>
             </div>
@@ -719,31 +744,22 @@ const OrdersPage = () => {
                 data={filteredOrders}
                 pagination
                 responsive
-                // highlightOnHover
+                customStyles={customStyles}
                 noDataComponent={
                   <NoDataFound
                     message={
-                      filters.search ||
-                      filters.status !== "all" ||
-                      filters.urgency !== "all"
+                      filters.search || filters.status !== "all"
                         ? "Try adjusting your search criteria."
-                        : "All orders have been processed. Great job!"
+                        : "No pending orders found for today."
                     }
                   />
                 }
-                customStyles={customStyles}
                 conditionalRowStyles={[
                   {
                     when: (row) => row.isUrgent,
                     style: {
                       backgroundColor: "rgba(220, 53, 69, 0.05)",
                       borderLeft: "4px solid #dc3545",
-                    },
-                  },
-                  {
-                    when: (row) => row.status === "READY_FOR_PICKUP",
-                    style: {
-                      backgroundColor: "rgba(25, 135, 84, 0.05)",
                     },
                   },
                 ]}
@@ -753,7 +769,6 @@ const OrdersPage = () => {
         </Card>
       </Container>
 
-      {/* View Order Modal */}
       <Modal
         isOpen={viewModal}
         toggle={() => setViewModal(false)}
@@ -761,120 +776,104 @@ const OrdersPage = () => {
         centered
       >
         <ModalHeader toggle={() => setViewModal(false)} className="bg-light">
-          <i className="ri-shopping-cart-line me-2"></i>
-          Order Details - #{selectedOrder?.orderId}
+          <i className="ri-eye-line me-2"></i>
+          Order Details
         </ModalHeader>
         <ModalBody>
-          {selectedOrder && (
-            <Row>
+          {selectedOrder ? (
+            <Row className="g-3">
               <Col md={6}>
-                <h6>Customer Information</h6>
-                <div className="border rounded p-3 mb-3">
-                  <p>
-                    <strong>Name:</strong>{" "}
-                    {selectedOrder.user?.fullName || "N/A"}
+                <h6>Customer</h6>
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Name:</strong> {selectedOrder.customerName}
                   </p>
-                  <p>
-                    <strong>Phone:</strong>{" "}
-                    {selectedOrder.user?.phoneNumber || "N/A"}
+                  <p className="mb-2">
+                    <strong>Phone:</strong> {selectedOrder.customerPhone}
                   </p>
-                  {/* <p><strong>User ID:</strong> {selectedOrder.user?.userId || 'N/A'}</p> */}
-                </div>
-
-                <h6>Order Information</h6>
-                <div className="border rounded p-3">
-                  <p>
-                    <strong>Order ID:</strong> #{selectedOrder.orderId}
-                  </p>
-                  <p>
-                    <strong>Quantity:</strong> {selectedOrder.quantity}
-                  </p>
-                  <p>
-                    <strong>Amount:</strong> ${selectedOrder.amount}
-                  </p>
-                  {/* <p><strong>PIN Code:</strong>
-                                        <Badge color="info" className="ms-2">
-                                            {selectedOrder.pinCode}
-                                        </Badge>
-                                    </p> */}
-                  <p>
-                    <strong>Reserved At:</strong>{" "}
-                    {new Date(selectedOrder.reservedAt).toLocaleString()}
-                  </p>
-                  <p>
-                    <strong>Order Age:</strong> {selectedOrder.orderAge}
+                  <p className="mb-0">
+                    <strong>Email:</strong> {selectedOrder.customerEmail}
                   </p>
                 </div>
               </Col>
-              <Col md={6}>
-                <h6>Package Information</h6>
-                <div className="border rounded p-3 mb-3">
-                  {selectedOrder.package?.packageImg && (
-                    <div className="text-center mb-3">
-                      <img
-                        src={selectedOrder.package.packageImg}
-                        alt={selectedOrder.package.title}
-                        className="rounded"
-                        style={{ maxHeight: "150px", maxWidth: "100%" }}
-                      />
-                    </div>
-                  )}
-                  <p>
-                    <strong>Title:</strong>{" "}
-                    {selectedOrder.package?.title || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Pickup Start:</strong>{" "}
-                    {selectedOrder.package?.pickupStart
-                      ? new Date(
-                          selectedOrder.package.pickupStart,
-                        ).toLocaleString()
-                      : "N/A"}
-                  </p>
-                  <p>
-                    <strong>Pickup End:</strong>{" "}
-                    {selectedOrder.package?.pickupEnd
-                      ? new Date(
-                          selectedOrder.package.pickupEnd,
-                        ).toLocaleString()
-                      : "N/A"}
-                  </p>
-                </div>
 
-                <h6>Status & Timing</h6>
-                <div className="border rounded p-3">
-                  <p>
-                    <strong>Status:</strong>
-                    <Badge
-                      color={getStatusBadge(selectedOrder.status).color}
-                      className="ms-2"
-                    >
-                      {getStatusBadge(selectedOrder.status).text}
-                    </Badge>
+              <Col md={6}>
+                <h6>Order Summary</h6>
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Order Number:</strong> {selectedOrder.orderNumber}
                   </p>
-                  {/* <p><strong>Payment Status:</strong> {selectedOrder.paymentStatus}</p> */}
-                  {/* <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'N/A'}</p> */}
-                  <p>
-                    <strong>Time Remaining:</strong>{" "}
-                    {selectedOrder.readableRemaining || "N/A"}
+                  <p className="mb-2">
+                    <strong>Offer:</strong> {selectedOrder.offerTitle}
                   </p>
-                  <p>
-                    <strong>Urgent:</strong>
-                    {selectedOrder.isUrgent ? (
-                      <Badge color="danger" className="ms-2">
-                        <i className="ri-alarm-warning-line me-1"></i>
-                        URGENT
-                      </Badge>
-                    ) : (
-                      <Badge color="success" className="ms-2">
-                        Normal
-                      </Badge>
+                  <p className="mb-2">
+                    <strong>Quantity:</strong> {selectedOrder.quantity}
+                  </p>
+                  <p className="mb-2">
+                    <strong>Total Amount:</strong>{" "}
+                    {formatCurrency(selectedOrder.totalAmount)}
+                  </p>
+                  <p className="mb-0">
+                    <strong>Placed At:</strong>{" "}
+                    {formatDateTime(
+                      selectedOrder.createdAt,
+                      selectedOrder.timezone,
                     )}
                   </p>
                 </div>
               </Col>
+
+              <Col md={6}>
+                <h6>Pickup Details</h6>
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Pickup Window:</strong>{" "}
+                    {formatDateTime(
+                      selectedOrder.pickupStartTime,
+                      selectedOrder.timezone,
+                    )}{" "}
+                    -{" "}
+                    {formatTimeOnly(
+                      selectedOrder.pickupEndTime,
+                      selectedOrder.timezone,
+                    )}
+                  </p>
+                  <p className="mb-2">
+                    <strong>Timezone:</strong> {selectedOrder.timezone}
+                  </p>
+                  <p className="mb-0">
+                    <strong>Business:</strong> {selectedOrder.businessName}
+                  </p>
+                </div>
+              </Col>
+
+              <Col md={6}>
+                <h6>Status</h6>
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Order Status:</strong>
+                    <Badge
+                      color={toDisplayStatus(selectedOrder.status).color}
+                      className="ms-2"
+                    >
+                      <i
+                        className={`${toDisplayStatus(selectedOrder.status).icon} me-1`}
+                      ></i>
+                      {toDisplayStatus(selectedOrder.status).text}
+                    </Badge>
+                  </p>
+                  <p className="mb-2">
+                    <strong>Payment Status:</strong>{" "}
+                    {toDisplayPaymentStatus(selectedOrder.paymentStatus)}
+                  </p>
+                  <p className="mb-0">
+                    <strong>Priority:</strong>{" "}
+                    {selectedOrder.isUrgent ? "Urgent" : "Normal"}
+                  </p>
+                </div>
+              </Col>
             </Row>
-          )}
+          ) : null}
         </ModalBody>
         <ModalFooter className="bg-light">
           <Button color="light" onClick={() => setViewModal(false)}>
@@ -884,7 +883,7 @@ const OrdersPage = () => {
             color="success"
             onClick={() => {
               setViewModal(false);
-              setTimeout(() => handleCompleteClick(selectedOrder), 300);
+              setTimeout(() => openCompleteModal(selectedOrder), 250);
             }}
           >
             <i className="ri-check-double-line me-1"></i>
@@ -893,7 +892,6 @@ const OrdersPage = () => {
         </ModalFooter>
       </Modal>
 
-      {/* Complete Order Modal */}
       <Modal
         isOpen={completeModal}
         toggle={() => setCompleteModal(false)}
@@ -907,14 +905,13 @@ const OrdersPage = () => {
           Complete Order
         </ModalHeader>
         <Form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
+          onSubmit={(event) => {
+            event.preventDefault();
             handleComplete();
           }}
         >
           <ModalBody>
-            {selectedOrder && (
+            {selectedOrder ? (
               <div>
                 <div className="text-center mb-4">
                   <div className="avatar-lg mx-auto mb-3">
@@ -922,10 +919,9 @@ const OrdersPage = () => {
                       <i className="ri-checkbox-circle-line display-4"></i>
                     </div>
                   </div>
-                  <h5>Complete Order #{selectedOrder.orderId}</h5>
-                  <p className="text-muted">
-                    Confirm order completion for{" "}
-                    <strong>{selectedOrder.user?.fullName}</strong>
+                  <h5>{selectedOrder.orderNumber}</h5>
+                  <p className="text-muted mb-0">
+                    Confirm pickup for <strong>{selectedOrder.customerName}</strong>
                   </p>
                 </div>
 
@@ -940,24 +936,19 @@ const OrdersPage = () => {
                     <Input
                       type="text"
                       value={pinCode}
-                      onChange={(e) => setPinCode(e.target.value)}
-                      placeholder="Enter PIN code from customer"
+                      onChange={(event) => setPinCode(event.target.value)}
+                      placeholder="Enter customer PIN code"
                       required
                     />
                   </InputGroup>
-                  <small className="text-muted">
-                    The customer should provide this PIN code for order
-                    verification.
-                  </small>
                 </FormGroup>
 
-                <Alert color="info" className="mt-3">
+                <Alert color="info" className="mt-3 mb-0">
                   <i className="ri-information-line me-2"></i>
-                  Completing this order will mark it as fulfilled and update
-                  package statistics.
+                  This will mark the order as collected.
                 </Alert>
               </div>
-            )}
+            ) : null}
           </ModalBody>
           <ModalFooter>
             <Button
@@ -970,39 +961,27 @@ const OrdersPage = () => {
             <Button
               color="success"
               type="submit"
-              disabled={actionLoading || !pinCode || !completedBy}
+              disabled={actionLoading || !pinCode.trim()}
             >
-              {actionLoading ? (
-                <>
-                  <i className="ri-loader-4-line spin me-1"></i>
-                  Completing...
-                </>
-              ) : (
-                <>
-                  <i className="ri-check-double-line me-1"></i>
-                  Complete Order
-                </>
-              )}
+              {actionLoading ? "Completing..." : "Complete Order"}
             </Button>
           </ModalFooter>
         </Form>
       </Modal>
 
-      {/* Cancel Order Modal */}
       <Modal isOpen={cancelModal} toggle={() => setCancelModal(false)} centered>
         <ModalHeader toggle={() => setCancelModal(false)} className="bg-light">
           <i className="ri-close-line me-2 text-danger"></i>
           Cancel Order
         </ModalHeader>
         <Form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
+          onSubmit={(event) => {
+            event.preventDefault();
             handleCancel();
           }}
         >
           <ModalBody>
-            {selectedOrder && (
+            {selectedOrder ? (
               <div>
                 <div className="text-center mb-4">
                   <div className="avatar-lg mx-auto mb-3">
@@ -1010,10 +989,9 @@ const OrdersPage = () => {
                       <i className="ri-close-circle-line display-4"></i>
                     </div>
                   </div>
-                  <h5>Cancel Order #{selectedOrder.orderId}</h5>
-                  <p className="text-muted">
-                    Cancel order for{" "}
-                    <strong>{selectedOrder.user?.fullName}</strong>
+                  <h5>{selectedOrder.orderNumber}</h5>
+                  <p className="text-muted mb-0">
+                    Cancel order for <strong>{selectedOrder.customerName}</strong>
                   </p>
                 </div>
 
@@ -1023,32 +1001,22 @@ const OrdersPage = () => {
                   </Label>
                   <Input
                     type="textarea"
-                    value={cancellationReason}
-                    onChange={(e) => setCancellationReason(e.target.value)}
-                    placeholder="Please provide a clear reason for cancelling this order..."
                     rows="4"
+                    value={cancellationReason}
+                    onChange={(event) =>
+                      setCancellationReason(event.target.value)
+                    }
+                    placeholder="Please explain why this order is being cancelled..."
                     required
                   />
-                  <small className="text-muted">
-                    This reason will be recorded and may be shared with the
-                    customer.
-                  </small>
                 </FormGroup>
 
-                <Alert color="warning" className="mt-3">
-                  <h6>
-                    <i className="ri-alert-line me-2"></i>Important Notes
-                  </h6>
-                  <ul className="mb-0 ps-3">
-                    <li>
-                      Order will be cancelled and payment will be refunded
-                    </li>
-                    <li>Package quantity will be restored</li>
-                    <li>This action cannot be undone</li>
-                  </ul>
+                <Alert color="warning" className="mt-3 mb-0">
+                  <i className="ri-alert-line me-2"></i>
+                  Please make sure the reason is clear before continuing.
                 </Alert>
               </div>
-            )}
+            ) : null}
           </ModalBody>
           <ModalFooter>
             <Button
@@ -1063,17 +1031,7 @@ const OrdersPage = () => {
               type="submit"
               disabled={actionLoading || !cancellationReason.trim()}
             >
-              {actionLoading ? (
-                <>
-                  <i className="ri-loader-4-line spin me-1"></i>
-                  Cancelling...
-                </>
-              ) : (
-                <>
-                  <i className="ri-close-line me-1"></i>
-                  Cancel Order
-                </>
-              )}
+              {actionLoading ? "Cancelling..." : "Cancel Order"}
             </Button>
           </ModalFooter>
         </Form>

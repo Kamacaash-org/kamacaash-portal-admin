@@ -31,10 +31,19 @@ export const verify2FA = (data) => api.post(url.VERIFY_2FA, data);
 export const changePassword = (data) => api.post(url.CHANGE_PASSWORD, data);
 export const getDashboardOverview = () => api.get(url.DASHBOARD_OVERVIEW);
 export const getStaffProfile = (staffId) => api.get(`${url.STAFFS}/${staffId}`);
+export const getMyStaffProfile = () => api.get("/staff/me/profile");
+export const updateMyStaffProfile = (payload) =>
+  api.update("/staff/me/profile", payload);
 export const getBusinessProfile = (businessId) =>
   api.get(`${url.BUSINESS_PROFILE}/${businessId}`);
 export const updateBusinessProfile = (businessId, payload) =>
   api.update(`${url.BUSINESS_PROFILE_UPDATE}/${businessId}`, payload);
+export const getAdminBusinessProfile = (businessId) =>
+  api.get(`/businesses/${businessId}/profile`);
+export const updateAdminBusinessSettings = (businessId, payload) =>
+  axios.patch(`/businesses/${businessId}/settings`, payload, {
+    headers: { "Content-Type": undefined },
+  });
 export const getBusinessReviews = (businessId) =>
   api.get(`${url.BUSINESS_REVIEWS}/${businessId}`);
 export const requestTopReviewApproval = (payload) =>
@@ -75,14 +84,14 @@ export const BusinessAPI = {
   create: (payload) =>
     payload instanceof FormData
       ? axios.post(url.BUSINESS, payload, {
-          headers: { "Content-Type": undefined },
-        })
+        headers: { "Content-Type": undefined },
+      })
       : api.post(url.BUSINESS, payload),
   update: ({ id, payload }) =>
     payload instanceof FormData
       ? axios.put(`${url.BUSINESS}/${id}`, payload, {
-          headers: { "Content-Type": undefined },
-        })
+        headers: { "Content-Type": undefined },
+      })
       : api.update(`${url.BUSINESS}/${id}`, payload),
   delete: (id) => api.delete(`${url.BUSINESS}/${id}`),
 
@@ -119,25 +128,33 @@ export const OffersAPI = {
   create: (payload) =>
     payload instanceof FormData
       ? axios.post(url.OFFERS, payload, {
-          headers: { "Content-Type": undefined },
-        })
+        headers: { "Content-Type": undefined },
+      })
       : api.post(url.OFFERS, payload),
   update: ({ id, payload }) =>
     payload instanceof FormData
       ? axios.put(`${url.OFFERS}/${id}`, payload, {
-          headers: { "Content-Type": undefined },
-        })
+        headers: { "Content-Type": undefined },
+      })
       : api.update(`${url.OFFERS}/${id}`, payload),
   delete: (id) => api.delete(`${url.OFFERS}/${id}`),
   publish: (id) => api.patch(`${url.OFFERS}/${id}/publish`),
 };
 
 export const OrdersAPI = {
-  listPendingOrders: (id) => api.get(`${url.ORDERS}/pending/${id}`),
-  completeOrder: (payload) => api.post(`${url.ORDERS}/complete`, payload),
-  cancelOrder: (payload) => api.post(`${url.ORDERS}/cancel`, payload),
-  listCompletedOrders: (id) => api.get(`${url.ORDERS}/completed/${id}`),
-  listCancelledOrders: (id) => api.get(`${url.ORDERS}/cancelled/${id}`),
+  listPendingOrders: (id) => api.get(`${url.ORDERS}/business/${id}/pending/today`),
+  completeOrder: ({ orderId, payload }) =>
+    api.patch(`${url.ORDERS}/${orderId}/complete`, payload),
+  cancelOrder: ({ orderId, payload }) =>
+    api.patch(`${url.ORDERS}/${orderId}/cancel`, payload),
+  listCompletedOrders: ({ businessId, start, end }) =>
+    api.get(
+      `${url.ORDERS}/business/${businessId}/completed?start=${start}&end=${end}`,
+    ),
+  listCancelledOrders: ({ businessId, start, end }) =>
+    api.get(
+      `${url.ORDERS}/business/${businessId}/cancelled?start=${start}&end=${end}`,
+    ),
 };
 
 // // ================================== END OF  URL ===================================================

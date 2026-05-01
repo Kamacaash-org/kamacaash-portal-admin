@@ -15,9 +15,9 @@ export const getPendingOrdersByBusinessID = createAsyncThunk("orders/order/retur
 
 });
 
-export const getCompletedOrdersByBusinessID = createAsyncThunk("orders/order/return-completed-orders", async (id) => {
+export const getCompletedOrdersByBusinessID = createAsyncThunk("orders/order/return-completed-orders", async (payload) => {
     try {
-        const res = await OrdersAPI.listCompletedOrders(id);
+        const res = await OrdersAPI.listCompletedOrders(payload);
         if (!res.success) throw res;
         return res.data;
     } catch (error) {
@@ -26,9 +26,9 @@ export const getCompletedOrdersByBusinessID = createAsyncThunk("orders/order/ret
     }
 
 });
-export const getCancelledOrdersByBusinessID = createAsyncThunk("orders/order/return-cancelled-orders", async (id) => {
+export const getCancelledOrdersByBusinessID = createAsyncThunk("orders/order/return-cancelled-orders", async (payload) => {
     try {
-        const res = await OrdersAPI.listCancelledOrders(id);
+        const res = await OrdersAPI.listCancelledOrders(payload);
         if (!res.success) throw res;
         return res.data;
     } catch (error) {
@@ -40,9 +40,14 @@ export const getCancelledOrdersByBusinessID = createAsyncThunk("orders/order/ret
 
 export const completeOrder = createAsyncThunk("orders/complete-order", async (payload) => {
     try {
-        const res = await OrdersAPI.completeOrder(payload);
+        const res = await OrdersAPI.completeOrder({
+            orderId: payload.orderId,
+            payload: {
+                pin_code: payload.pinCode,
+            },
+        });
         if (!res.success) throw res;
-        toast.success(`Order #${payload.orderId} completed successfully!`);
+        toast.success(`Order ${payload.orderLabel || payload.orderNumber || payload.orderId} completed successfully!`);
     } catch (error) {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to complete the order';
         toast.error(errorMessage);
@@ -52,9 +57,14 @@ export const completeOrder = createAsyncThunk("orders/complete-order", async (pa
 
 export const cancelOrder = createAsyncThunk("order/cancel-order", async (payload) => {
     try {
-        const res = await OrdersAPI.cancelOrder(payload);
+        const res = await OrdersAPI.cancelOrder({
+            orderId: payload.orderId,
+            payload: {
+                reason: payload.cancellationReason,
+            },
+        });
         if (!res.success) throw res;
-        toast.success(`Order #${payload.orderId} cancelled successfully!`);
+        toast.success(`Order ${payload.orderLabel || payload.orderNumber || payload.orderId} cancelled successfully!`);
     } catch (error) {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to cancel the order';
         toast.error(errorMessage);

@@ -2,343 +2,191 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Badge,
+  Button,
   Card,
   CardBody,
-  CardHeader,
   Col,
   Container,
+  Form,
+  FormFeedback,
+  FormGroup,
+  Input,
+  Label,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   Row,
-  Progress,
-  Button,
-  Tooltip,
-  ListGroup,
-  ListGroupItem,
 } from "reactstrap";
+import { toast, ToastContainer } from "react-toastify";
+
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import Loader from "../../../Components/Common/Loader";
-import useAuthUser from "../../../Components/Hooks/useAuthUser";
 import {
-  getStaffProfile,
-  toggleStaff2FA,
+  getMyStaffProfile,
+  updateMyStaffProfile,
 } from "../../../helpers/backend_helper";
-
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import { updateStaff } from "../../../slices/thunks";
-import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
-import {
-  Modal,
-  ModalHeader,
-  ModalBody,
-  Form,
-  Label,
-  Input,
-  FormFeedback,
-  ModalFooter,
-} from "reactstrap";
-
-const splitE164Phone = (phoneE164 = "") => {
-  const value = String(phoneE164 || "").trim();
-  if (!value.startsWith("+")) {
-    return { countryCode: "", phone: value };
-  }
-
-  const match = value.match(/^(\+\d{1,4})(\d+)$/);
-  if (!match) {
-    return { countryCode: "", phone: value };
-  }
-
-  return {
-    countryCode: match[1],
-    phone: match[2],
-  };
-};
 
 const normalizeStaffProfile = (raw) => {
   if (!raw) return null;
-
-  const basePhone = raw.phone_e164 || raw.phoneE164 || "";
-  const parsedPhone = splitE164Phone(basePhone);
-
-  const countryCode =
-    raw.countryCode ||
-    raw.country_code ||
-    raw.phone_country_code ||
-    parsedPhone.countryCode ||
-    "";
-
-  const phone =
-    raw.phone || raw.phone_number || raw.phoneNumber || parsedPhone.phone || "";
-
-  const firstName = raw.firstName || raw.first_name || "";
-  const lastName = raw.lastName || raw.last_name || "";
-
   return {
-    ...raw,
-    id: raw.id || raw._id,
-    firstName,
-    lastName,
-    fullName:
-      raw.fullName || raw.full_name || `${firstName} ${lastName}`.trim() || "",
+    id: raw.id || "",
     username: raw.username || "",
     email: raw.email || "",
-    countryCode,
-    phone,
-    sex: raw.sex || raw.gender || "",
+    phone: raw.phone,
+    firstName: raw.first_name || raw.firstName || "",
+    lastName: raw.last_name || raw.lastName || "",
+    fullName:
+      raw.full_name ||
+      raw.fullName ||
+      `${raw.first_name || ""} ${raw.last_name || ""}`.trim(),
+    profileImageUrl: raw.profile_image_url || raw.profileImageUrl || "",
     role: raw.role || "",
-    isActive:
-      typeof raw.isActive === "boolean"
-        ? raw.isActive
-        : typeof raw.is_active === "boolean"
-          ? raw.is_active
-          : false,
-    isAdminApproved:
-      typeof raw.isAdminApproved === "boolean"
-        ? raw.isAdminApproved
-        : typeof raw.is_admin_approved === "boolean"
-          ? raw.is_admin_approved
-          : false,
     twoFactorEnabled:
-      typeof raw.twoFactorEnabled === "boolean"
-        ? raw.twoFactorEnabled
-        : typeof raw.two_factor_enabled === "boolean"
-          ? raw.two_factor_enabled
-          : false,
-    lastLogin: raw.lastLogin || raw.last_login || null,
-    createdAt: raw.createdAt || raw.created_at || null,
-    updatedAt: raw.updatedAt || raw.updated_at || null,
+      typeof raw.two_factor_enabled === "boolean"
+        ? raw.two_factor_enabled
+        : Boolean(raw.twoFactorEnabled),
+    business: raw.business || null,
   };
 };
 
-const StaffProfile = () => {
-  document.title = "Staff Profile | Kamacash";
+const toTitleCase = (value) => {
+  if (!value) return "-";
+  return String(value)
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
-  const dispatch = useDispatch();
-  const authUser = useAuthUser();
+const InfoTile = ({ label, value }) => (
+  <div className="border rounded-3 p-3">
+    <small className="text-muted text-uppercase fw-semibold" style={{ fontSize: "11px", letterSpacing: ".05em" }}>
+      {label}
+    </small>
+    <div className="fw-semibold mt-1">{value || "-"}</div>
+  </div>
+);
+
+const StaffProfile = () => {
+  document.title = "Staff Profile | Kamacaash";
+
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [isEdit, setIsEdit] = useState(false);
-
-  const staffId = authUser?.staffId;
-
-  // Validation Schema
-  const validationSchema = Yup.object({
-    firstName: Yup.string().required("First Name is required"),
-    lastName: Yup.string().required("Last Name is required"),
-    phone: Yup.string().required("Phone is required"),
-    countryCode: Yup.string(),
-    username: Yup.string().required("Username is required"),
-    email: Yup.string().email("Invalid email").required("Email is required"),
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [formState, setFormState] = useState({
+    username: "",
+    email: "",
+    phone: "",
+    firstName: "",
+    lastName: "",
+    twoFactorEnabled: false,
   });
-
-  const validation = useFormik({
-    enableReinitialize: true,
-    initialValues: {
-      firstName: profile?.firstName || "",
-      lastName: profile?.lastName || "",
-      phone: profile?.phone || "",
-      countryCode: profile?.countryCode || "+1",
-      username: profile?.username || "",
-      email: profile?.email || "",
-    },
-    validationSchema: validationSchema,
-    onSubmit: async (values) => {
-      try {
-        const phoneE164 = values.phone?.startsWith("+")
-          ? values.phone
-          : `${values.countryCode || ""}${values.phone || ""}`;
-
-        const updateData = {
-          id: staffId,
-          first_name: values.firstName,
-          last_name: values.lastName,
-          phone_e164: phoneE164,
-          username: values.username,
-          email: values.email,
-          country_code: values.countryCode,
-        };
-        await dispatch(updateStaff(updateData));
-        toast.success("Profile updated successfully");
-        setIsEdit(false);
-        // Refresh profile data
-        const freshProfile = await getStaffProfile(staffId);
-        if (freshProfile?.success) {
-          setProfile(normalizeStaffProfile(freshProfile.data));
-        }
-      } catch (err) {
-        toast.error("Failed to update profile");
-        console.error(err);
-      }
-    },
-  });
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchProfile = async () => {
-      if (!staffId) {
-        setError("Staff ID not found. Please sign in again.");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError("");
-
-      try {
-        const response = await getStaffProfile(staffId);
-        if (response?.success) {
-          if (isMounted) {
-            setProfile(normalizeStaffProfile(response.data));
-          }
-        } else {
-          if (isMounted) {
-            setError(response?.message || "Failed to load staff profile");
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err?.message || "Failed to load staff profile");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchProfile();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [staffId]);
-
-  const fullName = useMemo(() => {
-    if (!profile) return "-";
-    if (profile.fullName) return profile.fullName;
-    const first = profile.firstName || "";
-    const last = profile.lastName || "";
-    return `${first} ${last}`.trim() || "-";
-  }, [profile]);
-
-  const formatDate = (value) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatRelativeTime = (value) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return formatDate(value).split(",")[0];
-  };
-
-  const toTitleCase = (value) => {
-    if (!value || typeof value !== "string") return "-";
-    return value
-      .split("_")
-      .map((item) => item.charAt(0).toUpperCase() + item.slice(1).toLowerCase())
-      .join(" ");
-  };
+  const [formErrors, setFormErrors] = useState({});
 
   const initials = useMemo(() => {
-    const baseName =
-      fullName && fullName !== "-" ? fullName : profile?.username || "ST";
-    return baseName
+    const name = profile?.fullName || profile?.username || "ST";
+    return name
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
+      .map((part) => part.charAt(0).toUpperCase())
       .join("");
-  }, [fullName, profile?.username]);
-
-  const getAvatarColor = useMemo(() => {
-    const colors = ["bg-primary"];
-    if (!profile?.username) return colors[0];
-    const index = profile.username.length % colors.length;
-    return colors[index];
-  }, [profile?.username]);
-
-  const statusBadge = (value, trueLabel, falseLabel) => (
-    <Badge
-      color={value ? "success" : "secondary"}
-      pill
-      className={`px-3 py-2 ${value ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary"}`}
-      style={{ fontSize: "0.75rem", fontWeight: "500" }}
-    >
-      <span
-        className={`d-inline-block rounded-circle me-1`}
-        style={{
-          width: "8px",
-          height: "8px",
-          backgroundColor: value ? "#338427" : "#6c757d",
-          boxShadow: value ? "0 0 0 2px rgba(16,185,129,0.2)" : "none",
-        }}
-      ></span>
-      {value ? trueLabel : falseLabel}
-    </Badge>
-  );
-
-  const roleBadge = (role) => {
-    const roleConfig = {
-      ADMIN: { color: "danger", icon: "ri-admin-line" },
-      MANAGER: { color: "warning", icon: "ri-user-star-line" },
-      STAFF: { color: "info", icon: "ri-user-settings-line" },
-      SUPER_ADMIN: { color: "primary", icon: "ri-shield-user-line" },
-    };
-    const config = roleConfig[role] || {
-      color: "secondary",
-      icon: "ri-user-line",
-    };
-    return (
-      <Badge
-        color={config.color}
-        pill
-        className="px-3 py-2 bg-opacity-10 text-dark border-0"
-        style={{
-          backgroundColor: `var(--bs-${config.color}-bg-subtle)`,
-          fontWeight: "500",
-        }}
-      >
-        <i className={`${config.icon} me-1`}></i>
-        {toTitleCase(role)}
-      </Badge>
-    );
-  };
-
-  const getSecurityScore = useMemo(() => {
-    let score = 0;
-    if (profile?.twoFactorEnabled) score += 40;
-    if (profile?.isAdminApproved) score += 30;
-    if (profile?.email) score += 15;
-    if (profile?.phone) score += 15;
-    return score;
   }, [profile]);
 
-  const toggleEdit = () => {
-    setIsEdit(!isEdit);
-    if (!isEdit) validation.resetForm();
+  const syncFormWithProfile = (nextProfile) => {
+    setFormState({
+      username: nextProfile?.username || "",
+      email: nextProfile?.email || "",
+      phone: nextProfile?.phone || "",
+      firstName: nextProfile?.firstName || "",
+      lastName: nextProfile?.lastName || "",
+      twoFactorEnabled: Boolean(nextProfile?.twoFactorEnabled),
+    });
+    setFormErrors({});
   };
+
+  const loadProfile = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await getMyStaffProfile();
+      if (!response?.success) throw new Error(response?.message || "Failed to load profile");
+      const nextProfile = normalizeStaffProfile(response.data);
+      setProfile(nextProfile);
+      syncFormWithProfile(nextProfile);
+    } catch (err) {
+      setError(err?.message || "Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadProfile(); }, []);
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formState.firstName.trim()) errors.firstName = "First name is required";
+    if (!formState.lastName.trim()) errors.lastName = "Last name is required";
+    if (!formState.username.trim()) errors.username = "Username is required";
+    if (!formState.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formState.email)) {
+      errors.email = "Enter a valid email address";
+    }
+    if (!formState.phone.trim()) errors.phone = "Phone number is required";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const buildPayload = (overrides = {}) => {
+    const nextState = { ...formState, ...overrides };
+    return {
+      username: nextState.username.trim(),
+      email: nextState.email.trim(),
+      phone_e164: `${nextState.phone || ""}`.trim(),
+      first_name: nextState.firstName.trim(),
+      last_name: nextState.lastName.trim(),
+      two_factor_enabled: Boolean(nextState.twoFactorEnabled),
+    };
+  };
+
+  const handleSaveProfile = async (event) => {
+    event.preventDefault();
+    if (!validateForm()) return;
+    setSaving(true);
+    try {
+      const response = await updateMyStaffProfile(buildPayload());
+      if (!response?.success) throw new Error(response?.message || "Failed to update profile");
+      toast.success("Profile updated successfully");
+      setIsEditOpen(false);
+      await loadProfile();
+    } catch (err) {
+      toast.error(err?.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggle2FA = async (enabled) => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      const response = await updateMyStaffProfile(buildPayload({ twoFactorEnabled: enabled }));
+      if (!response?.success) throw new Error(response?.message || "Failed to update 2FA");
+      setProfile((prev) => ({ ...prev, twoFactorEnabled: enabled }));
+      setFormState((prev) => ({ ...prev, twoFactorEnabled: enabled }));
+      toast.success(`Two-factor authentication ${enabled ? "enabled" : "disabled"}`);
+    } catch (err) {
+      toast.error(err?.message || "Failed to update 2FA");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setField = (key) => (event) =>
+    setFormState((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
     <div className="page-content">
@@ -349,683 +197,245 @@ const StaffProfile = () => {
           <Loader />
         ) : error ? (
           <Alert color="danger" className="mb-0">
-            <i className="ri-error-warning-line me-2"></i>
+            <i className="ri-error-warning-line me-2" />
             {error}
           </Alert>
         ) : (
           <>
-            {/* Profile Header Card with Cover */}
-            <Card className="overflow-hidden border-0 shadow-sm mb-4">
+            {/* ── Hero card ── */}
+            <Card className="border-0 shadow-sm overflow-hidden mb-4">
               <div
                 className="position-relative"
                 style={{
-                  height: "180px",
-                  background:
-                    "linear-gradient(135deg, #338427 0%, #E36814 100%)",
+                  height: "200px",
+                  background: "linear-gradient(135deg, #184e2f 0%, #338427 45%, #e36814 100%)",
                 }}
               >
-                {/* ... decorative svg ... */}
-                <svg
-                  className="position-absolute w-100 h-100"
-                  preserveAspectRatio="none"
-                >
-                  <defs>
-                    <pattern
-                      id="pattern-1"
-                      x="0"
-                      y="0"
-                      width="40"
-                      height="40"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <circle
-                        cx="20"
-                        cy="20"
-                        r="2"
-                        fill="rgba(255,255,255,0.1)"
-                      />
-                    </pattern>
-                  </defs>
-                  <rect
-                    x="0"
-                    y="0"
-                    width="100%"
-                    height="100%"
-                    fill="url(#pattern-1)"
-                  />
-                </svg>
-
                 <div className="position-absolute top-0 end-0 p-3">
-                  <Button color="light" size="sm" onClick={toggleEdit}>
-                    <i className="ri-edit-line me-1"></i> Edit Profile
+                  <Button color="light" size="sm" onClick={() => setIsEditOpen(true)}>
+                    <i className="ri-edit-line me-1" />
+                    Edit Profile
                   </Button>
                 </div>
               </div>
 
-              <CardBody className="pt-0">
-                {/* ... existing card body content ... */}
-                <div className="d-flex flex-wrap align-items-end justify-content-between">
-                  <div className="d-flex align-items-end gap-4">
-                    {/* Avatar with ring */}
-                    <div
-                      className="position-relative"
-                      style={{ marginTop: "-50px" }}
-                    >
-                      <div className="bg-white rounded-circle p-1 shadow-lg">
-                        <div
-                          className={`${getAvatarColor} rounded-circle d-flex align-items-center justify-content-center text-white fw-bold`}
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                            fontSize: "2.5rem",
-                          }}
-                        >
-                          {initials || "ST"}
-                        </div>
+              <CardBody className="pt-0 pb-4 px-4">
+                <div className="d-flex flex-wrap align-items-end justify-content-between gap-3">
+
+                  {/* Avatar + name */}
+                  <div className="d-flex align-items-end gap-3" >
+                    <div className="bg-white rounded-circle p-1 shadow flex-shrink-0">
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold fs-3"
+                        style={{
+                          width: "100px",
+                          height: "100px",
+                          background: "linear-gradient(135deg, #338427 0%, #184e2f 100%)",
+                        }}
+                      >
+                        {initials || "ST"}
                       </div>
-                      {profile?.isActive && (
-                        <div className="position-absolute bottom-0 end-0 bg-success rounded-circle p-1 border border-2 border-white">
-                          <div style={{ width: "12px", height: "12px" }}></div>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Basic Info */}
-                    <div className="mb-2">
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <h1 className="display-6 fw-bold mb-0">{fullName}</h1>
-                        {roleBadge(profile?.role)}
+                    <div className="pb-1">
+                      <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <h4 className="mb-0 fw-bold">{profile?.fullName || "-"}</h4>
+                        <Badge color="success" pill className="px-2 py-1">
+                          <i className="ri-user-star-line me-1" />
+                          {toTitleCase(profile?.role)}
+                        </Badge>
                       </div>
-                      <div className="d-flex flex-wrap gap-3">
-                        <div className="d-flex align-items-center text-muted">
-                          <i className="ri-at-line me-1"></i>
-                          {profile?.username || "-"}
-                        </div>
-                        <div className="d-flex align-items-center text-muted">
-                          <i className="ri-mail-line me-1"></i>
-                          {profile?.email || "-"}
-                        </div>
-                        {profile?.phone && (
-                          <div className="d-flex align-items-center text-muted">
-                            <i className="ri-phone-line me-1"></i>
-                            {profile?.countryCode || ""} {profile?.phone || "-"}
-                          </div>
-                        )}
+                      <div className="d-flex flex-wrap gap-3 text-muted small">
+                        <span><i className="ri-at-line me-1" />{profile?.username || "-"}</span>
+                        <span><i className="ri-mail-line me-1" />{profile?.email || "-"}</span>
+                        <span>
+                          <i className="ri-phone-line me-1" />
+                          {`${profile?.countryCode || ""} ${profile?.phone || ""}`.trim() || "-"}
+                        </span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Refresh */}
+                  <div className="pb-1">
+                    <Button color="success" outline size="sm" onClick={loadProfile}>
+                      <i className="ri-refresh-line me-1" />
+                      Refresh
+                    </Button>
                   </div>
                 </div>
               </CardBody>
             </Card>
 
-            {/* ... Rest of existing JSX ... */}
-            <Row className="g-4 mb-4">
-              {/* ... Stats Cards ... */}
-              <Col xl={3} md={6}>
-                <Card className="border-0 shadow-sm h-100">
-                  <CardBody>
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-primary-subtle text-primary rounded-3 fs-3">
-                            <i className="ri-shield-user-line"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h6 className="text-muted mb-1">Account Status</h6>
-                        <div className="d-flex align-items-center">
-                          {statusBadge(profile?.isActive, "Active", "Inactive")}
-                        </div>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              </Col>
-              <Col xl={3} md={6}>
-                <Card className="border-0 shadow-sm h-100">
-                  <CardBody>
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-success-subtle text-success rounded-3 fs-3">
-                            <i className="ri-shield-check-line"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h6 className="text-muted mb-1">Admin Approval</h6>
-                        <div className="d-flex align-items-center">
-                          {statusBadge(
-                            profile?.isAdminApproved,
-                            "Approved",
-                            "Pending",
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              </Col>
-              <Col xl={3} md={6}>
-                <Card className="border-0 shadow-sm h-100">
-                  <CardBody>
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-info-subtle text-info rounded-3 fs-3">
-                            <i className="ri-lock-password-line"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h6 className="text-muted mb-1">Two Factor</h6>
-                        <div className="d-flex align-items-center">
-                          {statusBadge(
-                            profile?.twoFactorEnabled,
-                            "Enabled",
-                            "Disabled",
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              </Col>
-              <Col xl={3} md={6}>
-                <Card className="border-0 shadow-sm h-100">
-                  <CardBody>
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-warning-subtle text-warning rounded-3 fs-3">
-                            <i className="ri-calendar-line"></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h6 className="text-muted mb-1">Last Login</h6>
-                        <div className="fw-semibold">
-                          {formatRelativeTime(profile?.lastLogin)}
-                        </div>
-                        <small className="text-muted">
-                          {formatDate(profile?.lastLogin).split(",")[1]}
-                        </small>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              </Col>
-            </Row>
-
+            {/* ── Body grid ── */}
             <Row className="g-4">
-              {/* Left Column - Profile Details */}
-              <Col xl={6}>
-                <Card className="border-0 shadow-sm h-100">
-                  <CardHeader className="bg-transparent border-0 pt-4 px-4">
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-light text-primary rounded-circle">
-                            <i className="ri-user-settings-line fs-4"></i>
-                          </div>
+
+              {/* Profile details */}
+              <Col xl={8} className="d-flex flex-column gap-4">
+                <Card className="border-0 shadow-sm">
+                  <CardBody className="p-4">
+                    <div className="d-flex align-items-center gap-3 mb-4">
+                      <div className="avatar-sm flex-shrink-0">
+                        <div className="avatar-title bg-primary-subtle text-primary rounded-circle">
+                          <i className="ri-user-settings-line" />
                         </div>
                       </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h5 className="card-title mb-1">Profile Details</h5>
-                        <p className="text-muted small mb-0">
-                          Personal information and account settings
-                        </p>
+                      <div>
+                        <h5 className="mb-0">Profile Details</h5>
+                        <small className="text-muted">Your account information and business ownership details</small>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardBody className="p-4">
-                    <Row className="g-4">
+
+                    <Row className="g-3">
+                      <Col md={6}><InfoTile label="First Name" value={profile?.firstName} /></Col>
+                      <Col md={6}><InfoTile label="Last Name" value={profile?.lastName} /></Col>
+                      <Col md={6}><InfoTile label="Username" value={profile?.username} /></Col>
+                      <Col md={6}><InfoTile label="Email" value={profile?.email} /></Col>
                       <Col md={6}>
-                        <div className="border-bottom pb-3">
-                          <small className="text-muted d-block mb-1">
-                            <i className="ri-user-line me-1"></i> First Name
-                          </small>
-                          <div className="fw-semibold fs-6">
-                            {profile?.firstName || "-"}
-                          </div>
-                        </div>
+                        <InfoTile
+                          label="Phone"
+                          value={`${profile?.countryCode || ""} ${profile?.phone || ""}`.trim() || "-"}
+                        />
                       </Col>
-                      <Col md={6}>
-                        <div className="border-bottom pb-3">
-                          <small className="text-muted d-block mb-1">
-                            <i className="ri-user-line me-1"></i> Last Name
-                          </small>
-                          <div className="fw-semibold fs-6">
-                            {profile?.lastName || "-"}
-                          </div>
-                        </div>
-                      </Col>
-                      <Col md={6}>
-                        <div className="border-bottom pb-3">
-                          <small className="text-muted d-block mb-1">
-                            <i className="ri-at-line me-1"></i> Username
-                          </small>
-                          <div className="fw-semibold fs-6">
-                            {profile?.username || "-"}
-                          </div>
-                        </div>
-                      </Col>
-                      <Col md={6}>
-                        <div className="border-bottom pb-3">
-                          <small className="text-muted d-block mb-1">
-                            <i className="ri-mail-line me-1"></i> Email Address
-                          </small>
-                          <div className="fw-semibold fs-6">
-                            {profile?.email || "-"}
-                          </div>
-                        </div>
-                      </Col>
-                      <Col md={6}>
-                        <div className="border-bottom pb-3">
-                          <small className="text-muted d-block mb-1">
-                            <i className="ri-phone-line me-1"></i> Phone Number
-                          </small>
-                          <div className="fw-semibold fs-6">
-                            {profile?.countryCode || ""}
-                            {profile?.phone ? ` ${profile.phone}` : "-"}
-                          </div>
-                        </div>
-                      </Col>
-                      <Col md={6}>
-                        <div className="border-bottom pb-3">
-                          <small className="text-muted d-block mb-1">
-                            <i className="ri-genderless-line me-1"></i> Gender
-                          </small>
-                          <div className="fw-semibold fs-6">
-                            <Badge
-                              color={
-                                profile?.sex === "MALE"
-                                  ? "primary"
-                                  : profile?.sex === "FEMALE"
-                                    ? "danger"
-                                    : "secondary"
-                              }
-                              pill
-                              className="px-3 py-2 bg-opacity-10 text-dark border-0"
-                            >
-                              <i
-                                className={`me-1 ${
-                                  profile?.sex === "MALE"
-                                    ? "ri-men-line"
-                                    : profile?.sex === "FEMALE"
-                                      ? "ri-women-line"
-                                      : "ri-user-line"
-                                }`}
-                              ></i>
-                              {toTitleCase(profile?.sex)}
-                            </Badge>
-                          </div>
-                        </div>
-                      </Col>
-                      <Col md={12}>
-                        <div className="border-top pt-3 mt-2">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                              <h6 className="mb-1">
-                                <i className="ri-shield-keyhole-line me-1"></i>{" "}
-                                Two-Factor Authentication
-                              </h6>
-                              <p className="text-muted small mb-0">
-                                Secure your account with 2FA
-                              </p>
-                            </div>
-                            <div className="form-check form-switch form-switch-lg">
-                              <Input
-                                className="form-check-input"
-                                type="checkbox"
-                                role="switch"
-                                id="flexSwitchCheckDefault"
-                                checked={profile?.twoFactorEnabled || false}
-                                onChange={async (e) => {
-                                  const newStatus = e.target.checked;
-                                  try {
-                                    await toggleStaff2FA(newStatus);
-                                    toast.success(
-                                      `Two-Factor Authentication ${newStatus ? "enabled" : "disabled"}`,
-                                    );
-                                    setProfile((prev) => ({
-                                      ...prev,
-                                      twoFactorEnabled: newStatus,
-                                    }));
-                                  } catch (err) {
-                                    toast.error("Failed to update 2FA status");
-                                    // Revert switch if failed ?? actually better to just not update state if failed, but here we update state after success
-                                  }
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </Col>
+                      <Col md={6}><InfoTile label="Role" value={toTitleCase(profile?.role)} /></Col>
                     </Row>
                   </CardBody>
                 </Card>
               </Col>
 
-              {/* Security & Activity Col -> Now Activity Timeline Only */}
-              <Col xl={6}>
-                {/* Security Score - HIDDEN as per request */}
-                {/* <Card className="border-0 shadow-sm mb-4"> ... </Card> */}
+              {/* Right column */}
+              <Col xl={4} className="d-flex flex-column gap-4">
 
-                {/* Security Settings - HIDDEN as per request */}
-                {/* <Card className="border-0 shadow-sm mb-4"> ... </Card> */}
-
-                {/* Activity Timeline Card */}
-                <Card className="border-0 shadow-sm">
-                  <CardHeader className="bg-transparent border-0 pt-4 px-4">
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-light text-info rounded-circle">
-                            <i className="ri-history-line fs-4"></i>
-                          </div>
+                {/* Security */}
+                <Card className="border-0 shadow-sm mb-0">
+                  <CardBody className="p-4">
+                    <div className="d-flex align-items-center gap-3 mb-4">
+                      <div className="avatar-sm flex-shrink-0">
+                        <div className="avatar-title bg-success-subtle text-success rounded-circle">
+                          <i className="ri-shield-keyhole-line" />
                         </div>
                       </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h6 className="mb-1">Activity Timeline</h6>
-                        <p className="text-muted small mb-0">
-                          Recent account activity
-                        </p>
+                      <div>
+                        <h5 className="mb-0">Security</h5>
+                        <small className="text-muted">Control login protection for your account</small>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardBody className="p-4">
-                    <div className="position-relative ps-3">
-                      {/* Timeline Line */}
-                      <div
-                        className="position-absolute start-0 top-0 bottom-0"
-                        style={{
-                          width: "2px",
-                          background:
-                            "linear-gradient(180deg, #0ab39c 0%, #e9e9e9 100%)",
-                        }}
-                      ></div>
 
-                      {/* Last Login */}
-                      <div className="mb-4 position-relative">
-                        <div
-                          className="position-absolute start-0 translate-middle-x bg-success rounded-circle"
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            left: "-5px",
-                            top: "5px",
-                            border: "2px solid white",
-                          }}
-                        ></div>
-                        <div className="ms-4">
-                          <h6 className="mb-1">Last Login</h6>
-                          <p className="text-muted small mb-1">
-                            {formatDate(profile?.lastLogin)}
-                          </p>
-                          <Badge color="light" className="text-dark">
-                            {formatRelativeTime(profile?.lastLogin)}
-                          </Badge>
-                        </div>
+                    <div className="border rounded-3 p-3 d-flex justify-content-between align-items-center gap-3">
+                      <div>
+                        <div className="fw-semibold">Two-Factor Authentication</div>
+                        <small className="text-muted">Add extra security to sign in</small>
                       </div>
-
-                      {/* Account Created */}
-                      <div className="mb-4 position-relative">
-                        <div
-                          className="position-absolute start-0 translate-middle-x bg-primary rounded-circle"
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            left: "-5px",
-                            top: "5px",
-                            border: "2px solid white",
-                          }}
-                        ></div>
-                        <div className="ms-4">
-                          <h6 className="mb-1">Account Created</h6>
-                          <p className="text-muted small mb-1">
-                            {formatDate(profile?.createdAt)}
-                          </p>
-                          <Badge color="light" className="text-dark">
-                            {formatRelativeTime(profile?.createdAt)}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* Last Updated */}
-                      <div className="position-relative">
-                        <div
-                          className="position-absolute start-0 translate-middle-x bg-warning rounded-circle"
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            left: "-5px",
-                            top: "5px",
-                            border: "2px solid white",
-                          }}
-                        ></div>
-                        <div className="ms-4">
-                          <h6 className="mb-1">Last Updated</h6>
-                          <p className="text-muted small mb-1">
-                            {formatDate(profile?.updatedAt)}
-                          </p>
-                          <Badge color="light" className="text-dark">
-                            {formatRelativeTime(profile?.updatedAt)}
-                          </Badge>
-                        </div>
-                      </div>
+                      <Input
+                        type="switch"
+                        className="flex-shrink-0"
+                        checked={formState.twoFactorEnabled}
+                        disabled={saving}
+                        onChange={(e) => handleToggle2FA(e.target.checked)}
+                      />
                     </div>
                   </CardBody>
                 </Card>
+
+                {/* Business */}
+                <Card className="border-0 shadow-sm mb-2">
+                  <CardBody className="p-4">
+                    <div className="d-flex align-items-center gap-3 mb-4">
+                      <div className="avatar-sm flex-shrink-0">
+                        <div className="avatar-title bg-warning-subtle text-warning rounded-circle">
+                          <i className="ri-store-2-line" />
+                        </div>
+                      </div>
+                      <div>
+                        <h5 className="mb-0">Business</h5>
+                        <small className="text-muted">The business linked to this account</small>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-3 p-3 d-flex flex-column gap-3">
+                      <InfoTile label="Display Name" value={profile?.business?.display_name} />
+                      <InfoTile label="Legal Name" value={profile?.business?.legal_name} />
+                    </div>
+                  </CardBody>
+                </Card>
+
               </Col>
             </Row>
           </>
         )}
 
-        {/* Edit Profile Modal */}
-        <Modal isOpen={isEdit} toggle={toggleEdit} centered>
-          <ModalHeader toggle={toggleEdit}>Edit Profile</ModalHeader>
-          <Form
-            onSubmit={(e) => {
-              e.preventDefault();
-              validation.handleSubmit();
-              return false;
-            }}
-          >
-            <ModalBody>
-              <Row>
+        {/* ── Edit modal ── */}
+        <Modal isOpen={isEditOpen} toggle={() => setIsEditOpen(false)} centered size="md">
+          <ModalHeader toggle={() => setIsEditOpen(false)} className="border-bottom pb-3">
+            Edit Profile
+          </ModalHeader>
+
+          <Form onSubmit={handleSaveProfile}>
+            <ModalBody className="p-4">
+              <Row className="g-3">
                 <Col md={6}>
-                  <div className="mb-3">
-                    <Label htmlFor="username" className="form-label">
-                      Username
-                    </Label>
-                    <Input
-                      id="username"
-                      name="username"
-                      type="text"
-                      className="form-control"
-                      onChange={validation.handleChange}
-                      onBlur={validation.handleBlur}
-                      value={validation.values.username || ""}
-                      invalid={
-                        validation.touched.username &&
-                        validation.errors.username
-                          ? true
-                          : false
-                      }
-                    />
-                    {validation.touched.username &&
-                    validation.errors.username ? (
-                      <FormFeedback type="invalid">
-                        {validation.errors.username}
-                      </FormFeedback>
-                    ) : null}
-                  </div>
+                  <FormGroup className="mb-0">
+                    <Label className="fw-semibold small">First Name</Label>
+                    <Input value={formState.firstName} invalid={Boolean(formErrors.firstName)} onChange={setField("firstName")} />
+                    <FormFeedback>{formErrors.firstName}</FormFeedback>
+                  </FormGroup>
                 </Col>
                 <Col md={6}>
-                  <div className="mb-3">
-                    <Label htmlFor="email" className="form-label">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      className="form-control"
-                      onChange={validation.handleChange}
-                      onBlur={validation.handleBlur}
-                      value={validation.values.email || ""}
-                      invalid={
-                        validation.touched.email && validation.errors.email
-                          ? true
-                          : false
-                      }
-                    />
-                    {validation.touched.email && validation.errors.email ? (
-                      <FormFeedback type="invalid">
-                        {validation.errors.email}
-                      </FormFeedback>
-                    ) : null}
-                  </div>
+                  <FormGroup className="mb-0">
+                    <Label className="fw-semibold small">Last Name</Label>
+                    <Input value={formState.lastName} invalid={Boolean(formErrors.lastName)} onChange={setField("lastName")} />
+                    <FormFeedback>{formErrors.lastName}</FormFeedback>
+                  </FormGroup>
                 </Col>
                 <Col md={6}>
-                  <div className="mb-3">
-                    <Label htmlFor="firstName" className="form-label">
-                      First Name
-                    </Label>
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      type="text"
-                      className="form-control"
-                      onChange={validation.handleChange}
-                      onBlur={validation.handleBlur}
-                      value={validation.values.firstName || ""}
-                      invalid={
-                        validation.touched.firstName &&
-                        validation.errors.firstName
-                          ? true
-                          : false
-                      }
-                    />
-                    {validation.touched.firstName &&
-                    validation.errors.firstName ? (
-                      <FormFeedback type="invalid">
-                        {validation.errors.firstName}
-                      </FormFeedback>
-                    ) : null}
-                  </div>
+                  <FormGroup className="mb-0">
+                    <Label className="fw-semibold small">Username</Label>
+                    <Input value={formState.username} invalid={Boolean(formErrors.username)} onChange={setField("username")} />
+                    <FormFeedback>{formErrors.username}</FormFeedback>
+                  </FormGroup>
                 </Col>
                 <Col md={6}>
-                  <div className="mb-3">
-                    <Label htmlFor="lastName" className="form-label">
-                      Last Name
-                    </Label>
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      type="text"
-                      className="form-control"
-                      onChange={validation.handleChange}
-                      onBlur={validation.handleBlur}
-                      value={validation.values.lastName || ""}
-                      invalid={
-                        validation.touched.lastName &&
-                        validation.errors.lastName
-                          ? true
-                          : false
-                      }
-                    />
-                    {validation.touched.lastName &&
-                    validation.errors.lastName ? (
-                      <FormFeedback type="invalid">
-                        {validation.errors.lastName}
-                      </FormFeedback>
-                    ) : null}
-                  </div>
+                  <FormGroup className="mb-0">
+                    <Label className="fw-semibold small">Email</Label>
+                    <Input type="email" value={formState.email} invalid={Boolean(formErrors.email)} onChange={setField("email")} />
+                    <FormFeedback>{formErrors.email}</FormFeedback>
+                  </FormGroup>
                 </Col>
-                <Col md={12}>
-                  <div className="mb-3">
-                    <Label htmlFor="phone" className="form-label">
-                      Phone Number
-                    </Label>
-                    <div className="input-group">
-                      <Input
-                        id="countryCode"
-                        name="countryCode"
-                        type="text"
-                        className="form-control"
-                        style={{ maxWidth: "80px" }}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        value={validation.values.countryCode || ""}
-                      />
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="text"
-                        className="form-control"
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        value={validation.values.phone || ""}
-                        invalid={
-                          validation.touched.phone && validation.errors.phone
-                            ? true
-                            : false
-                        }
-                      />
-                      {validation.touched.phone && validation.errors.phone ? (
-                        <FormFeedback type="invalid">
-                          {validation.errors.phone}
-                        </FormFeedback>
-                      ) : null}
+                <Col md={6}>
+                  <FormGroup className="mb-0">
+                    <Label className="fw-semibold small">Phone</Label>
+                    <Input value={formState.phone} invalid={Boolean(formErrors.phone)} onChange={setField("phone")} />
+                    <FormFeedback>{formErrors.phone}</FormFeedback>
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <div className="border rounded-3 px-3 py-2 h-100 d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                      <Label className="mb-0 fw-semibold small d-block">2FA</Label>
+                      <small className="text-muted">Two-factor auth</small>
                     </div>
+                    <Input
+                      type="switch"
+                      className="flex-shrink-0"
+                      checked={formState.twoFactorEnabled}
+                      onChange={(e) => setFormState((prev) => ({ ...prev, twoFactorEnabled: e.target.checked }))}
+                    />
                   </div>
                 </Col>
               </Row>
             </ModalBody>
-            <ModalFooter>
-              <Button color="light" onClick={toggleEdit}>
-                Cancel
-              </Button>
-              <Button color="primary" type="submit">
-                Save Changes
+
+            <ModalFooter className="border-top pt-3 gap-2">
+              <Button color="light" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+              <Button color="primary" type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
               </Button>
             </ModalFooter>
           </Form>
         </Modal>
       </Container>
 
-      <style jsx>{`
-        .bg-purple {
-          background-color: #338427;
-        }
-        .bg-opacity-10 {
-          --bs-bg-opacity: 0.1;
-        }
-        .bg-primary-subtle {
-          background-color: rgba(13, 110, 253, 0.1);
-        }
-        .bg-success-subtle {
-          background-color: rgba(16, 185, 129, 0.1);
-        }
-        .bg-info-subtle {
-          background-color: rgba(13, 202, 240, 0.1);
-        }
-        .bg-warning-subtle {
-          background-color: rgba(255, 193, 7, 0.1);
-        }
-        .avatar-xl {
-          width: 100px;
-          height: 100px;
-        }
-        .avatar-xl .avatar-title {
-          width: 100px;
-          height: 100px;
-          font-size: 2rem;
-        }
-      `}</style>
+      <ToastContainer />
     </div>
   );
 };
@@ -1035,108 +445,211 @@ export default StaffProfile;
 // import {
 //   Alert,
 //   Badge,
+//   Button,
 //   Card,
 //   CardBody,
-//   CardHeader,
 //   Col,
 //   Container,
+//   Form,
+//   FormFeedback,
+//   FormGroup,
+//   Input,
+//   Label,
+//   Modal,
+//   ModalBody,
+//   ModalFooter,
+//   ModalHeader,
 //   Row,
 // } from "reactstrap";
+// import { toast, ToastContainer } from "react-toastify";
+
 // import BreadCrumb from "../../../Components/Common/BreadCrumb";
 // import Loader from "../../../Components/Common/Loader";
-// import useAuthUser from "../../../Components/Hooks/useAuthUser";
-// import { getStaffProfile } from "../../../helpers/backend_helper";
+// import {
+//   getMyStaffProfile,
+//   updateMyStaffProfile,
+// } from "../../../helpers/backend_helper";
+
+// const normalizeStaffProfile = (raw) => {
+//   if (!raw) return null;
+
+//   return {
+//     id: raw.id || "",
+//     username: raw.username || "",
+//     email: raw.email || "",
+//     phone: raw.phone,
+//     firstName: raw.first_name || raw.firstName || "",
+//     lastName: raw.last_name || raw.lastName || "",
+//     fullName:
+//       raw.full_name ||
+//       raw.fullName ||
+//       `${raw.first_name || ""} ${raw.last_name || ""}`.trim(),
+//     profileImageUrl: raw.profile_image_url || raw.profileImageUrl || "",
+//     role: raw.role || "",
+//     twoFactorEnabled:
+//       typeof raw.two_factor_enabled === "boolean"
+//         ? raw.two_factor_enabled
+//         : Boolean(raw.twoFactorEnabled),
+//     business: raw.business || null,
+//   };
+// };
+
+// const toTitleCase = (value) => {
+//   if (!value) return "-";
+
+//   return String(value)
+//     .replaceAll("_", " ")
+//     .toLowerCase()
+//     .replace(/\b\w/g, (char) => char.toUpperCase());
+// };
 
 // const StaffProfile = () => {
-//   document.title = "Staff Profile | Kamacash";
+//   document.title = "Staff Profile | Kamacaash";
 
-//   const authUser = useAuthUser();
 //   const [profile, setProfile] = useState(null);
 //   const [loading, setLoading] = useState(true);
+//   const [saving, setSaving] = useState(false);
 //   const [error, setError] = useState("");
-
-//   const staffId = authUser?.staffId;
-
-//   useEffect(() => {
-//     let isMounted = true;
-
-//     const fetchProfile = async () => {
-//       if (!staffId) {
-//         setError("Staff ID not found. Please sign in again.");
-//         setLoading(false);
-//         return;
-//       }
-
-//       setLoading(true);
-//       setError("");
-
-//       try {
-//         const response = await getStaffProfile(staffId);
-//         if (response?.success) {
-//           if (isMounted) {
-//             setProfile(response.data || null);
-//           }
-//         } else {
-//           if (isMounted) {
-//             setError(response?.message || "Failed to load staff profile");
-//           }
-//         }
-//       } catch (err) {
-//         if (isMounted) {
-//           setError(err?.message || "Failed to load staff profile");
-//         }
-//       } finally {
-//         if (isMounted) {
-//           setLoading(false);
-//         }
-//       }
-//     };
-
-//     fetchProfile();
-
-//     return () => {
-//       isMounted = false;
-//     };
-//   }, [staffId]);
-
-//   const fullName = useMemo(() => {
-//     if (!profile) return "-";
-//     if (profile.fullName) return profile.fullName;
-//     const first = profile.firstName || "";
-//     const last = profile.lastName || "";
-//     return `${first} ${last}`.trim() || "-";
-//   }, [profile]);
-
-//   const formatDate = (value) => {
-//     if (!value) return "-";
-//     const date = new Date(value);
-//     if (Number.isNaN(date.getTime())) return "-";
-//     return date.toLocaleString();
-//   };
-
-//   const toTitleCase = (value) => {
-//     if (!value || typeof value !== "string") return "-";
-//     return value
-//       .split("_")
-//       .map((item) => item.charAt(0) + item.slice(1).toLowerCase())
-//       .join(" ");
-//   };
+//   const [isEditOpen, setIsEditOpen] = useState(false);
+//   const [formState, setFormState] = useState({
+//     username: "",
+//     email: "",
+//     phone: "",
+//     firstName: "",
+//     lastName: "",
+//     twoFactorEnabled: false,
+//   });
+//   const [formErrors, setFormErrors] = useState({});
 
 //   const initials = useMemo(() => {
-//     const baseName = fullName && fullName !== "-" ? fullName : profile?.username || "ST";
-//     return baseName
+//     const name = profile?.fullName || profile?.username || "ST";
+//     return name
 //       .split(" ")
 //       .filter(Boolean)
 //       .slice(0, 2)
-//       .map((part) => part[0]?.toUpperCase())
+//       .map((part) => part.charAt(0).toUpperCase())
 //       .join("");
-//   }, [fullName, profile?.username]);
+//   }, [profile]);
 
-//   const statusBadge = (value, trueLabel, falseLabel) => (
-//     <Badge color={value ? "success" : "danger"} pill>
-//       {value ? trueLabel : falseLabel}
-//     </Badge>
-//   );
+//   const syncFormWithProfile = (nextProfile) => {
+//     setFormState({
+//       username: nextProfile?.username || "",
+//       email: nextProfile?.email || "",
+//       phone: nextProfile?.phone || "",
+//       firstName: nextProfile?.firstName || "",
+//       lastName: nextProfile?.lastName || "",
+//       twoFactorEnabled: Boolean(nextProfile?.twoFactorEnabled),
+//     });
+//     setFormErrors({});
+//   };
+
+//   const loadProfile = async () => {
+//     setLoading(true);
+//     setError("");
+
+//     try {
+//       const response = await getMyStaffProfile();
+//       if (!response?.success) {
+//         throw new Error(response?.message || "Failed to load profile");
+//       }
+
+//       const nextProfile = normalizeStaffProfile(response.data);
+//       setProfile(nextProfile);
+//       syncFormWithProfile(nextProfile);
+//     } catch (err) {
+//       setError(err?.message || "Failed to load profile");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     loadProfile();
+//   }, []);
+
+//   const validateForm = () => {
+//     const errors = {};
+
+//     if (!formState.firstName.trim()) errors.firstName = "First name is required";
+//     if (!formState.lastName.trim()) errors.lastName = "Last name is required";
+//     if (!formState.username.trim()) errors.username = "Username is required";
+//     if (!formState.email.trim()) {
+//       errors.email = "Email is required";
+//     } else if (!/\S+@\S+\.\S+/.test(formState.email)) {
+//       errors.email = "Enter a valid email address";
+//     }
+//     if (!formState.phone.trim()) errors.phone = "Phone number is required";
+
+//     setFormErrors(errors);
+//     return Object.keys(errors).length === 0;
+//   };
+
+//   const buildPayload = (overrides = {}) => {
+//     const nextState = {
+//       ...formState,
+//       ...overrides,
+//     };
+
+//     return {
+//       username: nextState.username.trim(),
+//       email: nextState.email.trim(),
+//       phone_e164: `${nextState.phone || ""}`.trim(),
+//       first_name: nextState.firstName.trim(),
+//       last_name: nextState.lastName.trim(),
+//       two_factor_enabled: Boolean(nextState.twoFactorEnabled),
+//     };
+//   };
+
+//   const handleSaveProfile = async (event) => {
+//     event.preventDefault();
+//     if (!validateForm()) return;
+
+//     setSaving(true);
+//     try {
+//       const response = await updateMyStaffProfile(buildPayload());
+//       if (!response?.success) {
+//         throw new Error(response?.message || "Failed to update profile");
+//       }
+
+//       toast.success("Profile updated successfully");
+//       setIsEditOpen(false);
+//       await loadProfile();
+//     } catch (err) {
+//       toast.error(err?.message || "Failed to update profile");
+//     } finally {
+//       setSaving(false);
+//     }
+//   };
+
+//   const handleToggle2FA = async (enabled) => {
+//     if (!profile) return;
+
+//     setSaving(true);
+//     try {
+//       const response = await updateMyStaffProfile(
+//         buildPayload({ twoFactorEnabled: enabled }),
+//       );
+//       if (!response?.success) {
+//         throw new Error(response?.message || "Failed to update 2FA");
+//       }
+
+//       setProfile((prev) => ({
+//         ...prev,
+//         twoFactorEnabled: enabled,
+//       }));
+//       setFormState((prev) => ({
+//         ...prev,
+//         twoFactorEnabled: enabled,
+//       }));
+//       toast.success(
+//         `Two-factor authentication ${enabled ? "enabled" : "disabled"}`,
+//       );
+//     } catch (err) {
+//       toast.error(err?.message || "Failed to update 2FA");
+//     } finally {
+//       setSaving(false);
+//     }
+//   };
 
 //   return (
 //     <div className="page-content">
@@ -1147,130 +660,142 @@ export default StaffProfile;
 //           <Loader />
 //         ) : error ? (
 //           <Alert color="danger" className="mb-0">
+//             <i className="ri-error-warning-line me-2"></i>
 //             {error}
 //           </Alert>
 //         ) : (
 //           <>
-//             <Card className="overflow-hidden">
-//               <CardBody className="bg-light-subtle border-bottom">
-//                 <Row className="align-items-center gy-3">
-//                   <Col lg={8}>
-//                     <div className="d-flex align-items-center">
-//                       <div className="flex-shrink-0">
+//             <Card className="border-0 shadow-sm overflow-hidden mb-4">
+//               <div
+//                 style={{
+//                   minHeight: "220px",
+//                   background:
+//                     "linear-gradient(135deg, #184e2f 0%, #338427 45%, #e36814 100%)",
+//                 }}
+//                 className="position-relative"
+//               >
+//                 <div className="position-absolute top-0 end-0 p-4">
+//                   <Button color="light" onClick={() => setIsEditOpen(true)}>
+//                     <i className="ri-edit-line me-1"></i>
+//                     Edit Profile
+//                   </Button>
+//                 </div>
+//               </div>
+//               <CardBody className="pt-0">
+//                 <div className="d-flex flex-wrap align-items-end justify-content-between gap-4">
+//                   <div className="d-flex align-items-end gap-4">
+//                     <div style={{ marginTop: "-56px" }}>
+//                       <div className="bg-white rounded-circle p-1 shadow">
 //                         <div
-//                           className="avatar-lg rounded-circle d-flex align-items-center justify-content-center bg-primary text-white fw-bold fs-3"
-//                           style={{ width: 64, height: 64 }}
+//                           className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+//                           style={{
+//                             width: "112px",
+//                             height: "112px",
+//                             fontSize: "2rem",
+//                             background:
+//                               "linear-gradient(135deg, #338427 0%, #184e2f 100%)",
+//                           }}
 //                         >
 //                           {initials || "ST"}
 //                         </div>
 //                       </div>
-//                       <div className="flex-grow-1 ms-3">
-//                         <h4 className="mb-1">{fullName}</h4>
-//                         <div className="d-flex flex-wrap gap-2 mb-2">
-//                           <Badge color="primary" pill>
-//                             {toTitleCase(profile?.role)}
-//                           </Badge>
-//                           {statusBadge(profile?.isActive, "Active", "Inactive")}
-//                         </div>
-//                         <p className="text-muted mb-1">
-//                           <i className="ri-at-line align-middle me-1"></i>
+//                     </div>
+//                     <div className="pb-2">
+//                       <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
+//                         <h2 className="mb-0">{profile?.fullName || "-"}</h2>
+//                         <Badge color="success" pill className="px-3 py-2">
+//                           <i className="ri-user-star-line me-1"></i>
+//                           {toTitleCase(profile?.role)}
+//                         </Badge>
+//                       </div>
+//                       <div className="text-muted d-flex flex-wrap gap-3">
+//                         <span>
+//                           <i className="ri-at-line me-1"></i>
 //                           {profile?.username || "-"}
-//                         </p>
-//                         <p className="text-muted mb-0">
-//                           <i className="ri-mail-line align-middle me-1"></i>
+//                         </span>
+//                         <span>
+//                           <i className="ri-mail-line me-1"></i>
 //                           {profile?.email || "-"}
-//                         </p>
+//                         </span>
+//                         <span>
+//                           <i className="ri-phone-line me-1"></i>
+//                           {`${profile?.countryCode || ""} ${profile?.phone || ""}`.trim() ||
+//                             "-"}
+//                         </span>
 //                       </div>
 //                     </div>
-//                   </Col>
-//                   <Col lg={4}>
-//                     <Row className="g-2">
-//                       <Col xs={12}>
-//                         <div className="border rounded-3 p-2 bg-white">
-//                           <small className="text-muted d-block">Last Login</small>
-//                           <span className="fw-semibold">{formatDate(profile?.lastLogin)}</span>
-//                         </div>
-//                       </Col>
-//                       <Col xs={6}>
-//                         <div className="border rounded-3 p-2 bg-white h-100">
-//                           <small className="text-muted d-block">2FA</small>
-//                           <span className="fw-semibold">
-//                             {profile?.twoFactorEnabled ? "Enabled" : "Disabled"}
-//                           </span>
-//                         </div>
-//                       </Col>
-//                       <Col xs={6}>
-//                         <div className="border rounded-3 p-2 bg-white h-100">
-//                           <small className="text-muted d-block">Approval</small>
-//                           <span className="fw-semibold">
-//                             {profile?.isAdminApproved ? "Approved" : "Pending"}
-//                           </span>
-//                         </div>
-//                       </Col>
-//                     </Row>
-//                   </Col>
-//                 </Row>
+//                   </div>
+//                   <div className="pb-2">
+//                     <Button color="success" outline onClick={loadProfile}>
+//                       <i className="ri-refresh-line me-1"></i>
+//                       Refresh
+//                     </Button>
+//                   </div>
+//                 </div>
 //               </CardBody>
 //             </Card>
 
-//             <Row>
+//             <Row className="g-4">
 //               <Col xl={8}>
-//                 <Card>
-//                   <CardHeader className="bg-light">
-//                     <h5 className="card-title mb-0">
-//                       <i className="ri-user-settings-line me-2"></i>
-//                       Profile Details
-//                     </h5>
-//                   </CardHeader>
-//                   <CardBody>
-//                     <Row className="gy-3">
+//                 <Card className="border-0 shadow-sm h-100">
+//                   <CardBody className="p-4">
+//                     <div className="d-flex align-items-center gap-2 mb-4">
+//                       <div className="avatar-sm">
+//                         <div className="avatar-title bg-primary-subtle text-primary rounded-circle">
+//                           <i className="ri-user-settings-line"></i>
+//                         </div>
+//                       </div>
+//                       <div>
+//                         <h5 className="mb-0">Profile Details</h5>
+//                         <small className="text-muted">
+//                           Your account information and business ownership details
+//                         </small>
+//                       </div>
+//                     </div>
+
+//                     <Row className="g-4">
 //                       <Col md={6}>
-//                         <div className="text-muted mb-1">First Name</div>
-//                         <div className="fw-semibold">{profile?.firstName || "-"}</div>
-//                       </Col>
-//                       <Col md={6}>
-//                         <div className="text-muted mb-1">Last Name</div>
-//                         <div className="fw-semibold">{profile?.lastName || "-"}</div>
-//                       </Col>
-//                       <Col md={6}>
-//                         <div className="text-muted mb-1">Username</div>
-//                         <div className="fw-semibold">{profile?.username || "-"}</div>
-//                       </Col>
-//                       <Col md={6}>
-//                         <div className="text-muted mb-1">Email</div>
-//                         <div className="fw-semibold">{profile?.email || "-"}</div>
-//                       </Col>
-//                       <Col md={6}>
-//                         <div className="text-muted mb-1">Phone</div>
-//                         <div className="fw-semibold">
-//                           {profile?.countryCode || ""}
-//                           {profile?.phone ? ` ${profile.phone}` : "-"}
+//                         <div className="border rounded-3 p-3 h-100">
+//                           <small className="text-muted d-block mb-1">
+//                             First Name
+//                           </small>
+//                           <div className="fw-semibold">{profile?.firstName || "-"}</div>
 //                         </div>
 //                       </Col>
 //                       <Col md={6}>
-//                         <div className="text-muted mb-1">Sex</div>
-//                         <Badge
-//                           color={
-//                             profile?.sex === "MALE"
-//                               ? "primary"
-//                               : profile?.sex === "FEMALE"
-//                                 ? "success"
-//                                 : "secondary"
-//                           }
-//                           pill
-//                         >
-//                           {toTitleCase(profile?.sex)}
-//                         </Badge>
+//                         <div className="border rounded-3 p-3 h-100">
+//                           <small className="text-muted d-block mb-1">
+//                             Last Name
+//                           </small>
+//                           <div className="fw-semibold">{profile?.lastName || "-"}</div>
+//                         </div>
 //                       </Col>
 //                       <Col md={6}>
-//                         <div className="text-muted mb-1">Role</div>
-//                         <Badge color="info" pill>
-//                           {toTitleCase(profile?.role)}
-//                         </Badge>
+//                         <div className="border rounded-3 p-3 h-100">
+//                           <small className="text-muted d-block mb-1">Username</small>
+//                           <div className="fw-semibold">{profile?.username || "-"}</div>
+//                         </div>
 //                       </Col>
 //                       <Col md={6}>
-//                         <div className="text-muted mb-1">Account Status</div>
-//                         {statusBadge(profile?.isActive, "Active", "Inactive")}
+//                         <div className="border rounded-3 p-3 h-100">
+//                           <small className="text-muted d-block mb-1">Email</small>
+//                           <div className="fw-semibold">{profile?.email || "-"}</div>
+//                         </div>
+//                       </Col>
+//                       <Col md={6}>
+//                         <div className="border rounded-3 p-3 h-100">
+//                           <small className="text-muted d-block mb-1">Phone</small>
+//                           <div className="fw-semibold">
+//                             {`${profile?.countryCode || ""} ${profile?.phone || ""}`.trim() ||
+//                               "-"}
+//                           </div>
+//                         </div>
+//                       </Col>
+//                       <Col md={6}>
+//                         <div className="border rounded-3 p-3 h-100">
+//                           <small className="text-muted d-block mb-1">Role</small>
+//                           <div className="fw-semibold">{toTitleCase(profile?.role)}</div>
+//                         </div>
 //                       </Col>
 //                     </Row>
 //                   </CardBody>
@@ -1278,50 +803,64 @@ export default StaffProfile;
 //               </Col>
 
 //               <Col xl={4}>
-//                 <Card className="mb-3">
-//                   <CardHeader className="bg-light">
-//                     <h5 className="card-title mb-0">
-//                       <i className="ri-shield-check-line me-2"></i>
-//                       Security
-//                     </h5>
-//                   </CardHeader>
-//                   <CardBody>
-//                     <div className="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-//                       <div>
-//                         <p className="text-muted mb-1">Two Factor</p>
-//                         <h6 className="mb-0">Additional Login Protection</h6>
+//                 <Card className="border-0 shadow-sm mb-4">
+//                   <CardBody className="p-4">
+//                     <div className="d-flex align-items-center gap-2 mb-4">
+//                       <div className="avatar-sm">
+//                         <div className="avatar-title bg-success-subtle text-success rounded-circle">
+//                           <i className="ri-shield-keyhole-line"></i>
+//                         </div>
 //                       </div>
-//                       {statusBadge(profile?.twoFactorEnabled, "Enabled", "Disabled")}
+//                       <div>
+//                         <h5 className="mb-0">Security</h5>
+//                         <small className="text-muted">
+//                           Control login protection for your account
+//                         </small>
+//                       </div>
 //                     </div>
-//                     <div className="d-flex justify-content-between align-items-center">
+
+//                     <div className="d-flex justify-content-between align-items-center border rounded-3 p-3">
 //                       <div>
-//                         <p className="text-muted mb-1">Admin Approval</p>
-//                         <h6 className="mb-0">Profile Verification</h6>
+//                         <div className="fw-semibold">Two-Factor Authentication</div>
+//                         <small className="text-muted">
+//                           Add extra security to sign in
+//                         </small>
 //                       </div>
-//                       {statusBadge(profile?.isAdminApproved, "Approved", "Pending")}
+//                       <Input
+//                         type="switch"
+//                         checked={formState.twoFactorEnabled}
+//                         disabled={saving}
+//                         onChange={(event) => handleToggle2FA(event.target.checked)}
+//                       />
 //                     </div>
 //                   </CardBody>
 //                 </Card>
 
-//                 <Card>
-//                   <CardHeader className="bg-light">
-//                     <h5 className="card-title mb-0">
-//                       <i className="ri-time-line me-2"></i>
-//                       Activity Timeline
-//                     </h5>
-//                   </CardHeader>
-//                   <CardBody>
-//                     <div className="mb-3 pb-3 border-bottom">
-//                       <small className="text-muted d-block">Last Login</small>
-//                       <span className="fw-semibold">{formatDate(profile?.lastLogin)}</span>
+//                 <Card className="border-0 shadow-sm">
+//                   <CardBody className="p-4">
+//                     <div className="d-flex align-items-center gap-2 mb-4">
+//                       <div className="avatar-sm">
+//                         <div className="avatar-title bg-warning-subtle text-warning rounded-circle">
+//                           <i className="ri-store-2-line"></i>
+//                         </div>
+//                       </div>
+//                       <div>
+//                         <h5 className="mb-0">Business</h5>
+//                         <small className="text-muted">
+//                           The business linked to this account
+//                         </small>
+//                       </div>
 //                     </div>
-//                     <div className="mb-3 pb-3 border-bottom">
-//                       <small className="text-muted d-block">Created At</small>
-//                       <span className="fw-semibold">{formatDate(profile?.createdAt)}</span>
-//                     </div>
-//                     <div>
-//                       <small className="text-muted d-block">Updated At</small>
-//                       <span className="fw-semibold">{formatDate(profile?.updatedAt)}</span>
+
+//                     <div className="border rounded-3 p-3">
+//                       <small className="text-muted d-block mb-1">Display Name</small>
+//                       <div className="fw-semibold mb-3">
+//                         {profile?.business?.display_name || "-"}
+//                       </div>
+//                       <small className="text-muted d-block mb-1">Legal Name</small>
+//                       <div className="fw-semibold">
+//                         {profile?.business?.legal_name || "-"}
+//                       </div>
 //                     </div>
 //                   </CardBody>
 //                 </Card>
@@ -1329,7 +868,128 @@ export default StaffProfile;
 //             </Row>
 //           </>
 //         )}
+
+//         <Modal isOpen={isEditOpen} toggle={() => setIsEditOpen(false)} centered>
+//           <ModalHeader toggle={() => setIsEditOpen(false)}>
+//             Edit Profile
+//           </ModalHeader>
+//           <Form onSubmit={handleSaveProfile}>
+//             <ModalBody>
+//               <Row className="g-3">
+//                 <Col md={6}>
+//                   <FormGroup className="mb-0">
+//                     <Label>First Name</Label>
+//                     <Input
+//                       value={formState.firstName}
+//                       invalid={Boolean(formErrors.firstName)}
+//                       onChange={(event) =>
+//                         setFormState((prev) => ({
+//                           ...prev,
+//                           firstName: event.target.value,
+//                         }))
+//                       }
+//                     />
+//                     <FormFeedback>{formErrors.firstName}</FormFeedback>
+//                   </FormGroup>
+//                 </Col>
+//                 <Col md={6}>
+//                   <FormGroup className="mb-0">
+//                     <Label>Last Name</Label>
+//                     <Input
+//                       value={formState.lastName}
+//                       invalid={Boolean(formErrors.lastName)}
+//                       onChange={(event) =>
+//                         setFormState((prev) => ({
+//                           ...prev,
+//                           lastName: event.target.value,
+//                         }))
+//                       }
+//                     />
+//                     <FormFeedback>{formErrors.lastName}</FormFeedback>
+//                   </FormGroup>
+//                 </Col>
+//                 <Col md={6}>
+//                   <FormGroup className="mb-0">
+//                     <Label>Username</Label>
+//                     <Input
+//                       value={formState.username}
+//                       invalid={Boolean(formErrors.username)}
+//                       onChange={(event) =>
+//                         setFormState((prev) => ({
+//                           ...prev,
+//                           username: event.target.value,
+//                         }))
+//                       }
+//                     />
+//                     <FormFeedback>{formErrors.username}</FormFeedback>
+//                   </FormGroup>
+//                 </Col>
+//                 <Col md={6}>
+//                   <FormGroup className="mb-0">
+//                     <Label>Email</Label>
+//                     <Input
+//                       type="email"
+//                       value={formState.email}
+//                       invalid={Boolean(formErrors.email)}
+//                       onChange={(event) =>
+//                         setFormState((prev) => ({
+//                           ...prev,
+//                           email: event.target.value,
+//                         }))
+//                       }
+//                     />
+//                     <FormFeedback>{formErrors.email}</FormFeedback>
+//                   </FormGroup>
+//                 </Col>
+
+//                 <Col md={6}>
+//                   <FormGroup className="mb-0">
+//                     <Label>Phone</Label>
+//                     <Input
+//                       value={formState.phone}
+//                       invalid={Boolean(formErrors.phone)}
+//                       onChange={(event) =>
+//                         setFormState((prev) => ({
+//                           ...prev,
+//                           phone: event.target.value,
+//                         }))
+//                       }
+//                     />
+//                     <FormFeedback>{formErrors.phone}</FormFeedback>
+//                   </FormGroup>
+//                 </Col>
+//                 <Col md={6}>
+//                   <div className="border rounded-3 px-3 py-2 d-flex justify-content-between align-items-center">
+//                     <div>
+//                       <Label className="mb-1 d-block">2FA</Label>
+
+//                     </div>
+//                     <Input
+//                       type="switch"
+//                       checked={formState.twoFactorEnabled}
+//                       onChange={(event) =>
+//                         setFormState((prev) => ({
+//                           ...prev,
+//                           twoFactorEnabled: event.target.checked,
+//                         }))
+//                       }
+//                     />
+//                   </div>
+//                 </Col>
+//               </Row>
+//             </ModalBody>
+//             <ModalFooter>
+//               <Button color="light" onClick={() => setIsEditOpen(false)}>
+//                 Cancel
+//               </Button>
+//               <Button color="primary" type="submit" disabled={saving}>
+//                 {saving ? "Saving..." : "Save Changes"}
+//               </Button>
+//             </ModalFooter>
+//           </Form>
+//         </Modal>
 //       </Container>
+//       <ToastContainer />
 //     </div>
 //   );
 // };

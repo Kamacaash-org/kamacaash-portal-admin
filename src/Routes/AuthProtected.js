@@ -1,14 +1,21 @@
 import React, { useEffect } from "react";
-import { Navigate, Route } from "react-router-dom";
+import { Navigate, Route, useLocation } from "react-router-dom";
 import { setAuthorization } from "../helpers/api_helper";
 import { useDispatch } from "react-redux";
 
 import { useProfile } from "../Components/Hooks/UserHooks";
+import useAuthUser from "../Components/Hooks/useAuthUser";
+import {
+  getDefaultRouteForRole,
+  isPathAllowedForRole,
+} from "../helpers/permissions";
 
 import { logoutUser } from "../slices/auth/login/thunk";
 
 const AuthProtected = (props) =>{
   const dispatch = useDispatch();
+  const location = useLocation();
+  const authUser = useAuthUser();
   const { userProfile, loading, token } = useProfile();
   
   useEffect(() => {
@@ -27,6 +34,13 @@ const AuthProtected = (props) =>{
     return (
       <Navigate to={{ pathname: "/login", state: { from: props.location } }} />
     );
+  }
+
+  if (
+    authUser?.role &&
+    !isPathAllowedForRole(authUser.role, location.pathname)
+  ) {
+    return <Navigate to={getDefaultRouteForRole(authUser.role)} replace />;
   }
 
   return <>{props.children}</>;

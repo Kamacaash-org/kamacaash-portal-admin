@@ -2,6 +2,7 @@
 // import { getFirebaseBackend } from "../../../helpers/firebase_helper";
 import { login } from "../../../helpers/backend_helper";
 import { setAuthorization } from "../../../helpers/api_helper";
+import { getDefaultRouteForRole } from "../../../helpers/permissions";
 
 import {
   loginStart,
@@ -94,7 +95,7 @@ export const loginUser = (user, history) => async (dispatch) => {
         if (normalizedData?.user?.must_change_password) {
           history("/auth-change-password");
         } else {
-          history("/dashboard");
+          history(getDefaultRouteForRole(normalizedData?.user?.role));
         }
       } else {
         dispatch(apiError(normalizedResponse));

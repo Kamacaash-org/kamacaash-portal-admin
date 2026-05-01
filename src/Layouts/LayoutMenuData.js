@@ -2,12 +2,19 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { api } from "../config";
+import useAuthUser from "../Components/Hooks/useAuthUser";
+import {
+  getAllowedPathsForRole,
+  isPathAllowedForRole,
+} from "../helpers/permissions";
 const Navdata = () => {
   const history = useNavigate();
   const location = useLocation();
 
-  const authUser = JSON.parse(sessionStorage.getItem("authUser"));
-  const userId = authUser?.data?.user?._id;
+  const authUserSession = JSON.parse(sessionStorage.getItem("authUser"));
+  const authUser = useAuthUser();
+  const userId = authUserSession?.data?.user?._id;
+  const userRole = authUser?.role || authUserSession?.data?.user?.role || "";
   const isSuperAdmin = userId === "superadmin-id";
   const [iscurrentState, setIscurrentState] = useState("Dashboard");
   const [retreivedMenus, setRetreivedMenus] = useState([]);
@@ -72,6 +79,17 @@ const Navdata = () => {
 
   // Check route permission
   useEffect(() => {
+    const roleAllowedPaths = getAllowedPathsForRole(userRole);
+
+    if (roleAllowedPaths) {
+      const currentPath = location.pathname;
+
+      if (!isPathAllowedForRole(userRole, currentPath)) {
+        history("/offers");
+      }
+      return;
+    }
+
     if (!isSuperAdmin && retreivedMenus.length > 0) {
       const permittedPaths = getAllPermittedPaths(retreivedMenus);
       const currentPath = location.pathname;
@@ -91,7 +109,7 @@ const Navdata = () => {
         history("/not-found");
       }
     }
-  }, [location.pathname, retreivedMenus, isSuperAdmin, history]);
+  }, [location.pathname, retreivedMenus, isSuperAdmin, history, userRole]);
 
   // Static full-access menu for superadmin
   const menuItems = [
@@ -148,39 +166,39 @@ const Navdata = () => {
     },
 
     // ✅ Reviews separated
-    {
-      id: "REVIEWS",
-      label: "Reviews",
-      icon: "ri-star-smile-line",
-      link: "/#",
-      stateVariables: menuStates["REVIEWS"] || false,
-      click: function (e) {
-        e.preventDefault();
-        setMenuStates((prev) => ({ ...prev, REVIEWS: !prev.REVIEWS }));
-        setIscurrentState("REVIEWS");
-        updateIconSidebar(e);
-      },
-      subItems: [
-        {
-          id: "BusinessReviews",
-          label: "All Reviews",
-          link: "/reviews",
-          parentId: "REVIEWS",
-        },
-        {
-          id: "ReviewRequests",
-          label: "Featured Review Requests",
-          link: "/reviews/feature-requests",
-          parentId: "REVIEWS",
-        },
-        // {
-        //   id: "Moderation",
-        //   label: "Moderation",
-        //   link: "/reviews/moderation",
-        //   parentId: "REVIEWS",
-        // },
-      ],
-    },
+    // {
+    //   id: "REVIEWS",
+    //   label: "Reviews",
+    //   icon: "ri-star-smile-line",
+    //   link: "/#",
+    //   stateVariables: menuStates["REVIEWS"] || false,
+    //   click: function (e) {
+    //     e.preventDefault();
+    //     setMenuStates((prev) => ({ ...prev, REVIEWS: !prev.REVIEWS }));
+    //     setIscurrentState("REVIEWS");
+    //     updateIconSidebar(e);
+    //   },
+    //   subItems: [
+    //     {
+    //       id: "BusinessReviews",
+    //       label: "All Reviews",
+    //       link: "/reviews",
+    //       parentId: "REVIEWS",
+    //     },
+    //     {
+    //       id: "ReviewRequests",
+    //       label: "Featured Review Requests",
+    //       link: "/reviews/feature-requests",
+    //       parentId: "REVIEWS",
+    //     },
+    //     // {
+    //     //   id: "Moderation",
+    //     //   label: "Moderation",
+    //     //   link: "/reviews/moderation",
+    //     //   parentId: "REVIEWS",
+    //     // },
+    //   ],
+    // },
 
     {
       id: "OFFERS_SECTION",
@@ -285,6 +303,50 @@ const Navdata = () => {
       ],
     },
   ];
+
+  const businessOwnerFlatMenu = [
+    {
+      id: "BO_OFFERS",
+      label: "Offers",
+      icon: "ri-price-tag-3-line",
+      link: "/offers",
+    },
+    {
+      id: "BO_MANAGE_ORDERS",
+      label: "Manage Orders",
+      icon: "ri-shopping-bag-3-line",
+      link: "/orders",
+    },
+    {
+      id: "BO_ORDER_HISTORY",
+      label: "Order History",
+      icon: "ri-history-line",
+      link: "/orders/history",
+    },
+    {
+      id: "BO_SETTINGS",
+      label: "Settings",
+      icon: "ri-store-2-line",
+      link: "/business/profile-settings",
+    },
+    {
+      id: "BO_PROFILE",
+      label: "Profile",
+      icon: "ri-user-line",
+      link: "/users/staff-profile",
+    },
+    // {
+    //   id: "BO_CHANGE_PASSWORD",
+    //   label: "Change Password",
+    //   icon: "ri-lock-password-line",
+    //   link: "/auth-change-password",
+    // },
+  ];
+
+  const visibleMenuItems =
+    userRole === "BUSINESS_OWNER"
+      ? businessOwnerFlatMenu
+      : menuItems;
 
   // const menuItems = [
   //   {
@@ -459,7 +521,7 @@ const Navdata = () => {
 
   // const menuToRender = userId === "superadmin-id" ? menuItems : dynamicMenu;
 
-  return <React.Fragment>{menuItems}</React.Fragment>;
+  return <React.Fragment>{visibleMenuItems}</React.Fragment>;
 };
 
 export default Navdata;

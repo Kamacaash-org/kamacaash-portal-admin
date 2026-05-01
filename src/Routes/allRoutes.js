@@ -29,6 +29,13 @@ import Alt404 from "../pages/AuthenticationInner/Errors/Alt404";
 import Error500 from "../pages/AuthenticationInner/Errors/Error500";
 
 import Offlinepage from "../pages/AuthenticationInner/Errors/Offlinepage";
+import useAuthUser from "../Components/Hooks/useAuthUser";
+import { getDefaultRouteForRole } from "../helpers/permissions";
+
+const RootRedirect = () => {
+  const authUser = useAuthUser();
+  return <Navigate to={getDefaultRouteForRole(authUser?.role)} />;
+};
 
 const authProtectedRoutes = [
   // Dashboard
@@ -69,7 +76,7 @@ const authProtectedRoutes = [
   {
     path: "/",
     exact: true,
-    component: <Navigate to="/dashboard" />,
+    component: <RootRedirect />,
   },
   // { path: "*", component: <Navigate to="/not-found-404" /> },
 ];

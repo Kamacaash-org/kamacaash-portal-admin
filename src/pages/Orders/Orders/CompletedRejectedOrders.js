@@ -1,367 +1,428 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
+  Badge,
+  Button,
   Card,
-  CardHeader,
   CardBody,
+  CardHeader,
   Col,
   Container,
-  Row,
-  Form,
+  FormGroup,
   Input,
   Label,
-  FormGroup,
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
-  Button,
-  Badge,
   Nav,
   NavItem,
   NavLink,
+  Row,
   TabContent,
   TabPane,
-  Alert,
 } from "reactstrap";
 import DataTable from "react-data-table-component";
-import Select from "react-select";
-
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import BreadCrumb from "../../../Components/Common/BreadCrumb";
-import Loader from "../../../Components/Common/Loader";
-import NoDataFound from "../../../Components/Common/NoDataFound";
-
 import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "reselect";
 
-// Redux thunks
-import {
-  getCompletedOrdersByBusinessID as onGetCompletedOrders,
-  getCancelledOrdersByBusinessID as onGetCancelledOrders,
-} from "../../../slices/thunks";
+import BreadCrumb from "../../../Components/Common/BreadCrumb";
+import Loader from "../../../Components/Common/Loader";
+import NoDataFound from "../../../Components/Common/NoDataFound";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
+import {
+  getCancelledOrdersByBusinessID as onGetCancelledOrders,
+  getCompletedOrdersByBusinessID as onGetCompletedOrders,
+} from "../../../slices/thunks";
 
-// Selectors
 const selectCompletedOrdersData = createSelector(
   (state) => state.Orders,
-  (completedOrders) => completedOrders.completedOrders || [],
+  (ordersState) => ordersState.completedOrders || [],
 );
 
 const selectCancelledOrdersData = createSelector(
   (state) => state.Orders,
-  (cancelledOrders) => cancelledOrders.cancelledOrders || [],
+  (ordersState) => ordersState.cancelledOrders || [],
 );
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+});
+
+const formatCurrency = (value) => currencyFormatter.format(Number(value) || 0);
+
+const formatDateTime = (value, timezone) => {
+  if (!value) return "N/A";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: timezone || "Africa/Mogadishu",
+  }).format(new Date(value));
+};
+
+const formatRelativeTime = (value) => {
+  if (!value) return "N/A";
+
+  const now = new Date();
+  const date = new Date(value);
+  const diffMinutes = Math.round((now.getTime() - date.getTime()) / 60000);
+
+  if (diffMinutes < 60) return `${diffMinutes} min ago`;
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} hr ago`;
+
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays} day ago`;
+};
+
+const toDisplayPaymentStatus = (status) => {
+  switch (status) {
+    case "CONFIRMED":
+      return "Payment confirmed";
+    case "REFUNDED":
+      return "Payment refunded";
+    case "PENDING":
+      return "Payment pending";
+    case "FAILED":
+      return "Payment failed";
+    default:
+      return status
+        ? status
+            .replaceAll("_", " ")
+            .toLowerCase()
+            .replace(/\b\w/g, (char) => char.toUpperCase())
+        : "N/A";
+  }
+};
+
+const getStatusBadge = (status) => {
+  switch (status) {
+    case "COLLECTED":
+      return {
+        color: "success",
+        icon: "ri-checkbox-circle-line",
+        text: "Collected",
+      };
+    case "CANCELLED":
+    case "CANCELLED_BY_USER":
+      return {
+        color: "danger",
+        icon: "ri-close-circle-line",
+        text: "Cancelled by customer",
+      };
+    case "CANCELLED_BY_ADMIN":
+      return {
+        color: "danger",
+        icon: "ri-admin-line",
+        text: "Cancelled by admin",
+      };
+    case "EXPIRED":
+      return {
+        color: "warning",
+        icon: "ri-time-line",
+        text: "Expired",
+      };
+    case "NO_SHOW":
+      return {
+        color: "warning",
+        icon: "ri-user-unfollow-line",
+        text: "Customer did not show",
+      };
+    case "CLOSED":
+      return {
+        color: "dark",
+        icon: "ri-lock-line",
+        text: "Closed",
+      };
+    default:
+      return {
+        color: "secondary",
+        icon: "ri-information-line",
+        text: status
+          ? status
+              .replaceAll("_", " ")
+              .toLowerCase()
+              .replace(/\b\w/g, (char) => char.toUpperCase())
+          : "Unknown",
+      };
+  }
+};
+
+const normalizeOrder = (order, type) => {
+  const timezone = order?.timezone || "Africa/Mogadishu";
+  const customerName =
+    order?.user?.full_name ||
+    order?.user?.email ||
+    order?.user?.phone ||
+    "Unknown customer";
+
+  return {
+    id: order?.id,
+    orderNumber: order?.order_number || "N/A",
+    quantity: Number(order?.quantity) || 0,
+    unitPrice: Number(order?.unit_price) || 0,
+    totalAmount: Number(order?.total_amount) || 0,
+    status: order?.status || "UNKNOWN",
+    paymentStatus: order?.payment_status || "N/A",
+    pickupStartTime: order?.pickup_start_time,
+    pickupEndTime: order?.pickup_end_time,
+    timezone,
+    createdAt: order?.created_at,
+    collectedAt: order?.collected_at,
+    cancelledAt: order?.cancelled_at,
+    cancellationReason: order?.cancellation_reason,
+    isUrgent: Boolean(order?.is_urgent),
+    customerName,
+    customerPhone: order?.user?.phone || "N/A",
+    customerEmail: order?.user?.email || "N/A",
+    businessName: order?.business?.display_name || "N/A",
+    offerTitle: order?.offer?.title || "Untitled offer",
+    offerImage: order?.offer?.main_image_url || "",
+    type,
+    searchText: [
+      order?.order_number,
+      customerName,
+      order?.user?.phone,
+      order?.user?.email,
+      order?.offer?.title,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+  };
+};
+
+const getTodayDateString = () => {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const localDate = new Date(now.getTime() - offset * 60000);
+  return localDate.toISOString().slice(0, 10);
+};
 
 const CompletedRejectedOrdersPage = () => {
   document.title = "Order History | Kamacaash";
 
   const dispatch = useDispatch();
+  const userAuth = useAuthUser();
   const completedOrdersData = useSelector(selectCompletedOrdersData);
   const cancelledOrdersData = useSelector(selectCancelledOrdersData);
 
-  // State management
   const [completedOrders, setCompletedOrders] = useState([]);
   const [cancelledOrders, setCancelledOrders] = useState([]);
+  const [filteredCompletedOrders, setFilteredCompletedOrders] = useState([]);
+  const [filteredCancelledOrders, setFilteredCancelledOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [activeTab, setActiveTab] = useState("completed");
-  const [filteredCompletedOrders, setFilteredCompletedOrders] = useState([]);
-  const [filteredCancelledOrders, setFilteredCancelledOrders] = useState([]);
-
-  // Filters state
+  const today = useMemo(() => getTodayDateString(), []);
   const [filters, setFilters] = useState({
     search: "",
-    dateRange: "all", // 'all', 'today', 'week', 'month'
-    amountRange: "all", // 'all', '0-50', '50-100', '100+'
+    amountRange: "all",
+    startDate: today,
+    endDate: today,
   });
 
-  // Stats state
-  const [stats, setStats] = useState({
-    totalCompleted: 0,
-    totalCancelled: 0,
-    totalRevenue: 0,
-    avgOrderValue: 0,
-    completionRate: 0,
-  });
-  const userAuth = useAuthUser();
+  const businessId = userAuth?.businessId;
 
-  // Fetch data
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const businessId = userAuth.businessId; // Replace with actual business ID
-      await Promise.all([
-        dispatch(onGetCompletedOrders(businessId)),
-        dispatch(onGetCancelledOrders(businessId)),
-      ]);
-    } catch (error) {
-      console.error("Error loading orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [dispatch]);
-
-  // Load data
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Update lists and stats when data changes
-  useEffect(() => {
-    const initialCompleted = Array.isArray(completedOrdersData)
-      ? completedOrdersData
-      : [];
-    const initialCancelled = Array.isArray(cancelledOrdersData)
-      ? cancelledOrdersData
-      : [];
-
-    setCompletedOrders(initialCompleted);
-    setCancelledOrders(initialCancelled);
-
-    // Calculate stats
-    const totalCompleted = initialCompleted.length;
-    const totalCancelled = initialCancelled.length;
+  const stats = useMemo(() => {
+    const totalCompleted = completedOrders.length;
+    const totalCancelled = cancelledOrders.length;
     const totalOrders = totalCompleted + totalCancelled;
-    const totalRevenue = initialCompleted.reduce(
-      (sum, order) => sum + (order.amount || 0),
+    const totalRevenue = completedOrders.reduce(
+      (sum, order) => sum + (Number(order.totalAmount) || 0),
       0,
     );
     const avgOrderValue =
       totalCompleted > 0 ? totalRevenue / totalCompleted : 0;
     const completionRate =
-      totalOrders > 0 ? (totalCompleted / totalOrders) * 100 : 0;
+      totalOrders > 0 ? Math.round((totalCompleted / totalOrders) * 100) : 0;
 
-    setStats({
+    return {
       totalCompleted,
       totalCancelled,
       totalRevenue,
-      avgOrderValue: Math.round(avgOrderValue * 100) / 100,
-      completionRate: Math.round(completionRate),
-    });
+      avgOrderValue,
+      completionRate,
+    };
+  }, [cancelledOrders, completedOrders]);
 
-    // Apply filters
-    applyFilters(initialCompleted, initialCancelled, filters);
-  }, [completedOrdersData, cancelledOrdersData, filters]);
+  const applyFilters = useCallback((completedList, cancelledList, filterState) => {
+    const searchValue = filterState.search.trim().toLowerCase();
 
-  // Apply filters
-  const applyFilters = (completedList, cancelledList, filterSettings) => {
-    let filteredCompleted = completedList;
-    let filteredCancelled = cancelledList;
+    const matchesAmount = (order) => {
+      const amount = Number(order.totalAmount) || 0;
 
-    // Search filter
-    if (filterSettings.search) {
-      const searchTerm = filterSettings.search.toLowerCase();
-      const searchFilter = (order) =>
-        order.user?.fullName?.toLowerCase().includes(searchTerm) ||
-        order.user?.phoneNumber?.includes(searchTerm) ||
-        order.orderId?.toLowerCase().includes(searchTerm) ||
-        order.package?.title?.toLowerCase().includes(searchTerm);
+      switch (filterState.amountRange) {
+        case "0-5":
+          return amount <= 5;
+        case "5-10":
+          return amount > 5 && amount <= 10;
+        case "10+":
+          return amount > 10;
+        default:
+          return true;
+      }
+    };
 
-      filteredCompleted = filteredCompleted.filter(searchFilter);
-      filteredCancelled = filteredCancelled.filter(searchFilter);
+    const matchesSearch = (order) =>
+      searchValue ? order.searchText.includes(searchValue) : true;
+
+    setFilteredCompletedOrders(
+      completedList.filter(
+        (order) => matchesSearch(order) && matchesAmount(order),
+      ),
+    );
+    setFilteredCancelledOrders(
+      cancelledList.filter(
+        (order) => matchesSearch(order) && matchesAmount(order),
+      ),
+    );
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    if (!businessId) return;
+
+    setLoading(true);
+    try {
+      await Promise.all([
+        dispatch(
+          onGetCompletedOrders({
+            businessId,
+            start: filters.startDate,
+            end: filters.endDate,
+          }),
+        ),
+        dispatch(
+          onGetCancelledOrders({
+            businessId,
+            start: filters.startDate,
+            end: filters.endDate,
+          }),
+        ),
+      ]);
+    } catch (error) {
+      console.error("Error loading order history:", error);
+    } finally {
+      setLoading(false);
     }
+  }, [businessId, dispatch, filters.endDate, filters.startDate]);
 
-    // Date range filter
-    if (filterSettings.dateRange !== "all") {
-      const now = new Date();
-      const dateFilter = (order) => {
-        const orderDate = new Date(
-          order.completedAt || order.cancelledAt || order.createdAt,
-        );
-        switch (filterSettings.dateRange) {
-          case "today":
-            return orderDate.toDateString() === now.toDateString();
-          case "week":
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            return orderDate >= weekAgo;
-          case "month":
-            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            return orderDate >= monthAgo;
-          default:
-            return true;
-        }
-      };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-      filteredCompleted = filteredCompleted.filter(dateFilter);
-      filteredCancelled = filteredCancelled.filter(dateFilter);
-    }
+  useEffect(() => {
+    setCompletedOrders(
+      Array.isArray(completedOrdersData)
+        ? completedOrdersData.map((order) => normalizeOrder(order, "completed"))
+        : [],
+    );
+  }, [completedOrdersData]);
 
-    // Amount range filter
-    if (filterSettings.amountRange !== "all") {
-      const amountFilter = (order) => {
-        const amount = order.amount || 0;
-        switch (filterSettings.amountRange) {
-          case "0-5":
-            return amount <= 5;
-          case "5-10":
-            return amount > 5 && amount <= 10;
-          case "10+":
-            return amount > 10;
-          default:
-            return true;
-        }
-      };
+  useEffect(() => {
+    setCancelledOrders(
+      Array.isArray(cancelledOrdersData)
+        ? cancelledOrdersData.map((order) => normalizeOrder(order, "cancelled"))
+        : [],
+    );
+  }, [cancelledOrdersData]);
 
-      filteredCompleted = filteredCompleted.filter(amountFilter);
-      filteredCancelled = filteredCancelled.filter(amountFilter);
-    }
+  useEffect(() => {
+    applyFilters(completedOrders, cancelledOrders, filters);
+  }, [applyFilters, cancelledOrders, completedOrders, filters]);
 
-    setFilteredCompletedOrders(filteredCompleted);
-    setFilteredCancelledOrders(filteredCancelled);
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prevFilters) => ({ ...prevFilters, [name]: value }));
-  };
-
-  // Open modal for view
-  const handleView = (order, type) => {
-    setSelectedOrder({ ...order, type });
+  const openViewModal = (order) => {
+    setSelectedOrder(order);
     setViewModal(true);
   };
 
-  // Get status badge color and icon
-  const getStatusBadge = (status, type) => {
-    if (type === "cancelled") {
-      return {
-        color: "danger",
-        icon: "ri-close-circle-line",
-        text: "CANCELLED",
-      };
-    }
-
-    switch (status) {
-      case "COMPLETED":
-        return {
-          color: "success",
-          icon: "ri-checkbox-circle-line",
-          text: "COMPLETED",
-        };
-      case "CANCELLED":
-        return {
-          color: "danger",
-          icon: "ri-close-circle-line",
-          text: "CANCELLED",
-        };
-      default:
-        return {
-          color: "secondary",
-          icon: "ri-question-line",
-          text: status,
-        };
-    }
-  };
-
-  // Format date with time
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
-  // Format relative time
-  const formatRelativeTime = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    } else {
-      return `${diffDays}d ago`;
-    }
-  };
-
-  // Completed Orders columns
   const completedColumns = [
     {
       name: "#",
-      cell: (row, index) => index + 1,
+      width: "70px",
+      cell: (_, index) => index + 1,
     },
     {
-      name: "ORDER ID",
-      selector: (row) => row.orderId,
-      cell: (row) => <strong className="text-success">#{row.orderId}</strong>,
-    },
-    {
-      name: "CUSTOMER",
+      name: "Order",
+      grow: 1.4,
       cell: (row) => (
-        <div>
-          <div className="fw-semibold">{row.user?.fullName || "N/A"}</div>
-          <small className="text-muted">{row.user?.phoneNumber || "N/A"}</small>
+        <div className="py-2">
+          <div className="fw-semibold text-success">{row.orderNumber}</div>
+          <small className="text-muted">
+            Placed: {formatDateTime(row.createdAt, row.timezone)}
+          </small>
         </div>
       ),
     },
     {
-      name: "PACKAGE",
+      name: "Customer",
+      grow: 1.4,
       cell: (row) => (
-        <div className="d-flex align-items-center">
-          {row.package?.packageImg ? (
+        <div className="py-2">
+          <div className="fw-semibold">{row.customerName}</div>
+          <small className="text-muted">{row.customerPhone}</small>
+        </div>
+      ),
+    },
+    {
+      name: "Offer",
+      grow: 1.8,
+      cell: (row) => (
+        <div className="d-flex align-items-center py-2">
+          {row.offerImage ? (
             <img
-              src={row.package.packageImg}
-              alt={row.package.title}
+              src={row.offerImage}
+              alt={row.offerTitle}
               className="rounded me-3"
-              style={{ width: "40px", height: "40px", objectFit: "cover" }}
+              style={{ width: "44px", height: "44px", objectFit: "cover" }}
             />
           ) : (
             <div
               className="rounded bg-light d-flex align-items-center justify-content-center me-3"
-              style={{ width: "40px", height: "40px" }}
+              style={{ width: "44px", height: "44px" }}
             >
-              <i className="ri-gift-line text-muted"></i>
+              <i className="ri-image-line text-muted"></i>
             </div>
           )}
           <div>
-            <div
-              className="fw-semibold text-truncate"
-              style={{ maxWidth: "200px" }}
-            >
-              {row.package?.title || "N/A"}
-            </div>
+            <div className="fw-semibold">{row.offerTitle}</div>
             <small className="text-muted">Qty: {row.quantity}</small>
           </div>
         </div>
       ),
     },
     {
-      name: "AMOUNT",
-      cell: (row) => `$${row.amount || 0}`,
-      // sortable: true,
+      name: "Amount",
+      minWidth: "140px",
+      cell: (row) => formatCurrency(row.totalAmount),
     },
     {
-      name: "COMPLETED AT",
+      name: "Collected At",
+      grow: 1.4,
       cell: (row) => (
-        <div>
-          <div>{formatDateTime(row.completedAt)}</div>
+        <div className="py-2">
+          <div>{formatDateTime(row.collectedAt, row.timezone)}</div>
           <small className="text-muted">
-            {formatRelativeTime(row.completedAt)}
+            {formatRelativeTime(row.collectedAt)}
           </small>
         </div>
       ),
-      // sortable: true
     },
-    // {
-    //     name: 'COMPLETED BY',
-    //     cell: row => row.completedBy || 'System',
-    // },
     {
-      name: "ACTIONS",
+      name: "Actions",
+      minWidth: "110px",
       cell: (row) => (
         <Button
           color="outline-info"
           size="sm"
-          onClick={() => handleView(row, "completed")}
-          title="View Details"
+          onClick={() => openViewModal(row)}
           className="btn-icon"
         >
           <i className="ri-eye-line" />
@@ -370,94 +431,99 @@ const CompletedRejectedOrdersPage = () => {
     },
   ];
 
-  // Cancelled Orders columns
   const cancelledColumns = [
     {
       name: "#",
-      cell: (row, index) => index + 1,
+      width: "70px",
+      cell: (_, index) => index + 1,
     },
     {
-      name: "ORDER ID",
-      selector: (row) => row.orderId,
-      cell: (row) => <strong className="text-danger">#{row.orderId}</strong>,
-    },
-    {
-      name: "CUSTOMER",
+      name: "Order",
+      grow: 1.4,
       cell: (row) => (
-        <div>
-          <div className="fw-semibold">{row.user?.fullName || "N/A"}</div>
-          <small className="text-muted">{row.user?.phoneNumber || "N/A"}</small>
+        <div className="py-2">
+          <div className="fw-semibold text-danger">{row.orderNumber}</div>
+          <small className="text-muted">
+            Placed: {formatDateTime(row.createdAt, row.timezone)}
+          </small>
         </div>
       ),
     },
     {
-      name: "PACKAGE",
+      name: "Customer",
+      grow: 1.4,
       cell: (row) => (
-        <div className="d-flex align-items-center">
-          {row.package?.packageImg ? (
+        <div className="py-2">
+          <div className="fw-semibold">{row.customerName}</div>
+          <small className="text-muted">{row.customerPhone}</small>
+        </div>
+      ),
+    },
+    {
+      name: "Offer",
+      grow: 1.8,
+      cell: (row) => (
+        <div className="d-flex align-items-center py-2">
+          {row.offerImage ? (
             <img
-              src={row.package.packageImg}
-              alt={row.package.title}
+              src={row.offerImage}
+              alt={row.offerTitle}
               className="rounded me-3"
-              style={{ width: "40px", height: "40px", objectFit: "cover" }}
+              style={{ width: "44px", height: "44px", objectFit: "cover" }}
             />
           ) : (
             <div
               className="rounded bg-light d-flex align-items-center justify-content-center me-3"
-              style={{ width: "40px", height: "40px" }}
+              style={{ width: "44px", height: "44px" }}
             >
-              <i className="ri-gift-line text-muted"></i>
+              <i className="ri-image-line text-muted"></i>
             </div>
           )}
           <div>
-            <div
-              className="fw-semibold text-truncate"
-              style={{ maxWidth: "200px" }}
-            >
-              {row.package?.title || "N/A"}
-            </div>
+            <div className="fw-semibold">{row.offerTitle}</div>
             <small className="text-muted">Qty: {row.quantity}</small>
           </div>
         </div>
       ),
     },
     {
-      name: "AMOUNT",
-      cell: (row) => `$${row.amount || 0}`,
-      // sortable: true,
+      name: "Amount",
+      minWidth: "140px",
+      cell: (row) => formatCurrency(row.totalAmount),
     },
     {
-      name: "CANCELLED AT",
+      name: "Cancelled At",
+      grow: 1.4,
       cell: (row) => (
-        <div>
-          <div>{formatDateTime(row.cancelledAt)}</div>
+        <div className="py-2">
+          <div>{formatDateTime(row.cancelledAt, row.timezone)}</div>
           <small className="text-muted">
             {formatRelativeTime(row.cancelledAt)}
           </small>
         </div>
       ),
-      // sortable: true
     },
     {
-      name: "REASON",
+      name: "Reason",
+      grow: 1.5,
       cell: (row) => (
         <div
           className="text-truncate"
-          style={{ maxWidth: "200px" }}
-          title={row.cancellationReason}
+          style={{ maxWidth: "220px" }}
+          title={row.cancellationReason || "No reason provided"}
         >
           {row.cancellationReason || "No reason provided"}
         </div>
       ),
     },
     {
-      name: "ACTIONS",
+      name: "Actions",
+      minWidth: "110px",
       cell: (row) => (
         <Button
           color="outline-info"
           size="sm"
-          onClick={() => handleView(row, "cancelled")}
-          title="View Details"
+          onClick={() => openViewModal(row)}
           className="btn-icon"
         >
           <i className="ri-eye-line" />
@@ -466,13 +532,11 @@ const CompletedRejectedOrdersPage = () => {
     },
   ];
 
-  // Custom styles for DataTable
   const customStyles = {
     headCells: {
       style: {
         fontWeight: "600",
         fontSize: "0.875rem",
-        // backgroundColor: '#f8f9fa',
       },
     },
     cells: {
@@ -488,7 +552,6 @@ const CompletedRejectedOrdersPage = () => {
       <Container fluid>
         <BreadCrumb title="Order History" pageTitle="Orders" />
 
-        {/* Stats Cards */}
         <Row className="mb-4">
           <Col xl={3} md={6}>
             <Card className="card-animate">
@@ -500,7 +563,6 @@ const CompletedRejectedOrdersPage = () => {
                     </p>
                     <h4 className="mb-0">{stats.totalCompleted}</h4>
                     <p className="text-success mb-0">
-                      <i className="ri-arrow-up-line align-middle"></i>
                       {stats.completionRate}% completion rate
                     </p>
                   </div>
@@ -515,6 +577,7 @@ const CompletedRejectedOrdersPage = () => {
               </CardBody>
             </Card>
           </Col>
+
           <Col xl={3} md={6}>
             <Card className="card-animate">
               <CardBody>
@@ -525,7 +588,6 @@ const CompletedRejectedOrdersPage = () => {
                     </p>
                     <h4 className="mb-0">{stats.totalCancelled}</h4>
                     <p className="text-danger mb-0">
-                      <i className="ri-arrow-down-line align-middle"></i>
                       {100 - stats.completionRate}% cancellation rate
                     </p>
                   </div>
@@ -540,6 +602,7 @@ const CompletedRejectedOrdersPage = () => {
               </CardBody>
             </Card>
           </Col>
+
           <Col xl={3} md={6}>
             <Card className="card-animate">
               <CardBody>
@@ -548,7 +611,7 @@ const CompletedRejectedOrdersPage = () => {
                     <p className="text-uppercase fw-medium text-muted mb-0">
                       Total Revenue
                     </p>
-                    <h4 className="mb-0">${stats.totalRevenue}</h4>
+                    <h4 className="mb-0">{formatCurrency(stats.totalRevenue)}</h4>
                     <p className="text-muted mb-0">From completed orders</p>
                   </div>
                   <div className="flex-shrink-0">
@@ -562,6 +625,7 @@ const CompletedRejectedOrdersPage = () => {
               </CardBody>
             </Card>
           </Col>
+
           <Col xl={3} md={6}>
             <Card className="card-animate">
               <CardBody>
@@ -570,7 +634,9 @@ const CompletedRejectedOrdersPage = () => {
                     <p className="text-uppercase fw-medium text-muted mb-0">
                       Avg Order Value
                     </p>
-                    <h4 className="mb-0">${stats.avgOrderValue}</h4>
+                    <h4 className="mb-0">
+                      {formatCurrency(stats.avgOrderValue)}
+                    </h4>
                     <p className="text-muted mb-0">Per completed order</p>
                   </div>
                   <div className="flex-shrink-0">
@@ -586,7 +652,6 @@ const CompletedRejectedOrdersPage = () => {
           </Col>
         </Row>
 
-        {/* Main Content */}
         <Card>
           <CardHeader className="bg-light">
             <Row className="align-items-center">
@@ -605,7 +670,6 @@ const CompletedRejectedOrdersPage = () => {
             </Row>
           </CardHeader>
           <CardBody className="p-0">
-            {/* Tabs Navigation */}
             <Nav className="nav-pills nav-justified bg-light" role="tablist">
               <NavItem>
                 <NavLink
@@ -633,97 +697,91 @@ const CompletedRejectedOrdersPage = () => {
               </NavItem>
             </Nav>
 
-            {/* Filter Controls */}
             <div className="p-3 border-bottom">
               <Row className="g-3 align-items-end">
-                <Col md={4}>
+                <Col md={6}>
                   <FormGroup className="mb-0">
                     <Label className="form-label">Search Orders</Label>
                     <Input
                       type="text"
                       name="search"
-                      placeholder="Search by customer, order ID, or package..."
+                      placeholder="Search by order number, customer, phone, email, or offer..."
                       value={filters.search}
-                      onChange={handleFilterChange}
-                      className="form-control"
-                    />
-                  </FormGroup>
-                </Col>
-                <Col md={3}>
-                  <FormGroup className="mb-0">
-                    <Label className="form-label">Date Range</Label>
-                    <Select
-                      options={[
-                        { value: "all", label: "All Time" },
-                        { value: "today", label: "Today" },
-                        { value: "week", label: "Last 7 Days" },
-                        { value: "month", label: "Last 30 Days" },
-                      ]}
-                      value={{
-                        value: filters.dateRange,
-                        label:
-                          filters.dateRange === "all"
-                            ? "All Time"
-                            : filters.dateRange === "today"
-                              ? "Today"
-                              : filters.dateRange === "week"
-                                ? "Last 7 Days"
-                                : "Last 30 Days",
-                      }}
-                      onChange={(opt) =>
+                      onChange={(event) =>
                         setFilters((prev) => ({
                           ...prev,
-                          dateRange: opt.value,
+                          search: event.target.value,
                         }))
                       }
-                      placeholder="Select date range"
-                      className="react-select"
-                      classNamePrefix="select"
-                    />
-                  </FormGroup>
-                </Col>
-                <Col md={3}>
-                  <FormGroup className="mb-0">
-                    <Label className="form-label">Amount Range</Label>
-                    <Select
-                      options={[
-                        { value: "all", label: "All Amounts" },
-                        { value: "0-5", label: "$0 - $5" },
-                        { value: "5-10", label: "$5 - $10" },
-                        { value: "10+", label: "$10+" },
-                      ]}
-                      value={{
-                        value: filters.amountRange,
-                        label:
-                          filters.amountRange === "all"
-                            ? "All Amounts"
-                            : filters.amountRange === "0-5"
-                              ? "$0 - $5"
-                              : filters.amountRange === "5-10"
-                                ? "$5 - $10"
-                                : "$10+",
-                      }}
-                      onChange={(opt) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          amountRange: opt.value,
-                        }))
-                      }
-                      placeholder="Select amount range"
-                      className="react-select"
-                      classNamePrefix="select"
                     />
                   </FormGroup>
                 </Col>
                 <Col md={2}>
-                  <div className="d-grid mb-3">
+                  <FormGroup className="mb-0">
+                    <Label className="form-label">Start Date</Label>
+                    <Input
+                      type="date"
+                      value={filters.startDate}
+                      max={filters.endDate}
+                      onChange={(event) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          startDate: event.target.value,
+                        }))
+                      }
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md={2}>
+                  <FormGroup className="mb-0">
+                    <Label className="form-label">End Date</Label>
+                    <Input
+                      type="date"
+                      value={filters.endDate}
+                      min={filters.startDate}
+                      onChange={(event) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          endDate: event.target.value,
+                        }))
+                      }
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md={2}>
+                  <FormGroup className="mb-0">
+                    <Label className="form-label">Amount Range</Label>
+                    <Input
+                      type="select"
+                      value={filters.amountRange}
+                      onChange={(event) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          amountRange: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="all">All Amounts</option>
+                      <option value="0-5">$0 - $5</option>
+                      <option value="5-10">$5 - $10</option>
+                      <option value="10+">$10+</option>
+                    </Input>
+                  </FormGroup>
+                </Col>
+                <Col md={12}>
+                  <div className="d-flex gap-2 justify-content-end">
+                    <Button color="primary" onClick={fetchData} disabled={loading}>
+                      <i className="ri-filter-3-line me-1"></i>
+                      Apply
+                    </Button>
                     <Button
                       color="light"
                       onClick={() =>
                         setFilters({
                           search: "",
-                          dateRange: "all",
                           amountRange: "all",
+                          startDate: today,
+                          endDate: today,
                         })
                       }
                     >
@@ -735,9 +793,7 @@ const CompletedRejectedOrdersPage = () => {
               </Row>
             </div>
 
-            {/* Tab Content */}
             <TabContent activeTab={activeTab}>
-              {/* Completed Orders Tab */}
               <TabPane tabId="completed">
                 {loading ? (
                   <div className="text-center py-5">
@@ -749,24 +805,20 @@ const CompletedRejectedOrdersPage = () => {
                     data={filteredCompletedOrders}
                     pagination
                     responsive
-                    // highlightOnHover
+                    customStyles={customStyles}
                     noDataComponent={
                       <NoDataFound
                         message={
-                          filters.search ||
-                          filters.dateRange !== "all" ||
-                          filters.amountRange !== "all"
+                          filters.search || filters.amountRange !== "all"
                             ? "Try adjusting your search criteria."
-                            : "No orders have been completed yet."
+                            : "No completed orders found for the selected date range."
                         }
                       />
                     }
-                    customStyles={customStyles}
                   />
                 )}
               </TabPane>
 
-              {/* Cancelled Orders Tab */}
               <TabPane tabId="cancelled">
                 {loading ? (
                   <div className="text-center py-5">
@@ -778,19 +830,16 @@ const CompletedRejectedOrdersPage = () => {
                     data={filteredCancelledOrders}
                     pagination
                     responsive
-                    // highlightOnHover
+                    customStyles={customStyles}
                     noDataComponent={
                       <NoDataFound
                         message={
-                          filters.search ||
-                          filters.dateRange !== "all" ||
-                          filters.amountRange !== "all"
+                          filters.search || filters.amountRange !== "all"
                             ? "Try adjusting your search criteria."
-                            : "No orders have been cancelled yet."
+                            : "No cancelled orders found for the selected date range."
                         }
                       />
                     }
-                    customStyles={customStyles}
                   />
                 )}
               </TabPane>
@@ -799,7 +848,6 @@ const CompletedRejectedOrdersPage = () => {
         </Card>
       </Container>
 
-      {/* View Order Modal */}
       <Modal
         isOpen={viewModal}
         toggle={() => setViewModal(false)}
@@ -807,141 +855,133 @@ const CompletedRejectedOrdersPage = () => {
         centered
       >
         <ModalHeader toggle={() => setViewModal(false)} className="bg-light">
-          <i className="ri-shopping-cart-line me-2"></i>
-          Order Details - #{selectedOrder?.orderId}
+          <i className="ri-eye-line me-2"></i>
+          Order Details
         </ModalHeader>
         <ModalBody>
-          {selectedOrder && (
-            <Row>
+          {selectedOrder ? (
+            <Row className="g-3">
               <Col md={6}>
-                <h6>Customer Information</h6>
-                <div className="border rounded p-3 mb-3">
-                  <p>
-                    <strong>Name:</strong>{" "}
-                    {selectedOrder.user?.fullName || "N/A"}
+                <h6>Customer</h6>
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Name:</strong> {selectedOrder.customerName}
                   </p>
-                  <p>
-                    <strong>Phone:</strong>{" "}
-                    {selectedOrder.user?.phoneNumber || "N/A"}
+                  <p className="mb-2">
+                    <strong>Phone:</strong> {selectedOrder.customerPhone}
                   </p>
-                  {/* <p><strong>User ID:</strong> {selectedOrder.user?.userId || 'N/A'}</p> */}
-                </div>
-
-                <h6>Order Information</h6>
-                <div className="border rounded p-3">
-                  <p>
-                    <strong>Order ID:</strong> #{selectedOrder.orderId}
+                  <p className="mb-0">
+                    <strong>Email:</strong> {selectedOrder.customerEmail}
                   </p>
-                  <p>
-                    <strong>Quantity:</strong> {selectedOrder.quantity}
-                  </p>
-                  <p>
-                    <strong>Amount:</strong> ${selectedOrder.amount || 0}
-                  </p>
-                  <p>
-                    <strong>Status:</strong>
-                    <Badge
-                      color={
-                        getStatusBadge(selectedOrder.status, selectedOrder.type)
-                          .color
-                      }
-                      className="ms-2"
-                    >
-                      <i
-                        className={`${getStatusBadge(selectedOrder.status, selectedOrder.type).icon} me-1`}
-                      ></i>
-                      {
-                        getStatusBadge(selectedOrder.status, selectedOrder.type)
-                          .text
-                      }
-                    </Badge>
-                  </p>
-                  {/* <p><strong>Payment Status:</strong> {selectedOrder.paymentStatus}</p>
-                                    <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'N/A'}</p> */}
                 </div>
               </Col>
+
               <Col md={6}>
-                <h6>Package Information</h6>
-                <div className="border rounded p-3 mb-3">
-                  {selectedOrder.package?.packageImg && (
-                    <div className="text-center mb-3">
-                      <img
-                        src={selectedOrder.package.packageImg}
-                        alt={selectedOrder.package.title}
-                        className="rounded"
-                        style={{ maxHeight: "150px", maxWidth: "100%" }}
-                      />
-                    </div>
-                  )}
-                  <p>
-                    <strong>Title:</strong>{" "}
-                    {selectedOrder.package?.title || "N/A"}
+                <h6>Order Summary</h6>
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Order Number:</strong> {selectedOrder.orderNumber}
                   </p>
-                  <p>
-                    <strong>Pickup Start:</strong>{" "}
-                    {selectedOrder.package?.pickupStart
-                      ? formatDateTime(selectedOrder.package.pickupStart)
-                      : "N/A"}
+                  <p className="mb-2">
+                    <strong>Offer:</strong> {selectedOrder.offerTitle}
                   </p>
-                  <p>
-                    <strong>Pickup End:</strong>{" "}
-                    {selectedOrder.package?.pickupEnd
-                      ? formatDateTime(selectedOrder.package.pickupEnd)
-                      : "N/A"}
+                  <p className="mb-2">
+                    <strong>Quantity:</strong> {selectedOrder.quantity}
+                  </p>
+                  <p className="mb-0">
+                    <strong>Total Amount:</strong>{" "}
+                    {formatCurrency(selectedOrder.totalAmount)}
                   </p>
                 </div>
+              </Col>
 
+              <Col md={6}>
+                <h6>Pickup Details</h6>
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Pickup Start:</strong>{" "}
+                    {formatDateTime(
+                      selectedOrder.pickupStartTime,
+                      selectedOrder.timezone,
+                    )}
+                  </p>
+                  <p className="mb-2">
+                    <strong>Pickup End:</strong>{" "}
+                    {formatDateTime(
+                      selectedOrder.pickupEndTime,
+                      selectedOrder.timezone,
+                    )}
+                  </p>
+                  <p className="mb-0">
+                    <strong>Business:</strong> {selectedOrder.businessName}
+                  </p>
+                </div>
+              </Col>
+
+              <Col md={6}>
                 <h6>
                   {selectedOrder.type === "completed"
                     ? "Completion Details"
                     : "Cancellation Details"}
                 </h6>
-                <div className="border rounded p-3">
+                <div className="border rounded p-3 h-100">
+                  <p className="mb-2">
+                    <strong>Status:</strong>
+                    <Badge
+                      color={getStatusBadge(selectedOrder.status).color}
+                      className="ms-2"
+                    >
+                      <i
+                        className={`${getStatusBadge(selectedOrder.status).icon} me-1`}
+                      ></i>
+                      {getStatusBadge(selectedOrder.status).text}
+                    </Badge>
+                  </p>
+                  <p className="mb-2">
+                    <strong>Payment Status:</strong>{" "}
+                    {toDisplayPaymentStatus(selectedOrder.paymentStatus)}
+                  </p>
                   {selectedOrder.type === "completed" ? (
                     <>
-                      <p>
-                        <strong>Completed At:</strong>{" "}
-                        {formatDateTime(selectedOrder.completedAt)}
+                      <p className="mb-2">
+                        <strong>Collected At:</strong>{" "}
+                        {formatDateTime(
+                          selectedOrder.collectedAt,
+                          selectedOrder.timezone,
+                        )}
                       </p>
-                      <p>
-                        <strong>Completed By:</strong>{" "}
-                        {selectedOrder.completedBy || "System"}
-                      </p>
-                      <p>
-                        <strong>Time Since Completion:</strong>{" "}
-                        {formatRelativeTime(selectedOrder.completedAt)}
+                      <p className="mb-0">
+                        <strong>Time Since Collection:</strong>{" "}
+                        {formatRelativeTime(selectedOrder.collectedAt)}
                       </p>
                     </>
                   ) : (
                     <>
-                      <p>
+                      <p className="mb-2">
                         <strong>Cancelled At:</strong>{" "}
-                        {formatDateTime(selectedOrder.cancelledAt)}
+                        {formatDateTime(
+                          selectedOrder.cancelledAt,
+                          selectedOrder.timezone,
+                        )}
                       </p>
-                      <p>
-                        <strong>Cancellation Reason:</strong>{" "}
+                      <p className="mb-0">
+                        <strong>Reason:</strong>{" "}
                         {selectedOrder.cancellationReason ||
                           "No reason provided"}
                       </p>
-                      <p>
-                        <strong>Time Since Cancellation:</strong>{" "}
-                        {formatRelativeTime(selectedOrder.cancelledAt)}
-                      </p>
-                      <Alert color="info" className="mt-2 mb-0">
+                      <Alert color="info" className="mt-3 mb-0">
                         <i className="ri-information-line me-2"></i>
-                        This order was refunded and package quantity was
-                        restored.
+                        This order was cancelled in the selected date range.
                       </Alert>
                     </>
                   )}
                 </div>
               </Col>
             </Row>
-          )}
+          ) : null}
         </ModalBody>
         <ModalFooter className="bg-light">
           <Button color="light" onClick={() => setViewModal(false)}>
-            <i className="ri-close-line me-1"></i>
             Close
           </Button>
         </ModalFooter>

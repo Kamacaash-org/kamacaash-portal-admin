@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
   Col,
   Container,
   Form,
@@ -13,165 +12,181 @@ import {
   Input,
   Label,
   Row,
-  Progress,
-  TabContent,
-  TabPane,
-  Nav,
-  NavItem,
-  NavLink,
 } from "reactstrap";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import Loader from "../../../Components/Common/Loader";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
 import {
-  getBusinessProfile,
-  getStaffProfile,
-  updateBusinessProfile,
+  getAdminBusinessProfile,
+  getMyStaffProfile,
+  updateAdminBusinessSettings,
 } from "../../../helpers/backend_helper";
 
-const defaultHours = {
-  open: "",
-  close: "",
-};
-
 const days = [
-  { key: "mon", label: "Monday" },
-  { key: "tue", label: "Tuesday" },
-  { key: "wed", label: "Wednesday" },
-  { key: "thur", label: "Thursday" },
-  { key: "fri", label: "Friday" },
-  { key: "sat", label: "Saturday" },
-  { key: "sun", label: "Sunday" },
+  { key: 1, label: "Monday" },
+  { key: 2, label: "Tuesday" },
+  { key: 3, label: "Wednesday" },
+  { key: 4, label: "Thursday" },
+  { key: 5, label: "Friday" },
+  { key: 6, label: "Saturday" },
+  { key: 7, label: "Sunday" },
 ];
 
+const emptyHours = () =>
+  days.reduce((acc, day) => {
+    acc[day.key] = { open: "", close: "" };
+    return acc;
+  }, {});
+
+const normalizeOpenHours = (value) => {
+  const normalized = emptyHours();
+
+  if (!Array.isArray(value)) return normalized;
+
+  value.forEach((entry) => {
+    const dayOfWeek = Number(entry?.day_of_week);
+    const key = days.some((day) => day.key === dayOfWeek) ? dayOfWeek : null;
+    if (!key) return;
+
+    normalized[key] = {
+      open: entry?.opens_at || "",
+      close: entry?.closes_at || "",
+    };
+  });
+
+  return normalized;
+};
+
+const serializeOpenHours = (hoursMap) =>
+  days
+    .map((day) => ({
+      day_of_week: day.key,
+      opens_at: hoursMap?.[day.key]?.open || "",
+      closes_at: hoursMap?.[day.key]?.close || "",
+    }))
+    .filter((entry) => entry.opens_at || entry.closes_at);
+
+const normalizeBusinessProfile = (raw) => {
+  if (!raw) return null;
+
+  return {
+    id: raw.id || "",
+    displayName: raw.display_name || "",
+    legalName: raw.legal_name || "",
+    logoUrl: raw.logo_url || "",
+    bannerUrl: raw.banner_url || "",
+    galleryImages: raw.gallery_images || [],
+    description: raw.description || "",
+    shortDescription: raw.short_description || "",
+    email: raw.email || "",
+    phone: raw.phone || "",
+    secondaryPhone: raw.secondary_phone || "",
+    websiteUrl: raw.website_url || "",
+    socialLinks: {
+      facebook: raw.social_links?.facebook || "",
+      instagram: raw.social_links?.instagram || "",
+    },
+    openHours: normalizeOpenHours(raw.open_hours || []),
+    logoFile: null,
+    bannerFile: null,
+    galleryFiles: [],
+  };
+};
+
 const BusinessProfileSettings = () => {
-  document.title = "Business Profile Settings | Kamacash";
+  document.title = "Business Profile Settings | Kamacaash";
 
   const authUser = useAuthUser();
-  const businessId = authUser?.businessId;
-  const [resolvedBusinessId, setResolvedBusinessId] = useState(businessId || "");
-  const [activeTab, setActiveTab] = useState("1");
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [businessId, setBusinessId] = useState(authUser?.businessId || "");
   const [profile, setProfile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState("");
-  const [bannerPreview, setBannerPreview] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
   const logoInputRef = useRef(null);
   const bannerInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const resolveBusinessId = async () => {
+    if (authUser?.businessId) return authUser.businessId;
 
-    const resolveBusinessId = async () => {
-      if (businessId) {
-        setResolvedBusinessId(businessId);
-        return;
+    const response = await getMyStaffProfile();
+    return response?.data?.business?.id || "";
+  };
+
+  const loadProfile = async (resolvedId) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const finalBusinessId = resolvedId || (await resolveBusinessId());
+      if (!finalBusinessId) {
+        throw new Error("Business ID not found. Please sign in again.");
       }
 
-      if (!authUser?.staffId) {
-        setError("Business ID not found. Please sign in again.");
-        setLoading(false);
-        return;
+      setBusinessId(finalBusinessId);
+
+      const response = await getAdminBusinessProfile(finalBusinessId);
+      if (!response?.success) {
+        throw new Error(response?.message || "Failed to load business profile");
       }
 
-      try {
-        const staffResponse = await getStaffProfile(authUser.staffId);
-        const staffBusinessId = staffResponse?.data?.business?._id || "";
-        if (staffBusinessId && isMounted) {
-          setResolvedBusinessId(staffBusinessId);
-        } else if (isMounted) {
-          setError("Business ID not found. Please sign in again.");
-          setLoading(false);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err?.message || "Failed to resolve business ID");
-          setLoading(false);
-        }
-      }
-    };
-
-    resolveBusinessId();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [authUser?.staffId, businessId]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchProfile = async () => {
-      if (!resolvedBusinessId) return;
-
-      setLoading(true);
-      setError("");
-
-      try {
-        const response = await getBusinessProfile(resolvedBusinessId);
-        if (response?.success) {
-          if (isMounted) {
-            const data = response.data || null;
-            setProfile(data);
-            setLogoPreview(data?.logo || "");
-            setBannerPreview(data?.bannerImage || "");
-          }
-        } else if (isMounted) {
-          setError(response?.message || "Failed to load business profile");
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err?.message || "Failed to load business profile");
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchProfile();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [resolvedBusinessId]);
-
-  useEffect(() => {
-    if (profile?.logo instanceof File) {
-      const previewUrl = URL.createObjectURL(profile.logo);
-      setLogoPreview(previewUrl);
-      return () => URL.revokeObjectURL(previewUrl);
-    }
-    setLogoPreview(profile?.logo || "");
-    return undefined;
-  }, [profile?.logo]);
-
-  useEffect(() => {
-    if (profile?.bannerImage instanceof File) {
-      const previewUrl = URL.createObjectURL(profile.bannerImage);
-      setBannerPreview(previewUrl);
-      return () => URL.revokeObjectURL(previewUrl);
-    }
-    setBannerPreview(profile?.bannerImage || "");
-    return undefined;
-  }, [profile?.bannerImage]);
-
-  const handleLogoFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFieldChange("logo", file);
+      setProfile(normalizeBusinessProfile(response.data));
+    } catch (err) {
+      setError(err?.message || "Failed to load business profile");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleBannerFileChange = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFieldChange("bannerImage", file);
+  useEffect(() => {
+    loadProfile(authUser?.businessId || "");
+  }, [authUser?.businessId]);
+
+  const profileCompletion = useMemo(() => {
+    const fields = [
+      profile?.displayName,
+      profile?.description,
+      profile?.shortDescription,
+      profile?.email,
+      profile?.phone,
+      profile?.websiteUrl,
+      profile?.logoFile || profile?.logoUrl,
+      profile?.bannerFile || profile?.bannerUrl,
+    ];
+
+    const completed = fields.filter(Boolean).length;
+    return Math.round((completed / fields.length) * 100);
+  }, [profile]);
+
+  const logoPreview = useMemo(() => {
+    if (!profile) return "";
+    if (profile.logoFile instanceof File) {
+      return URL.createObjectURL(profile.logoFile);
     }
-  };
+    return profile.logoUrl || "";
+  }, [profile]);
+
+  const bannerPreview = useMemo(() => {
+    if (!profile) return "";
+    if (profile.bannerFile instanceof File) {
+      return URL.createObjectURL(profile.bannerFile);
+    }
+    return profile.bannerUrl || "";
+  }, [profile]);
+
+  useEffect(() => {
+    return () => {
+      if (logoPreview && profile?.logoFile instanceof File) {
+        URL.revokeObjectURL(logoPreview);
+      }
+      if (bannerPreview && profile?.bannerFile instanceof File) {
+        URL.revokeObjectURL(bannerPreview);
+      }
+    };
+  }, [bannerPreview, logoPreview, profile]);
 
   const handleFieldChange = (key, value) => {
     setProfile((prev) => ({
@@ -180,199 +195,155 @@ const BusinessProfileSettings = () => {
     }));
   };
 
-  const handleAddressChange = (key, value) => {
+  const handleSocialChange = (key, value) => {
     setProfile((prev) => ({
       ...(prev || {}),
-      address: {
-        ...(prev?.address || {}),
+      socialLinks: {
+        ...(prev?.socialLinks || {}),
         [key]: value,
       },
     }));
   };
 
-  const handleHoursChange = (dayKey, fieldKey, value) => {
+  const handleHoursChange = (day, field, value) => {
     setProfile((prev) => ({
       ...(prev || {}),
-      openingHours: {
-        ...(prev?.openingHours || {}),
-        [dayKey]: {
-          ...(prev?.openingHours?.[dayKey] || defaultHours),
-          [fieldKey]: value,
+      openHours: {
+        ...(prev?.openHours || {}),
+        [day]: {
+          ...(prev?.openHours?.[day] || { open: "", close: "" }),
+          [field]: value,
         },
       },
     }));
   };
 
-  const hoursValue = useMemo(() => profile?.openingHours || {}, [profile]);
+  const handleLogoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    handleFieldChange("logoFile", file);
+  };
 
-  const completionStats = useMemo(() => {
-    const checks = [
-      { field: profile?.businessName, label: "Business Name", weight: 15 },
-      { field: profile?.email, label: "Email", weight: 10 },
-      { field: profile?.phoneNumber, label: "Phone", weight: 10 },
-      { field: profile?.description, label: "Description", weight: 15 },
-      { field: profile?.address?.street, label: "Address", weight: 10 },
-      { field: profile?.logo, label: "Logo", weight: 20 },
-      { field: profile?.bannerImage, label: "Banner", weight: 20 },
-    ];
+  const handleBannerChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    handleFieldChange("bannerFile", file);
+  };
 
-    const totalWeight = checks.reduce((sum, item) => sum + item.weight, 0);
-    const completedWeight = checks.reduce((sum, item) =>
-      item.field ? sum + item.weight : sum, 0);
+  const handleGalleryChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
 
-    const completed = checks.filter(item => item.field).length;
-
-    return {
-      completed,
-      total: checks.length,
-      percentage: Math.round((completedWeight / totalWeight) * 100),
-      weightedPercentage: Math.round((completedWeight / totalWeight) * 100),
-      items: checks
-    };
-  }, [profile]);
-
-  const formatTimeDisplay = (value) => {
-    if (!value) return "Closed";
-    return value;
+    setProfile((prev) => ({
+      ...(prev || {}),
+      galleryFiles: files,
+      galleryImages: [
+        ...(prev?.galleryImages || []).filter((item) => typeof item === "string"),
+        ...files,
+      ],
+    }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!resolvedBusinessId) {
-      setError("Business ID not found. Please sign in again.");
-      return;
-    }
-
-    const submitData = new FormData();
-    submitData.append("businessName", profile?.businessName || "");
-    submitData.append("description", profile?.description || "");
-    submitData.append("phoneNumber", profile?.phoneNumber || "");
-    submitData.append("email", profile?.email || "");
-    submitData.append("address[street]", profile?.address?.street || "");
-
-    if (profile?.logo instanceof File) {
-      submitData.append("logo", profile.logo);
-    } else if (profile?.logo) {
-      submitData.append("logo", profile.logo);
-    }
-
-    if (profile?.bannerImage instanceof File) {
-      submitData.append("bannerImage", profile.bannerImage);
-    } else if (profile?.bannerImage) {
-      submitData.append("bannerImage", profile.bannerImage);
-    }
-
-    Object.keys(profile?.openingHours || {}).forEach((day) => {
-      const openTime = profile?.openingHours?.[day]?.open || "";
-      const closeTime = profile?.openingHours?.[day]?.close || "";
-      submitData.append(`openingHours[${day}][open]`, openTime);
-      submitData.append(`openingHours[${day}][close]`, closeTime);
-    });
+    if (!businessId || !profile) return;
 
     setSaving(true);
     setError("");
 
     try {
-      const response = await updateBusinessProfile(resolvedBusinessId, submitData);
-      if (response?.success) {
-        toast.success("Business profile updated successfully");
-        // Refresh profile data
-        const refreshResponse = await getBusinessProfile(resolvedBusinessId);
-        if (refreshResponse?.success) {
-          setProfile(refreshResponse.data);
-        }
-      } else {
-        setError(response?.message || "Failed to update business profile");
-        toast.error(response?.message || "Failed to update business profile");
+      const formData = new FormData();
+      formData.append("display_name", profile.displayName || "");
+      formData.append("description", profile.description || "");
+      formData.append("short_description", profile.shortDescription || "");
+      formData.append("email", profile.email || "");
+      formData.append("phone", profile.phone || "");
+      formData.append("secondary_phone", profile.secondaryPhone || "");
+      formData.append("website_url", profile.websiteUrl || "");
+      formData.append("social_links", JSON.stringify(profile.socialLinks || {}));
+      formData.append(
+        "open_hours",
+        JSON.stringify(serializeOpenHours(profile.openHours || {})),
+      );
+
+      if (profile.logoFile instanceof File) {
+        formData.append("logo_url", profile.logoFile);
       }
+      if (profile.bannerFile instanceof File) {
+        formData.append("banner_url", profile.bannerFile);
+      }
+      (profile.galleryFiles || []).forEach((file) => {
+        if (file instanceof File) {
+          formData.append("gallery_images", file);
+        }
+      });
+
+      const response = await updateAdminBusinessSettings(businessId, formData);
+      if (!response?.success) {
+        throw new Error(response?.message || "Failed to update business settings");
+      }
+
+      toast.success("Business settings updated successfully");
+      await loadProfile(businessId);
     } catch (err) {
-      setError(err?.message || "Failed to update business profile");
-      toast.error(err?.message || "Failed to update business profile");
+      const message = err?.message || "Failed to update business settings";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
-  };
-
-  // Get completion status color
-  const getCompletionColor = (percentage) => {
-    if (percentage >= 80) return "success";
-    if (percentage >= 50) return "warning";
-    return "danger";
   };
 
   return (
     <div className="page-content">
       <Container fluid>
         <BreadCrumb title="Business Profile Settings" pageTitle="Business" />
-        <ToastContainer position="top-right" />
 
         {loading ? (
           <Loader />
+        ) : error ? (
+          <Alert color="danger" className="mb-0">
+            <i className="ri-error-warning-line me-2"></i>
+            {error}
+          </Alert>
         ) : (
           <Form onSubmit={handleSubmit}>
-            {error && (
-              <Alert color="danger" className="mb-4">
-                <i className="ri-error-warning-line me-2"></i>
-                {error}
-              </Alert>
-            )}
-
-            {/* Banner Section - Full Width */}
-            <Card className="overflow-hidden mb-4 border-0 shadow-sm">
-              <div className="position-relative">
-                {/* Banner Image */}
-                <div
-                  className="position-relative"
-                  style={{
-                    height: "280px",
-                    background: bannerPreview
-                      ? `linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 100%), url(${bannerPreview})`
-                      : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    backgroundSize: bannerPreview ? "contain" : "cover",
-                    backgroundRepeat: "no-repeat",
-
-                    backgroundPosition: "center",
-                  }}
-                >
-                  {/* Banner Overlay Controls */}
-                  <div className="position-absolute bottom-0 end-0 p-4">
-                    <Button
-                      type="button"
-                      color="light"
-                      className="shadow-sm me-2"
-                      onClick={() => bannerInputRef.current?.click()}
-                    >
-                      <i className="ri-image-edit-line me-2"></i>
-                      Change Banner
-                    </Button>
-                    <Input
-                      innerRef={bannerInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBannerFileChange}
-                      className="d-none"
-                    />
-                  </div>
+            <Card className="border-0 shadow-sm overflow-hidden mb-4">
+              <div
+                className="position-relative"
+                style={{
+                  minHeight: "260px",
+                  background: bannerPreview
+                    ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${bannerPreview}) center/cover no-repeat`
+                    : "linear-gradient(135deg, #0f3d2e 0%, #338427 55%, #e36814 100%)",
+                }}
+              >
+                <div className="position-absolute top-0 end-0 p-4">
+                  <Button color="light" onClick={() => bannerInputRef.current?.click()}>
+                    <i className="ri-image-edit-line me-1"></i>
+                    Change Banner
+                  </Button>
+                  <Input
+                    innerRef={bannerInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerChange}
+                    className="d-none"
+                  />
                 </div>
-
-                {/* Logo and Business Info Overlay */}
-                <div className="position-absolute bottom-0 start-0 p-4 w-100">
+              </div>
+              <CardBody className="pt-0">
+                <div className="d-flex flex-wrap align-items-end justify-content-between gap-4">
                   <div className="d-flex align-items-end gap-4">
-                    {/* Logo */}
-                    <div className="position-relative">
+                    <div >
                       <div
-                        className="bg-white rounded-4 shadow-lg d-flex align-items-center justify-content-center"
-                        style={{
-                          width: "120px",
-                          height: "120px",
-                          border: "4px solid white",
-                          overflow: "hidden",
-                        }}
+                        className="bg-white rounded-4 shadow p-2 d-flex align-items-center justify-content-center"
+                        style={{ width: "128px", height: "128px" }}
                       >
                         {logoPreview ? (
                           <img
                             src={logoPreview}
-                            alt="Business Logo"
+                            alt="Business logo"
                             style={{
                               width: "100%",
                               height: "100%",
@@ -380,497 +351,340 @@ const BusinessProfileSettings = () => {
                             }}
                           />
                         ) : (
-                          <i className="ri-store-2-line text-primary fs-1"></i>
+                          <i className="ri-store-2-line fs-1 text-primary"></i>
                         )}
                       </div>
-                      <Button
-                        type="button"
-                        color="primary"
-                        size="sm"
-                        className="position-absolute bottom-0 end-0 rounded-circle p-2"
-                        style={{ transform: "translateY(25%)" }}
-                        onClick={() => logoInputRef.current?.click()}
-                      >
-                        <i className="ri-pencil-line"></i>
-                      </Button>
-                      <Input
-                        innerRef={logoInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoFileChange}
-                        className="d-none"
-                      />
                     </div>
-
-                    {/* Business Info */}
                     <div className="pb-2">
-                      <h1 className="display-6 fw-bold mb-2 text-white">
-                        {profile?.businessName || "Business Name"}
-                      </h1>
-                      <div className="d-flex align-items-center gap-3">
-                        <Badge color="primary" pill className="px-3 py-2">
-                          <i className="ri-mail-line me-1"></i>
-                          {profile?.email || "No email"}
+                      <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
+                        <h2 className="mb-0">{profile?.displayName || "Business Name"}</h2>
+                        <Badge color="success" pill className="px-3 py-2">
+                          Profile {profileCompletion}% complete
                         </Badge>
-                        {profile?.phoneNumber && (
-                          <Badge color="primary" pill className="px-3 py-2">
-                            <i className="ri-phone-line me-1"></i>
-                            {profile.phoneNumber}
-                          </Badge>
-                        )}
-                        {profile?.address?.street && (
-                          <Badge color="primary" pill className="px-3 py-2">
-                            <i className="ri-map-pin-line me-1"></i>
-                            {profile.address.street}
-                          </Badge>
-                        )}
+                      </div>
+                      <div className="text-muted d-flex flex-wrap gap-3">
+                        <span>
+                          <i className="ri-mail-line me-1"></i>
+                          {profile?.email || "-"}
+                        </span>
+                        <span>
+                          <i className="ri-phone-line me-1"></i>
+                          {profile?.phone || "-"}
+                        </span>
+                        <span>
+                          <i className="ri-global-line me-1"></i>
+                          {profile?.websiteUrl || "-"}
+                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Profile Completion Stats Card */}
-            <Card className="mb-4 border-0 shadow-sm">
-              <CardBody className="p-4">
-                <Row className="align-items-center g-4">
-                  <Col lg={4}>
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="position-relative">
-                        <div
-                          className="rounded-circle d-flex align-items-center justify-content-center"
-                          style={{
-                            width: "80px",
-                            height: "80px",
-                            background: `conic-gradient(${getCompletionColor(completionStats.percentage) === "success"
-                              ? "#338427"
-                              : getCompletionColor(completionStats.percentage) === "warning"
-                                ? "#f59e0b"
-                                : "#ef4444"
-                              } ${completionStats.percentage}%, #e9e9e9 0deg)`,
-                          }}
-                        >
-                          <div
-                            className="bg-white rounded-circle d-flex align-items-center justify-content-center"
-                            style={{ width: "64px", height: "64px" }}
-                          >
-                            <span className="fs-4 fw-bold text-dark">
-                              {completionStats.percentage}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h5 className="mb-1">Profile Completion</h5>
-                        <p className="text-muted mb-0">
-                          {completionStats.completed} of {completionStats.total} fields completed
-                        </p>
-                      </div>
-                    </div>
-                  </Col>
-                  <Col lg={8}>
-                    <div className="d-flex flex-wrap gap-3">
-                      {completionStats.items.map((item, index) => (
-                        <div key={index} className="d-flex align-items-center gap-2">
-                          <div
-                            className={`rounded-circle ${item.field ? "bg-success" : "bg-light"
-                              }`}
-                            style={{ width: "10px", height: "10px" }}
-                          ></div>
-                          <small className={item.field ? "text-dark" : "text-muted"}>
-                            {item.label}
-                          </small>
-                        </div>
-                      ))}
-                    </div>
-                  </Col>
-                </Row>
-              </CardBody>
-            </Card>
-
-            {/* Main Content Tabs */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="bg-white border-0 pt-4 px-4">
-                <Nav tabs className="nav-tabs-custom">
-                  <NavItem>
-                    <NavLink
-                      className={activeTab === "1" ? "active" : ""}
-                      onClick={() => setActiveTab("1")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <i className="ri-building-line me-2"></i>
-                      Business Information
-                    </NavLink>
-                  </NavItem>
-                  <NavItem>
-                    <NavLink
-                      className={activeTab === "2" ? "active" : ""}
-                      onClick={() => setActiveTab("2")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <i className="ri-time-line me-2"></i>
-                      Operating Hours
-                    </NavLink>
-                  </NavItem>
-                </Nav>
-              </CardHeader>
-              <CardBody className="p-4">
-                <TabContent activeTab={activeTab}>
-                  {/* Tab 1: Business Information */}
-                  <TabPane tabId="1">
-                    <Row className="g-4">
-                      <Col lg={8}>
-                        <Card className="border-0 shadow-none">
-                          <CardHeader className="bg-transparent border-0 px-0 pt-0">
-                            <h5 className="card-title mb-0">Basic Information</h5>
-                            <p className="text-muted small mb-0">
-                              Update your business details and contact information
-                            </p>
-                          </CardHeader>
-                          <CardBody className="px-0">
-                            <Row className="g-4">
-                              <Col md={6}>
-                                <FormGroup>
-                                  <Label for="businessName" className="fw-semibold">
-                                    Business Name <span className="text-danger">*</span>
-                                  </Label>
-                                  <Input
-                                    id="businessName"
-                                    type="text"
-                                    value={profile?.businessName || ""}
-                                    onChange={(e) =>
-                                      handleFieldChange("businessName", e.target.value)
-                                    }
-                                    placeholder="Enter business name"
-                                    className="form-control-lg"
-                                  />
-                                </FormGroup>
-                              </Col>
-                              <Col md={6}>
-                                <FormGroup>
-                                  <Label for="email" className="fw-semibold">
-                                    Email Address <span className="text-danger">*</span>
-                                  </Label>
-                                  <Input
-                                    id="email"
-                                    type="email"
-                                    value={profile?.email || ""}
-                                    onChange={(e) =>
-                                      handleFieldChange("email", e.target.value)
-                                    }
-                                    placeholder="Enter email address"
-                                    className="form-control-lg"
-                                  />
-                                </FormGroup>
-                              </Col>
-                              <Col md={6}>
-                                <FormGroup>
-                                  <Label for="phoneNumber" className="fw-semibold">
-                                    Phone Number <span className="text-danger">*</span>
-                                  </Label>
-                                  <Input
-                                    id="phoneNumber"
-                                    type="tel"
-                                    value={profile?.phoneNumber || ""}
-                                    onChange={(e) =>
-                                      handleFieldChange("phoneNumber", e.target.value)
-                                    }
-                                    placeholder="Enter phone number"
-                                    className="form-control-lg"
-                                  />
-                                </FormGroup>
-                              </Col>
-                              <Col md={12}>
-                                <FormGroup>
-                                  <Label for="description" className="fw-semibold">
-                                    Business Description
-                                  </Label>
-                                  <Input
-                                    id="description"
-                                    type="textarea"
-                                    rows="4"
-                                    value={profile?.description || ""}
-                                    onChange={(e) =>
-                                      handleFieldChange("description", e.target.value)
-                                    }
-                                    placeholder="Tell customers about your business..."
-                                    className="form-control-lg"
-                                  />
-                                  <small className="text-muted">
-                                    {profile?.description?.length || 0}/500 characters
-                                  </small>
-                                </FormGroup>
-                              </Col>
-                            </Row>
-                          </CardBody>
-                        </Card>
-
-                        <Card className="border-0 shadow-none">
-                          <CardHeader className="bg-transparent border-0 px-0">
-                            <h5 className="card-title mb-0">Address Information</h5>
-                            <p className="text-muted small mb-0">
-                              Your business location for customers
-                            </p>
-                          </CardHeader>
-                          <CardBody className="px-0">
-                            <Row className="g-4">
-                              <Col md={12}>
-                                <FormGroup>
-                                  <Label for="street" className="fw-semibold">
-                                    Street Address
-                                  </Label>
-                                  <Input
-                                    id="street"
-                                    type="text"
-                                    value={profile?.address?.street || ""}
-                                    onChange={(e) =>
-                                      handleAddressChange("street", e.target.value)
-                                    }
-                                    placeholder="Enter street address"
-                                    className="form-control-lg"
-                                  />
-                                </FormGroup>
-                              </Col>
-                            </Row>
-                          </CardBody>
-                        </Card>
-                      </Col>
-
-                      {/* Brand Media Sidebar */}
-                      <Col lg={4}>
-                        <Card className="border-0 bg-light shadow-none">
-                          <CardBody className="p-4">
-                            <h5 className="card-title mb-3">Brand Assets</h5>
-                            <p className="text-muted small mb-4">
-                              High-quality images help build trust and recognition
-                            </p>
-
-                            <div className="mb-4">
-                              <Label className="fw-semibold mb-3">Business Logo</Label>
-                              <div className="text-center">
-                                <div
-                                  className="mx-auto mb-3 rounded-4 border bg-white d-flex align-items-center justify-content-center"
-                                  style={{
-                                    width: "160px",
-                                    height: "160px",
-                                    margin: "0 auto",
-                                  }}
-                                >
-                                  {logoPreview ? (
-                                    <img
-                                      src={logoPreview}
-                                      alt="Logo"
-                                      style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "contain",
-                                        padding: "12px",
-                                      }}
-                                    />
-                                  ) : (
-                                    <i className="ri-store-2-line text-primary" style={{ fontSize: "48px" }}></i>
-                                  )}
-                                </div>
-                                <Button
-                                  type="button"
-                                  color="outline-primary"
-                                  size="sm"
-                                  onClick={() => logoInputRef.current?.click()}
-                                  className="mt-2"
-                                >
-                                  <i className="ri-upload-2-line me-2"></i>
-                                  Upload Logo
-                                </Button>
-                              </div>
-                            </div>
-
-                            <div>
-                              <Label className="fw-semibold mb-3">Banner Image</Label>
-                              <div
-                                className="rounded-4 border bg-white d-flex align-items-center justify-content-center p-3"
-                                style={{
-                                  minHeight: "120px",
-                                  background: bannerPreview
-                                    ? `url(${bannerPreview}) center/contain no-repeat`
-                                    : "none",
-                                }}
-                              >
-                                {!bannerPreview && (
-                                  <div className="text-center py-3">
-                                    <i className="ri-image-line text-muted" style={{ fontSize: "32px" }}></i>
-                                    <p className="text-muted small mb-0 mt-2">No banner image</p>
-                                  </div>
-                                )}
-                              </div>
-                              <Button
-                                type="button"
-                                color="outline-primary"
-                                size="sm"
-                                onClick={() => bannerInputRef.current?.click()}
-                                className="mt-2 w-100"
-                              >
-                                <i className="ri-upload-2-line me-2"></i>
-                                {bannerPreview ? "Change Banner" : "Upload Banner"}
-                              </Button>
-                            </div>
-                          </CardBody>
-                        </Card>
-                      </Col>
-                    </Row>
-                  </TabPane>
-
-                  {/* Tab 2: Operating Hours */}
-                  <TabPane tabId="2">
-                    <Row>
-                      <Col lg={12}>
-                        <Card className="border-0 shadow-none">
-                          <CardHeader className="bg-transparent border-0 px-0 pt-0">
-                            <h5 className="card-title mb-0">Operating Hours</h5>
-                            <p className="text-muted small mb-0">
-                              Set your business hours for each day of the week
-                            </p>
-                          </CardHeader>
-                          <CardBody className="px-0">
-                            <Row className="g-4">
-                              {days.map((day) => (
-                                <Col md={6} key={day.key}>
-                                  <div className="border rounded-4 p-4 h-100 bg-white">
-                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                      <h6 className="fw-semibold mb-0">{day.label}</h6>
-                                      <Badge
-                                        color={
-                                          hoursValue?.[day.key]?.open && hoursValue?.[day.key]?.close
-                                            ? "success"
-                                            : "light"
-                                        }
-                                        pill
-                                        className="px-3 py-2"
-                                      >
-                                        {hoursValue?.[day.key]?.open && hoursValue?.[day.key]?.close
-                                          ? `${formatTimeDisplay(hoursValue[day.key].open)} - ${formatTimeDisplay(hoursValue[day.key].close)}`
-                                          : "Closed"
-                                        }
-                                      </Badge>
-                                    </div>
-                                    <Row className="g-3">
-                                      <Col xs={6}>
-                                        <Input
-                                          type="time"
-                                          value={hoursValue?.[day.key]?.open || ""}
-                                          onChange={(e) =>
-                                            handleHoursChange(day.key, "open", e.target.value)
-                                          }
-                                          className="form-control-lg"
-                                        />
-                                      </Col>
-                                      <Col xs={6}>
-                                        <Input
-                                          type="time"
-                                          value={hoursValue?.[day.key]?.close || ""}
-                                          onChange={(e) =>
-                                            handleHoursChange(day.key, "close", e.target.value)
-                                          }
-                                          className="form-control-lg"
-                                        />
-                                      </Col>
-                                    </Row>
-                                  </div>
-                                </Col>
-                              ))}
-                            </Row>
-                          </CardBody>
-                        </Card>
-                      </Col>
-                    </Row>
-                  </TabPane>
-                </TabContent>
-              </CardBody>
-            </Card>
-
-            {/* Sticky Save Button */}
-            <div className="sticky-bottom bg-white py-3 mt-4 border-top">
-              <Container fluid>
-                <Row className="align-items-center justify-content-between">
-                  <Col lg={8}>
-                    <div className="d-flex align-items-center gap-3">
-                      <i className="ri-information-line text-muted"></i>
-                      <small className="text-muted">
-                        Changes will be visible to customers immediately after saving
-                      </small>
-                    </div>
-                  </Col>
-                  <Col lg={4} className="text-end">
-                    <Button
-                      color="primary"
-                      type="submit"
-                      size="lg"
-                      className="px-5"
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Saving Changes...
-                        </>
-                      ) : (
-                        <>
-                          <i className="ri-save-3-line me-2"></i>
-                          Save All Changes
-                        </>
-                      )}
+                  <div className="pb-2 d-flex gap-2 flex-wrap">
+                    <Button color="light" onClick={() => logoInputRef.current?.click()}>
+                      <i className="ri-upload-2-line me-1"></i>
+                      Upload Logo
                     </Button>
-                  </Col>
-                </Row>
-              </Container>
-            </div>
+                    <Button color="success" outline onClick={() => loadProfile(businessId)}>
+                      <i className="ri-refresh-line me-1"></i>
+                      Refresh
+                    </Button>
+                    <Input
+                      innerRef={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="d-none"
+                    />
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Row className="g-4">
+              <Col xl={8}>
+                <Card className="border-0 shadow-sm mb-4">
+                  <CardBody className="p-4">
+                    <h5 className="mb-1">Business Information</h5>
+                    <p className="text-muted mb-4">
+                      Update the public details customers see about your business.
+                    </p>
+
+                    <Row className="g-4">
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Display Name</Label>
+                          <Input
+                            value={profile?.displayName || ""}
+                            onChange={(event) =>
+                              handleFieldChange("displayName", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Legal Name</Label>
+                          <Input value={profile?.legalName || ""} disabled />
+                        </FormGroup>
+                      </Col>
+                      <Col md={12}>
+                        <FormGroup className="mb-0">
+                          <Label>Description</Label>
+                          <Input
+                            type="textarea"
+                            rows="5"
+                            value={profile?.description || ""}
+                            onChange={(event) =>
+                              handleFieldChange("description", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={12}>
+                        <FormGroup className="mb-0">
+                          <Label>Short Description</Label>
+                          <Input
+                            type="textarea"
+                            rows="3"
+                            value={profile?.shortDescription || ""}
+                            onChange={(event) =>
+                              handleFieldChange("shortDescription", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                    </Row>
+                  </CardBody>
+                </Card>
+
+                <Card className="border-0 shadow-sm mb-4">
+                  <CardBody className="p-4">
+                    <h5 className="mb-1">Contact And Social Links</h5>
+                    <p className="text-muted mb-4">
+                      Keep your contact information and links up to date.
+                    </p>
+
+                    <Row className="g-4">
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Email</Label>
+                          <Input
+                            type="email"
+                            value={profile?.email || ""}
+                            onChange={(event) =>
+                              handleFieldChange("email", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Website URL</Label>
+                          <Input
+                            type="url"
+                            value={profile?.websiteUrl || ""}
+                            onChange={(event) =>
+                              handleFieldChange("websiteUrl", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Phone</Label>
+                          <Input
+                            value={profile?.phone || ""}
+                            onChange={(event) =>
+                              handleFieldChange("phone", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Secondary Phone</Label>
+                          <Input
+                            value={profile?.secondaryPhone || ""}
+                            onChange={(event) =>
+                              handleFieldChange("secondaryPhone", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Facebook</Label>
+                          <Input
+                            type="url"
+                            value={profile?.socialLinks?.facebook || ""}
+                            onChange={(event) =>
+                              handleSocialChange("facebook", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup className="mb-0">
+                          <Label>Instagram</Label>
+                          <Input
+                            type="url"
+                            value={profile?.socialLinks?.instagram || ""}
+                            onChange={(event) =>
+                              handleSocialChange("instagram", event.target.value)
+                            }
+                          />
+                        </FormGroup>
+                      </Col>
+                    </Row>
+                  </CardBody>
+                </Card>
+
+                <Card className="border-0 shadow-sm">
+                  <CardBody className="p-4">
+                    <h5 className="mb-1">Operating Hours</h5>
+                    <p className="text-muted mb-4">
+                      Set the opening and closing times for each day.
+                    </p>
+
+                    <Row className="g-3">
+                      {days.map((day) => (
+                        <Col md={6} key={day.key}>
+                          <div className="border rounded-3 p-3 h-100">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                              <div className="fw-semibold">{day.label}</div>
+                              <Badge color="light" className="text-dark">
+                                {profile?.openHours?.[day.key]?.open &&
+                                  profile?.openHours?.[day.key]?.close
+                                  ? `${profile.openHours[day.key].open} - ${profile.openHours[day.key].close}`
+                                  : "Closed"}
+                              </Badge>
+                            </div>
+                            <Row className="g-2">
+                              <Col xs={6}>
+                                <Input
+                                  type="time"
+                                  value={profile?.openHours?.[day.key]?.open || ""}
+                                  onChange={(event) =>
+                                    handleHoursChange(
+                                      day.key,
+                                      "open",
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </Col>
+                              <Col xs={6}>
+                                <Input
+                                  type="time"
+                                  value={profile?.openHours?.[day.key]?.close || ""}
+                                  onChange={(event) =>
+                                    handleHoursChange(
+                                      day.key,
+                                      "close",
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </Col>
+                            </Row>
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  </CardBody>
+                </Card>
+              </Col>
+
+              <Col xl={4}>
+                <Card className="border-0 shadow-sm mb-4">
+                  <CardBody className="p-4">
+                    <h5 className="mb-1">Media</h5>
+                    <p className="text-muted mb-4">
+                      Upload logo, banner, and gallery images.
+                    </p>
+
+                    <div className="mb-4">
+                      <Label className="fw-semibold mb-2">Banner Preview</Label>
+                      <div
+                        className="rounded-3 border"
+                        style={{
+                          minHeight: "140px",
+                          background: bannerPreview
+                            ? `url(${bannerPreview}) center/cover no-repeat`
+                            : "#f8f9fa",
+                        }}
+                      ></div>
+                    </div>
+
+                    <div className="mb-4">
+                      <Label className="fw-semibold mb-2">Gallery Images</Label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {(profile?.galleryImages || []).length ? (
+                          profile.galleryImages.map((image, index) => (
+                            <div
+                              key={index}
+                              className="rounded overflow-hidden border"
+                              style={{ width: "70px", height: "70px" }}
+                            >
+                              <img
+                                src={
+                                  image instanceof File
+                                    ? URL.createObjectURL(image)
+                                    : image
+                                }
+                                alt={`Gallery ${index + 1}`}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          <small className="text-muted">
+                            No gallery images uploaded yet.
+                          </small>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="d-grid gap-2">
+                      <Button color="light" onClick={() => galleryInputRef.current?.click()}>
+                        <i className="ri-image-add-line me-1"></i>
+                        Upload Gallery Images
+                      </Button>
+                      <Input
+                        innerRef={galleryInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleGalleryChange}
+                        className="d-none"
+                      />
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border-0 shadow-sm">
+                  <CardBody className="p-4">
+                    <h5 className="mb-1">Save Changes</h5>
+                    <p className="text-muted mb-4">
+                      Changes will be visible after the update succeeds.
+                    </p>
+
+                    <div className="d-grid">
+                      <Button color="primary" type="submit" size="lg" disabled={saving}>
+                        {saving ? "Saving..." : "Save All Changes"}
+                      </Button>
+                    </div>
+                  </CardBody>
+                </Card>
+              </Col>
+            </Row>
           </Form>
         )}
       </Container>
-
-      <style jsx>{`
-        .nav-tabs-custom .nav-link {
-          border: none;
-          padding: 1rem 1.5rem;
-          font-weight: 500;
-          color: #6c757d;
-          border-radius: 0.5rem 0.5rem 0 0;
-        }
-        
-        .nav-tabs-custom .nav-link.active {
-          color: #338427;
-          background: transparent;
-          border-bottom: 3px solid #338427;
-        }
-        
-        .nav-tabs-custom .nav-link:hover {
-          color: #338427;
-          background: rgba(10, 179, 156, 0.05);
-        }
-        
-        .form-control-lg {
-          padding: 0.75rem 1rem;
-          border-radius: 0.5rem;
-          border: 1px solid #e9e9e9;
-        }
-        
-        .form-control-lg:focus {
-          border-color: #338427;
-          box-shadow: 0 0 0 0.2rem rgba(10, 179, 156, 0.15);
-        }
-        
-        .border-4 {
-          border-width: 4px !important;
-        }
-        
-        .sticky-bottom {
-          position: sticky;
-          bottom: 0;
-          z-index: 1000;
-          backdrop-filter: blur(10px);
-          background: rgba(255, 255, 255, 0.95) !important;
-        }
-      `}</style>
+      <ToastContainer />
     </div>
   );
 };

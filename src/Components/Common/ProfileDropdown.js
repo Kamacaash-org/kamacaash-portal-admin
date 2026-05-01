@@ -47,6 +47,7 @@ const ProfileDropdown = () => {
       const obj = JSON.parse(sessionStorage.getItem("authUser"));
       const staffName = obj.data.user.username || "Admin";
       const staffRole = obj.data.user.role || "USER";
+      console.log("Staff Role:", staffRole);
       setUserName(staffName);
       setStaffRole(formatRole(staffRole));
     }
