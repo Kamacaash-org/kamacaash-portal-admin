@@ -52,19 +52,9 @@ const buildInitialValues = () => ({
   primary_staff_id: "",
   city_id: "",
   address_line: "",
-  latitude: "",
-  longitude: "",
   phone: "",
   secondary_phone: "",
   email: "",
-  website_url: "",
-  social_links: {
-    facebook: "",
-    instagram: "",
-  },
-  description: "",
-  short_description: "",
-  notes: "",
   merchant_accounts: [
     {
       merchantHolderName: "",
@@ -143,26 +133,10 @@ const normalizeBusiness = (business = {}) => {
     city_id: business.city_id || getEntityId(business.city) || "",
     city_name: business.city?.name || business.city_name || "",
     address_line: business.address_line || business.addressLine || "",
-    latitude:
-      business.latitude ?? business.location?.latitude ?? business.coordinates?.latitude ?? "",
-    longitude:
-      business.longitude ??
-      business.location?.longitude ??
-      business.coordinates?.longitude ??
-      "",
+
     phone: business.phone || "",
     secondary_phone: business.secondary_phone || business.secondaryPhone || "",
     email: business.email || "",
-    website_url: business.website_url || business.websiteUrl || "",
-    social_links: {
-      facebook:
-        business.social_links?.facebook || business.socialLinks?.facebook || "",
-      instagram:
-        business.social_links?.instagram || business.socialLinks?.instagram || "",
-    },
-    description: business.description || "",
-    short_description: business.short_description || business.shortDescription || "",
-    notes: business.notes || "",
     merchant_accounts: merchantAccounts.length
       ? merchantAccounts.map((account) => ({
         merchantHolderName: account.merchantHolderName || account.merchant_holder_name || "",
@@ -334,34 +308,13 @@ const BusinessesPage = () => {
       primary_staff_id: Yup.string().required("Primary staff is required").trim(),
       city_id: Yup.string().required("City is required").trim(),
       address_line: Yup.string().required("Address line is required").trim(),
-      latitude: Yup.number()
-        .nullable()
-        .transform((value, originalValue) =>
-          originalValue === "" || originalValue === null ? null : value,
-        )
-        .min(-90, "Latitude must be between -90 and 90")
-        .max(90, "Latitude must be between -90 and 90"),
-      longitude: Yup.number()
-        .nullable()
-        .transform((value, originalValue) =>
-          originalValue === "" || originalValue === null ? null : value,
-        )
-        .min(-180, "Longitude must be between -180 and 180")
-        .max(180, "Longitude must be between -180 and 180"),
+
       phone: Yup.string().required("Phone is required").trim(),
       secondary_phone: Yup.string().nullable(),
       email: Yup.string()
         .email("Enter a valid email")
         .required("Email is required")
         .trim(),
-      website_url: Yup.string().url("Enter a valid website URL").nullable(),
-      social_links: Yup.object({
-        facebook: Yup.string().url("Enter a valid Facebook URL").nullable(),
-        instagram: Yup.string().url("Enter a valid Instagram URL").nullable(),
-      }),
-      description: Yup.string().nullable(),
-      short_description: Yup.string().nullable(),
-      notes: Yup.string().nullable(),
       merchant_accounts: Yup.array().of(
         Yup.object({
           merchantHolderName: Yup.string().nullable(),
@@ -404,38 +357,9 @@ const BusinessesPage = () => {
         status: values.status,
       };
 
-      if (values.latitude !== "" && values.latitude !== null) {
-        payload.latitude = Number(values.latitude);
-      }
-
-      if (values.longitude !== "" && values.longitude !== null) {
-        payload.longitude = Number(values.longitude);
-      }
 
       if (cleanOptionalString(values.secondary_phone)) {
         payload.secondary_phone = values.secondary_phone.trim();
-      }
-
-      if (cleanOptionalString(values.website_url)) {
-        payload.website_url = values.website_url.trim();
-      }
-
-      if (socialLinks.facebook || socialLinks.instagram) {
-        payload.social_links = {};
-        if (socialLinks.facebook) payload.social_links.facebook = socialLinks.facebook;
-        if (socialLinks.instagram) payload.social_links.instagram = socialLinks.instagram;
-      }
-
-      if (cleanOptionalString(values.description)) {
-        payload.description = values.description.trim();
-      }
-
-      if (cleanOptionalString(values.short_description)) {
-        payload.short_description = values.short_description.trim();
-      }
-
-      if (cleanOptionalString(values.notes)) {
-        payload.notes = values.notes.trim();
       }
 
       if (merchantAccounts.length > 0) {
@@ -550,7 +474,7 @@ const BusinessesPage = () => {
     {
       name: "#",
       cell: (row, index) => index + 1,
-      width: "70px",
+      // width: "70px",
     },
     {
       name: "Display Name",
@@ -727,7 +651,7 @@ const BusinessesPage = () => {
             <TabContent activeTab={activeTab}>
               <TabPane tabId="1">
                 <Row>
-                  <Col md={6}>
+                  <Col md={4}>
                     <FormGroup>
                       <Label>
                         Legal Name <span className="text-danger">*</span>
@@ -746,7 +670,7 @@ const BusinessesPage = () => {
                       <FormFeedback>{validation.errors.legal_name}</FormFeedback>
                     </FormGroup>
                   </Col>
-                  <Col md={6}>
+                  <Col md={4}>
                     <FormGroup>
                       <Label>
                         Display Name <span className="text-danger">*</span>
@@ -765,9 +689,7 @@ const BusinessesPage = () => {
                       <FormFeedback>{validation.errors.display_name}</FormFeedback>
                     </FormGroup>
                   </Col>
-                </Row>
 
-                <Row>
                   <Col md={4}>
                     <FormGroup>
                       <Label>
@@ -851,9 +773,7 @@ const BusinessesPage = () => {
                       ) : null}
                     </FormGroup>
                   </Col>
-                </Row>
 
-                <Row>
                   <Col md={4}>
                     <FormGroup>
                       <Label>
@@ -884,7 +804,7 @@ const BusinessesPage = () => {
 
               <TabPane tabId="2">
                 <Row>
-                  <Col md={6}>
+                  <Col md={3}>
                     <FormGroup>
                       <Label>
                         Address Line <span className="text-danger">*</span>
@@ -903,48 +823,8 @@ const BusinessesPage = () => {
                       <FormFeedback>{validation.errors.address_line}</FormFeedback>
                     </FormGroup>
                   </Col>
-                  <Col md={3}>
-                    <FormGroup>
-                      <Label>Latitude</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        name="latitude"
-                        placeholder="2.0469"
-                        value={validation.values.latitude}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.latitude &&
-                          !!validation.errors.latitude
-                        }
-                      />
-                      <FormFeedback>{validation.errors.latitude}</FormFeedback>
-                    </FormGroup>
-                  </Col>
-                  <Col md={3}>
-                    <FormGroup>
-                      <Label>Longitude</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        name="longitude"
-                        placeholder="45.3182"
-                        value={validation.values.longitude}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.longitude &&
-                          !!validation.errors.longitude
-                        }
-                      />
-                      <FormFeedback>{validation.errors.longitude}</FormFeedback>
-                    </FormGroup>
-                  </Col>
-                </Row>
 
-                <Row>
-                  <Col md={4}>
+                  <Col md={3}>
                     <FormGroup>
                       <Label>
                         Phone <span className="text-danger">*</span>
@@ -960,7 +840,7 @@ const BusinessesPage = () => {
                       <FormFeedback>{validation.errors.phone}</FormFeedback>
                     </FormGroup>
                   </Col>
-                  <Col md={4}>
+                  <Col md={3}>
                     <FormGroup>
                       <Label>Secondary Phone</Label>
                       <Input
@@ -979,7 +859,7 @@ const BusinessesPage = () => {
                       </FormFeedback>
                     </FormGroup>
                   </Col>
-                  <Col md={4}>
+                  <Col md={3}>
                     <FormGroup>
                       <Label>
                         Email <span className="text-danger">*</span>
@@ -1000,109 +880,6 @@ const BusinessesPage = () => {
               </TabPane>
 
               <TabPane tabId="3">
-                <Row>
-                  <Col md={6}>
-                    <FormGroup>
-                      <Label>Website URL</Label>
-                      <Input
-                        name="website_url"
-                        placeholder="https://kamacaash.com"
-                        value={validation.values.website_url}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.website_url &&
-                          !!validation.errors.website_url
-                        }
-                      />
-                      <FormFeedback>{validation.errors.website_url}</FormFeedback>
-                    </FormGroup>
-                  </Col>
-                  <Col md={3}>
-                    <FormGroup>
-                      <Label>Facebook</Label>
-                      <Input
-                        name="social_links.facebook"
-                        placeholder="https://facebook.com/kamacaash"
-                        value={validation.values.social_links.facebook}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.social_links?.facebook &&
-                          !!validation.errors.social_links?.facebook
-                        }
-                      />
-                      <FormFeedback>
-                        {validation.errors.social_links?.facebook}
-                      </FormFeedback>
-                    </FormGroup>
-                  </Col>
-                  <Col md={3}>
-                    <FormGroup>
-                      <Label>Instagram</Label>
-                      <Input
-                        name="social_links.instagram"
-                        placeholder="https://instagram.com/kamacaash"
-                        value={validation.values.social_links.instagram}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.social_links?.instagram &&
-                          !!validation.errors.social_links?.instagram
-                        }
-                      />
-                      <FormFeedback>
-                        {validation.errors.social_links?.instagram}
-                      </FormFeedback>
-                    </FormGroup>
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={4}>
-                    <FormGroup>
-                      <Label>Short Description</Label>
-                      <Input
-                        type="textarea"
-                        rows="3"
-                        name="short_description"
-                        placeholder="Meals and groceries"
-                        value={validation.values.short_description}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                      />
-                    </FormGroup>
-                  </Col>
-                  <Col md={4}>
-                    <FormGroup>
-                      <Label>Description</Label>
-                      <Input
-                        type="textarea"
-                        rows="3"
-                        name="description"
-                        placeholder="Fresh meals and grocery products."
-                        value={validation.values.description}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                      />
-                    </FormGroup>
-                  </Col>
-                  <Col md={4}>
-                    <FormGroup>
-                      <Label>Notes</Label>
-                      <Input
-                        type="textarea"
-                        rows="3"
-                        name="notes"
-                        placeholder="Flagship branch"
-                        value={validation.values.notes}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                      />
-                    </FormGroup>
-                  </Col>
-                </Row>
-
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h6 className="mb-0">Merchant Accounts</h6>
                   <Button color="soft-primary" type="button" onClick={addMerchantAccount}>
@@ -1338,54 +1115,11 @@ const BusinessesPage = () => {
                       <p>
                         <strong>Email:</strong> {selectedBusiness.email || "-"}
                       </p>
-                      <p>
-                        <strong>Latitude:</strong> {selectedBusiness.latitude ?? "-"}
-                      </p>
-                      <p className="mb-0">
-                        <strong>Longitude:</strong> {selectedBusiness.longitude ?? "-"}
-                      </p>
                     </CardBody>
                   </Card>
                 </Col>
 
                 <Col md={6}>
-                  <Card className="border shadow-none h-100 mb-0">
-                    <CardHeader>
-                      <h6 className="mb-0">
-                        <i className="ri-information-line me-2 text-info" />
-                        Optional Details
-                      </h6>
-                    </CardHeader>
-                    <CardBody>
-                      <p>
-                        <strong>Website:</strong> {selectedBusiness.website_url || "-"}
-                      </p>
-                      <p>
-                        <strong>Facebook:</strong>{" "}
-                        {selectedBusiness.social_links?.facebook || "-"}
-                      </p>
-                      <p>
-                        <strong>Instagram:</strong>{" "}
-                        {selectedBusiness.social_links?.instagram || "-"}
-                      </p>
-                      <p>
-                        <strong>Short Description:</strong>{" "}
-                        {selectedBusiness.short_description || "-"}
-                      </p>
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {selectedBusiness.description || "-"}
-                      </p>
-                      <p className="mb-0">
-                        <strong>Notes:</strong> {selectedBusiness.notes || "-"}
-                      </p>
-                    </CardBody>
-                  </Card>
-                </Col>
-              </Row>
-
-              <Row className="g-4 mt-1">
-                <Col md={12}>
                   <Card className="border shadow-none mb-0">
                     <CardHeader>
                       <h6 className="mb-0">
