@@ -43,7 +43,7 @@ import { useFormik } from "formik";
 import { passiveEventSupported } from "@tanstack/react-table";
 
 const Staff = () => {
-  document.title = "Staff | Kamacash";
+  document.title = "Staff | Kamacaash";
 
   const dispatch = useDispatch();
 

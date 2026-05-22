@@ -315,7 +315,7 @@ const BusinessProfileSettings = () => {
                   minHeight: "260px",
                   background: bannerPreview
                     ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${bannerPreview}) center/cover no-repeat`
-                    : "linear-gradient(135deg, #0f3d2e 0%, #338427 55%, #e36814 100%)",
+                    : "linear-gradient(135deg, #22991a 0%, #40c637 55%, #b0f5aa 100%)",
                 }}
               >
                 <div className="position-absolute top-0 end-0 p-4">

@@ -10,7 +10,7 @@ import { createSelector } from "reselect";
 import { useDispatch, useSelector } from "react-redux";
 
 //import images
-import avatar1 from "../../assets/images/logo-kamacash.png";
+import avatar1 from "../../assets/images/logo-kamacaash.png";
 import useAuthUser from "../Hooks/useAuthUser";
 import { logoutUser } from "../../slices/auth/login/thunk";
 import { use } from "react";

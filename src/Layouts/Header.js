@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { Dropdown, DropdownMenu, DropdownToggle, Form } from 'reactstrap';
 
 //import images
-import logoSm from "../assets/images/logo-kamacash.png";
-import logoDark from "../assets/images/logo-kamacash.png";
+import logoSm from "../assets/images/logo-kamacaash.png";
+import logoDark from "../assets/images/logo-kamacaash.png";
 import logoLight from "../assets/images/logo-light.png";
 
 //import Components

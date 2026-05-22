@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
-import logoSm from "../../assets/images/logo-kamacash.png";
+import logoSm from "../../assets/images/logo-kamacaash.png";
 
 
 const styles = StyleSheet.create({

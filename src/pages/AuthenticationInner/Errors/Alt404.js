@@ -18,14 +18,14 @@ const Alt404 = () => {
                                             {/* <lord-icon className="avatar-xl"
                                                 src="https://cdn.lordicon.com/spxnqpau.json"
                                                 trigger="loop"
-                                                colors="primary:#338427,secondary:#0AB39C"
+                                                colors="primary:#40c637,secondary:#0AB39C"
                                                 style={{ width: "120px", height: "120px" }}>
                                             </lord-icon> */}
 
                                             <lord-icon
                                                 src="https://cdn.lordicon.com/etwtznjn.json"
                                                 trigger="loop"
-                                                colors="primary:#338427,secondary:#0AB39C"
+                                                colors="primary:#40c637,secondary:#0AB39C"
                                                 className="avatar-xl"
                                                 style={{ width: "120px", height: "120px" }}
                                             >

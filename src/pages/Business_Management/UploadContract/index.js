@@ -274,23 +274,23 @@ const UploadContractPage = () => {
   const customSelectStyles = {
     control: (base, state) => ({
       ...base,
-      borderColor: state.isFocused ? "#338427" : "#ced4da",
-      boxShadow: state.isFocused ? "0 0 0 1px #338427" : "none",
+      borderColor: state.isFocused ? "#40c637" : "#ced4da",
+      boxShadow: state.isFocused ? "0 0 0 1px #40c637" : "none",
       "&:hover": {
-        borderColor: "#338427",
+        borderColor: "#40c637",
       },
       minHeight: "38px",
     }),
     option: (base, state) => ({
       ...base,
       backgroundColor: state.isSelected
-        ? "#338427"
+        ? "#40c637"
         : state.isFocused
           ? "#e8f8f0"
           : "#fff",
       color: state.isSelected ? "#fff" : "#333",
       "&:active": {
-        backgroundColor: "#338427",
+        backgroundColor: "#40c637",
       },
     }),
     singleValue: (base) => ({
@@ -514,8 +514,8 @@ const UploadContractPage = () => {
                         <strong>Verified At:</strong>{" "}
                         {selectedContractRecord.business?.verified_at
                           ? new Date(
-                              selectedContractRecord.business.verified_at,
-                            ).toLocaleString()
+                            selectedContractRecord.business.verified_at,
+                          ).toLocaleString()
                           : "-"}
                       </p>
                       <p>
@@ -565,8 +565,8 @@ const UploadContractPage = () => {
                         <strong>Signed At:</strong>{" "}
                         {selectedContractRecord.contract?.signed_at
                           ? new Date(
-                              selectedContractRecord.contract.signed_at,
-                            ).toLocaleString()
+                            selectedContractRecord.contract.signed_at,
+                          ).toLocaleString()
                           : "-"}
                       </p>
                       <p>
@@ -653,16 +653,16 @@ const UploadContractPage = () => {
                         <strong>Effective From:</strong>{" "}
                         {selectedContractRecord.contract?.effective_from
                           ? new Date(
-                              selectedContractRecord.contract.effective_from,
-                            ).toLocaleString()
+                            selectedContractRecord.contract.effective_from,
+                          ).toLocaleString()
                           : "-"}
                       </p>
                       <p>
                         <strong>Effective To:</strong>{" "}
                         {selectedContractRecord.contract?.effective_to
                           ? new Date(
-                              selectedContractRecord.contract.effective_to,
-                            ).toLocaleString()
+                            selectedContractRecord.contract.effective_to,
+                          ).toLocaleString()
                           : "-"}
                       </p>
                       <p className="mb-0">

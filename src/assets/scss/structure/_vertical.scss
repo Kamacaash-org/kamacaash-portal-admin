@@ -280,7 +280,7 @@
 .logo {
     line-height: $header-height;
 
-    .logo-kamacash {
+    .logo-Kamacaash {
         display: none;
     }
 }
@@ -390,7 +390,7 @@
                 display: none;
             }
 
-            span.logo-kamacash {
+            span.logo-Kamacaash {
                 display: inline-block;
             }
         }
@@ -518,7 +518,7 @@
                         display: inline-block;
                     }
 
-                    span.logo-kamacash {
+                    span.logo-Kamacaash {
                         display: none;
                     }
                 }
@@ -587,7 +587,7 @@
                 display: none;
             }
 
-            span.logo-kamacash {
+            span.logo-Kamacaash {
                 display: inline-block;
             }
         }
@@ -808,7 +808,7 @@
 
     &[data-sidebar="dark"] {
 
-        .logo-kamacash {
+        .logo-Kamacaash {
             display: none;
         }
 
@@ -818,7 +818,7 @@
     }
 
     &[data-sidebar="light"] {
-        // .logo-kamacash {
+        // .logo-Kamacaash {
         //     display: inline-block;
         // }
 
@@ -864,7 +864,7 @@
             }
 
             &:is([data-sidebar="dark"], [data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {
-                .logo-kamacash {
+                .logo-Kamacaash {
                     display: inline-block;
                 }
 
@@ -900,7 +900,7 @@
     @if $sidebar-gradient-mode {
 
         &:is([data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {
-            .logo-kamacash {
+            .logo-Kamacaash {
                 display: none;
             }
 
@@ -916,7 +916,7 @@
 
         @media (min-width: 1024.1px) {
             &:is([data-sidebar="light"], [data-sidebar="dark"], [data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {
-                .logo-kamacash {
+                .logo-Kamacaash {
                     display: none;
                 }
 

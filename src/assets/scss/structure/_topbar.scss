@@ -59,7 +59,10 @@
         color: var(--#{$prefix}header-item-sub-color);
         transition: all 0.5s ease;
 
-        &:hover, &:focus, &:active, &.active {
+        &:hover,
+        &:focus,
+        &:active,
+        &.active {
             background-color: var(--#{$prefix}header-item-bg);
         }
 
@@ -147,7 +150,7 @@
             display: none;
         }
 
-        span.logo-kamacash {
+        span.logo-Kamacaash {
             display: inline-block;
         }
     }
@@ -240,7 +243,7 @@
 }
 
 [data-topbar="dark"] {
-    .logo-kamacash {
+    .logo-Kamacaash {
         display: none;
     }
 
@@ -251,7 +254,7 @@
 
 [data-bs-theme="dark"] {
     &[data-topbar="light"] {
-        .logo-kamacash {
+        .logo-Kamacaash {
             display: none;
         }
 
@@ -308,7 +311,7 @@
                     width: auto;
                     text-align: left;
 
-                    .logo-kamacash {
+                    .logo-Kamacaash {
                         display: none;
                     }
 
@@ -321,7 +324,7 @@
 
         &[data-topbar="dark"] {
             .horizontal-logo {
-                .logo-kamacash {
+                .logo-Kamacaash {
                     display: none;
                 }
 

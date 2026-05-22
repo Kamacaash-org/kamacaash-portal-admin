@@ -39,7 +39,7 @@ import {
 } from "../../../helpers/backend_helper";
 
 const ReviewRequests = () => {
-  document.title = "Featured Review Approval | Kamacash";
+  document.title = "Featured Review Approval | Kamacaash";
 
   const authUser = useAuthUser();
   const [loading, setLoading] = useState(true);
@@ -424,23 +424,23 @@ const ReviewRequests = () => {
   const customSelectStyles = {
     control: (base, state) => ({
       ...base,
-      borderColor: state.isFocused ? "#338427" : "#338427",
-      boxShadow: state.isFocused ? "0 0 0 1px #338427" : "none",
+      borderColor: state.isFocused ? "#40c637" : "#40c637",
+      boxShadow: state.isFocused ? "0 0 0 1px #40c637" : "none",
       "&:hover": {
-        borderColor: "#338427",
+        borderColor: "#40c637",
       },
     }),
 
     option: (base, state) => ({
       ...base,
       backgroundColor: state.isSelected
-        ? "#338427"
+        ? "#40c637"
         : state.isFocused
           ? "#e8f8f0"
           : "white",
       color: state.isSelected ? "#fff" : "#333",
       "&:active": {
-        backgroundColor: "#338427",
+        backgroundColor: "#40c637",
       },
     }),
 
@@ -682,22 +682,22 @@ const ReviewRequests = () => {
                   />
                 }
                 customStyles={customStyles}
-                // conditionalRowStyles={[
-                //   {
-                //     when: (row) => row.status === "PENDING",
-                //     style: {
-                //       backgroundColor: "rgba(255, 193, 7, 0.1)",
-                //       borderLeft: "4px solid #ffc107",
-                //     },
-                //   },
-                //   {
-                //     when: (row) => row.status === "REJECTED",
-                //     style: {
-                //       backgroundColor: "rgba(220, 53, 69, 0.05)",
-                //       borderLeft: "4px solid #dc3545",
-                //     },
-                //   },
-                // ]}
+              // conditionalRowStyles={[
+              //   {
+              //     when: (row) => row.status === "PENDING",
+              //     style: {
+              //       backgroundColor: "rgba(255, 193, 7, 0.1)",
+              //       borderLeft: "4px solid #ffc107",
+              //     },
+              //   },
+              //   {
+              //     when: (row) => row.status === "REJECTED",
+              //     style: {
+              //       backgroundColor: "rgba(220, 53, 69, 0.05)",
+              //       borderLeft: "4px solid #dc3545",
+              //     },
+              //   },
+              // ]}
               />
             )}
           </CardBody>
@@ -881,8 +881,8 @@ const ReviewRequests = () => {
                     <div className="fw-semibold">
                       {selectedRequest.reviewIds?.[0]?.createdAt
                         ? new Date(
-                            selectedRequest.reviewIds[0].createdAt,
-                          ).toLocaleString()
+                          selectedRequest.reviewIds[0].createdAt,
+                        ).toLocaleString()
                         : "—"}
                     </div>
                   </div>

@@ -314,7 +314,7 @@ const ChangePassword = () => {
                 <div className="text-center">
                   <p className="mb-0">
                     &copy; {new Date().getFullYear()} Crafted with{" "}
-                    <i className="mdi mdi-heart text-danger"></i> by Kamacash
+                    <i className="mdi mdi-heart text-danger"></i> by Kamacaash
                   </p>
                 </div>
               </Col>

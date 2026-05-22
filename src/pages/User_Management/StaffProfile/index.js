@@ -208,7 +208,7 @@ const StaffProfile = () => {
                 className="position-relative"
                 style={{
                   height: "200px",
-                  background: "linear-gradient(135deg, #184e2f 0%, #338427 45%, #e36814 100%)",
+                  background: "linear-gradient(135deg, #184e2f 0%, #40c637 45%, #e36814 100%)",
                 }}
               >
                 <div className="position-absolute top-0 end-0 p-3">
@@ -230,7 +230,7 @@ const StaffProfile = () => {
                         style={{
                           width: "100px",
                           height: "100px",
-                          background: "linear-gradient(135deg, #338427 0%, #184e2f 100%)",
+                          background: "linear-gradient(135deg, #40c637 0%, #184e2f 100%)",
                         }}
                       >
                         {initials || "ST"}
@@ -670,7 +670,7 @@ export default StaffProfile;
 //                 style={{
 //                   minHeight: "220px",
 //                   background:
-//                     "linear-gradient(135deg, #184e2f 0%, #338427 45%, #e36814 100%)",
+//                     "linear-gradient(135deg, #184e2f 0%, #40c637 45%, #e36814 100%)",
 //                 }}
 //                 className="position-relative"
 //               >
@@ -693,7 +693,7 @@ export default StaffProfile;
 //                             height: "112px",
 //                             fontSize: "2rem",
 //                             background:
-//                               "linear-gradient(135deg, #338427 0%, #184e2f 100%)",
+//                               "linear-gradient(135deg, #40c637 0%, #184e2f 100%)",
 //                           }}
 //                         >
 //                           {initials || "ST"}

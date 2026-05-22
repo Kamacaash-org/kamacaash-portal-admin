@@ -121,7 +121,7 @@ const getStatusColor = (value) => {
 };
 
 const Dashboard = () => {
-  document.title = "Dashboard | Kamacash";
+  document.title = "Dashboard | Kamacaash";
 
   const authUser = useAuthUser();
   const authSession = JSON.parse(sessionStorage.getItem("authUser") || "{}");

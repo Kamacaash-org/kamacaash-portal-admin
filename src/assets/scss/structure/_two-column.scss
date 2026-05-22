@@ -76,14 +76,14 @@
         }
     }
 
-    &:is([data-sidebar="dark"], [data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {   
+    &:is([data-sidebar="dark"], [data-sidebar="gradient"], [data-sidebar="gradient-2"], [data-sidebar="gradient-3"], [data-sidebar="gradient-4"]) {
         .app-menu {
             .navbar-brand-box {
                 .logo-light {
                     display: block;
                 }
 
-                .logo-kamacash {
+                .logo-Kamacaash {
                     display: none;
                 }
             }
@@ -104,6 +104,7 @@
         li {
             position: relative;
             list-style-type: none;
+
             .nav-icon {
                 &::after {
                     content: "";
@@ -159,7 +160,7 @@
                 display: block;
             }
 
-            span.logo-kamacash {
+            span.logo-Kamacaash {
                 display: none;
             }
         }
@@ -172,7 +173,7 @@
                     display: none;
                 }
 
-                .logo-kamacash {
+                .logo-Kamacaash {
                     display: block;
                 }
             }
@@ -187,7 +188,7 @@
                     display: block;
                 }
 
-                .logo-kamacash {
+                .logo-Kamacaash {
                     display: none;
                 }
             }

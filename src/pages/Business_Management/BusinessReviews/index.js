@@ -32,7 +32,7 @@ import {
 } from "../../../helpers/backend_helper";
 
 const BusinessReviews = () => {
-  document.title = "Business Reviews | Kamacash";
+  document.title = "Business Reviews | Kamacaash";
 
   const authUser = useAuthUser();
   const businessId = authUser?.businessId;
@@ -173,11 +173,11 @@ const BusinessReviews = () => {
     const averageRating =
       total > 0
         ? (
-            reviews.reduce(
-              (acc, review) => acc + Number(review?.rating || 0),
-              0,
-            ) / total
-          ).toFixed(1)
+          reviews.reduce(
+            (acc, review) => acc + Number(review?.rating || 0),
+            0,
+          ) / total
+        ).toFixed(1)
         : "0.0";
 
     return {
@@ -327,22 +327,22 @@ const BusinessReviews = () => {
   const customSelectStyles = {
     control: (base, state) => ({
       ...base,
-      borderColor: state.isFocused ? "#338427" : "#338427",
-      boxShadow: state.isFocused ? "0 0 0 1px #338427" : "none",
+      borderColor: state.isFocused ? "#40c637" : "#40c637",
+      boxShadow: state.isFocused ? "0 0 0 1px #40c637" : "none",
       "&:hover": {
-        borderColor: "#338427",
+        borderColor: "#40c637",
       },
     }),
     option: (base, state) => ({
       ...base,
       backgroundColor: state.isSelected
-        ? "#338427"
+        ? "#40c637"
         : state.isFocused
           ? "#e8f8f0"
           : "white",
       color: state.isSelected ? "#fff" : "#333",
       "&:active": {
-        backgroundColor: "#338427",
+        backgroundColor: "#40c637",
       },
     }),
     singleValue: (base) => ({
