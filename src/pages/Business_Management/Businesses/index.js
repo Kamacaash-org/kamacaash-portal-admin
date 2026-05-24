@@ -42,7 +42,7 @@ import {
   getBusinessesData as onGetBusinesses,
   getCategoriesDDL as onGetCategoriesDDL,
   getCities as onGetCities,
-  getStaffs as onGetStaffs,
+  getUnAssignedStaffDDL as onGetUnAssignedStaffDDL,
 } from "../../../slices/thunks";
 
 const buildInitialValues = () => ({
@@ -177,7 +177,7 @@ const BusinessesPage = () => {
     (businessManagement, userManagement, settings) => ({
       businessesData: businessManagement.businessesData,
       categoriesDDL: businessManagement.categoriesDDL,
-      staffData: userManagement.staffData,
+      staffData: userManagement.UnAssignedStaffDDL,
       citiesData: settings.citiesData,
     }),
   );
@@ -219,21 +219,14 @@ const BusinessesPage = () => {
         .filter(Boolean),
     [citiesData],
   );
-
   const staffOptions = useMemo(
     () =>
-      normalizeArray(staffData, ["rows", "data", "staffs"])
-        .map((staff) =>
-          normalizeOption(
-            staff,
-            ["username", "firstName", "email"],
-            ["id", "_id", "uuid"],
-          ),
-        )
-        .filter(Boolean),
+      (staffData ?? []).map((staff) => ({
+        value: staff.id,
+        label: staff.full_name,
+      })),
     [staffData],
   );
-
   const statusOptions = [
     { value: "", label: "All" },
     { value: "Active", label: "Active" },
@@ -254,7 +247,7 @@ const BusinessesPage = () => {
         dispatch(onGetBusinesses()),
         dispatch(onGetCategoriesDDL()),
         dispatch(onGetCities()),
-        dispatch(onGetStaffs()),
+        dispatch(onGetUnAssignedStaffDDL()),
       ]);
     } catch (error) {
       console.error("Error loading businesses page data:", error);
@@ -470,6 +463,37 @@ const BusinessesPage = () => {
     );
   };
 
+
+
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderColor: state.isFocused ? "#40c637" : "#ced4da",
+      boxShadow: state.isFocused ? "0 0 0 1px #40c637" : "none",
+      "&:hover": {
+        borderColor: "#40c637",
+      },
+      minHeight: "38px",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#40c637"
+        : state.isFocused
+          ? "#e8f8f0"
+          : "#fff",
+      color: state.isSelected ? "#fff" : "#333",
+      "&:active": {
+        backgroundColor: "#40c637",
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontWeight: 500,
+    }),
+  };
+
+
   const columns = [
     {
       name: "#",
@@ -565,6 +589,7 @@ const BusinessesPage = () => {
                 <FormGroup>
                   <Label>Status</Label>
                   <Select
+                    styles={customSelectStyles}
                     options={statusOptions}
                     value={statusOptions.find((opt) => opt.value === filters.status)}
                     onChange={(opt) => handleSelectFilterChange("status", opt)}
@@ -696,6 +721,7 @@ const BusinessesPage = () => {
                         Category <span className="text-danger">*</span>
                       </Label>
                       <Select
+                        styles={customSelectStyles}
                         options={categoryOptions}
                         value={
                           categoryOptions.find(
@@ -722,6 +748,7 @@ const BusinessesPage = () => {
                         City <span className="text-danger">*</span>
                       </Label>
                       <Select
+                        styles={customSelectStyles}
                         options={cityOptions}
                         value={
                           cityOptions.find(
@@ -747,6 +774,7 @@ const BusinessesPage = () => {
                         Primary Staff <span className="text-danger">*</span>
                       </Label>
                       <Select
+                        styles={customSelectStyles}
                         options={staffOptions}
                         value={
                           staffOptions.find(
@@ -780,6 +808,7 @@ const BusinessesPage = () => {
                         Status <span className="text-danger">*</span>
                       </Label>
                       <Select
+                        styles={customSelectStyles}
                         options={businessStatusOptions}
                         value={
                           businessStatusOptions.find(

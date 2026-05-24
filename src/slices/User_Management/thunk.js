@@ -1,5 +1,5 @@
 import { StaffsAPI } from "../../helpers/backend_helper";
-import { makeCRUDThunks } from "../../helpers/thunk_factory";
+import { makeCRUDThunks, makeDDLThunks } from "../../helpers/thunk_factory";
 
 
 export const {
@@ -9,3 +9,13 @@ export const {
     delete: deleteStaff
 } = makeCRUDThunks("setup/staff", StaffsAPI);
 
+
+// DDL (dropdown) — call the new ddl endpoint
+export const { list: getUnAssignedStaffDDL } = makeDDLThunks(
+    "staffs/ddl",
+    StaffsAPI.ddlUnassigned,
+    {
+        labelKey: "full_name",
+        valueKey: "id",
+    },
+);

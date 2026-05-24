@@ -41,11 +41,11 @@ import NoDataFound from "../../../Components/Common/NoDataFound";
 import {
   createOffer as onCreateOffer,
   deleteOffer as onDeleteOffer,
-  getBusinessesData as onGetBusinesses,
   getOffers as onGetOffers,
   publishOffer as onPublishOffer,
   updateOffer as onUpdateOffer,
 } from "../../../slices/thunks";
+import useAuthUser from "../../../Components/Hooks/useAuthUser";
 
 const normalizeArray = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
@@ -92,6 +92,18 @@ const normalizeOption = (
   };
 };
 
+const blockInvalidNumberKeys = (e) => {
+  if (["e", "E", "+", "-"].includes(e.key)) {
+    e.preventDefault();
+  }
+};
+
+const clampToMin = (value, min = 0) => {
+  if (value === "" || value === null || value === undefined) return "";
+  const num = Number(value);
+  return num < min ? min : num;
+};
+
 const formatForDateTimeLocal = (date) => {
   if (!date) return "";
   const parsed = new Date(date);
@@ -119,7 +131,6 @@ const getCutoffBadge = (isLimited) =>
     : { color: "success", label: "Open Order", icon: "ri-time-line" };
 
 const buildInitialValues = () => ({
-  business_id: "",
   title: "",
   description: "",
   short_description: "",
@@ -139,7 +150,6 @@ const buildInitialValues = () => ({
 const normalizeOffer = (offer = {}) => ({
   ...offer,
   id: getEntityId(offer),
-  business_id: offer.business_id || getEntityId(offer.business) || "",
   business_name:
     offer.business?.display_name ||
     offer.business_name ||
@@ -193,12 +203,11 @@ const Offers = () => {
     (state) => state.ContentManagement,
     (state) => state.BusinessManagement,
     (contentManagement, businessManagement) => ({
-      offersData: contentManagement.offersData,
-      businessesData: businessManagement.businessesData
+      offersData: contentManagement.offersData
     }),
   );
 
-  const { offersData, businessesData } = useSelector(selectPageData);
+  const { offersData } = useSelector(selectPageData);
 
   const [offersList, setOffersList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -210,27 +219,16 @@ const Offers = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [mainImageFile, setMainImageFile] = useState(null);
+  const [mainImagePreview, setMainImagePreview] = useState(null);
   const [galleryImageFiles, setGalleryImageFiles] = useState([]);
+  const [galleryImagePreviews, setGalleryImagePreviews] = useState([]);
+  const [existingMainImageUrl, setExistingMainImageUrl] = useState("");
+  const [existingGalleryImages, setExistingGalleryImages] = useState([]);
   const [filters, setFilters] = useState({
     search: "",
     limited: "",
   });
   const deferredSelectedOffer = useDeferredValue(selectedOffer);
-
-  const businessOptions = useMemo(
-    () =>
-      normalizeArray(businessesData, ["rows", "data", "businesses"])
-        .map((item) =>
-          normalizeOption(item, ["display_name", "legal_name", "name"], [
-            "id",
-            "_id",
-            "uuid",
-          ]),
-        )
-        .filter(Boolean),
-    [businessesData],
-  );
-
 
   const limitedOptions = [
     { value: "", label: "All" },
@@ -238,19 +236,20 @@ const Offers = () => {
     { value: "open", label: "No Cutoff" },
   ];
 
+  const authUser = useAuthUser();
+  const businessId = authUser?.businessId;
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      await Promise.all([
-        dispatch(onGetOffers()),
-        dispatch(onGetBusinesses()),
-      ]);
+      if (businessId) {
+        await dispatch(onGetOffers(businessId));
+      }
     } catch (error) {
       console.error("Error loading offers page data:", error);
     } finally {
       setLoading(false);
     }
-  }, [dispatch]);
+  }, [dispatch, businessId]);
 
   useEffect(() => {
     fetchData();
@@ -278,11 +277,139 @@ const Offers = () => {
     });
   }, [offersList, filters]);
 
+  const resetImageState = () => {
+    if (mainImagePreview && mainImagePreview !== existingMainImageUrl) {
+      URL.revokeObjectURL(mainImagePreview);
+    }
+    galleryImagePreviews.forEach(preview => {
+      if (preview && !existingGalleryImages.includes(preview)) {
+        URL.revokeObjectURL(preview);
+      }
+    });
+    setMainImageFile(null);
+    setMainImagePreview(null);
+    setGalleryImageFiles([]);
+    setGalleryImagePreviews([]);
+    setExistingMainImageUrl("");
+    setExistingGalleryImages([]);
+  };
+
+  const handleMainImageChange = (e) => {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+
+    if (mainImagePreview && mainImagePreview !== existingMainImageUrl) {
+      URL.revokeObjectURL(mainImagePreview);
+    }
+
+    setMainImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setMainImagePreview(previewUrl);
+  };
+
+  const handleRemoveMainImage = () => {
+    if (mainImagePreview && mainImagePreview !== existingMainImageUrl) {
+      URL.revokeObjectURL(mainImagePreview);
+    }
+    setMainImageFile(null);
+    setMainImagePreview(null);
+    setExistingMainImageUrl("");
+  };
+
+  const handleGalleryImagesChange = (e) => {
+    const files = Array.from(e.currentTarget.files || []);
+    if (files.length === 0) return;
+
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setGalleryImageFiles(prev => [...prev, ...files]);
+    setGalleryImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleRemoveGalleryImage = (indexToRemove, isExisting = false, existingUrl = null) => {
+    if (isExisting && existingUrl) {
+      setExistingGalleryImages(prev => prev.filter(url => url !== existingUrl));
+    } else {
+      const fileIndex = indexToRemove - (existingGalleryImages.length);
+      if (fileIndex >= 0 && galleryImageFiles[fileIndex]) {
+        URL.revokeObjectURL(galleryImagePreviews[indexToRemove]);
+        const newFiles = [...galleryImageFiles];
+        const newPreviews = [...galleryImagePreviews];
+        newFiles.splice(fileIndex, 1);
+        newPreviews.splice(indexToRemove, 1);
+        setGalleryImageFiles(newFiles);
+        setGalleryImagePreviews(newPreviews);
+      }
+    }
+  };
+
+  const handleCreate = () => {
+    resetImageState();
+    setSelectedOffer(null);
+    setIsEdit(false);
+    setModal(true);
+  };
+
+  const handleEdit = (offer) => {
+    resetImageState();
+    setSelectedOffer(offer);
+    setIsEdit(true);
+    setExistingMainImageUrl(offer.main_image_url || "");
+    setMainImagePreview(offer.main_image_url || null);
+    setExistingGalleryImages(offer.gallery_images || []);
+    setGalleryImagePreviews(offer.gallery_images || []);
+    setModal(true);
+  };
+
+  const handleView = (offer) => {
+    setViewModal(true);
+    startTransition(() => {
+      setSelectedOffer(offer);
+    });
+  };
+
+  const handleDeleteClick = (offer) => {
+    setSelectedOffer(offer);
+    setDeleteModal(true);
+  };
+
+  const handleDeleteOffer = async () => {
+    const id = selectedOffer?.id;
+    if (!id) return;
+    await dispatch(onDeleteOffer({ id: id, business_id: businessId }));
+    setDeleteModal(false);
+    setSelectedOffer(null);
+  };
+
+  const handlePublishOffer = async () => {
+    const id = selectedOffer?.id;
+    if (!id) return;
+    await dispatch(onPublishOffer({ id: id, business_id: businessId }));
+    setPublishModal(false);
+    setSelectedOffer(null);
+  };
+
+  const openPublishModal = (offer) => {
+    setSelectedOffer(offer);
+    setPublishModal(true);
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectFilterChange = (name, selectedOption) => {
+    setFilters((prev) => ({
+      ...prev,
+      [name]: selectedOption?.value || "",
+    }));
+  };
+
   const validation = useFormik({
     enableReinitialize: true,
     initialValues: selectedOffer
       ? {
-        business_id: selectedOffer.business_id || "",
+        business_id: authUser?.businessId || "",
         title: selectedOffer.title || "",
         description: selectedOffer.description || "",
         short_description: selectedOffer.short_description || "",
@@ -298,7 +425,7 @@ const Offers = () => {
         pickup_end: formatForDateTimeLocal(selectedOffer.pickup_end),
         pickup_instructions: selectedOffer.pickup_instructions || "",
       }
-      : buildInitialValues(),
+      : { ...buildInitialValues(), business_id: authUser?.businessId || "" },
     validationSchema: Yup.object({
       business_id: Yup.string().required("Business is required"),
       title: Yup.string().required("Title is required").trim(),
@@ -390,20 +517,14 @@ const Offers = () => {
         });
 
         if (isEdit) {
-          await dispatch(
-            onUpdateOffer({
-              id: selectedOffer?.id,
-              payload,
-            }),
-          );
+          await dispatch(onUpdateOffer({ id: selectedOffer?.id, payload, business_id: businessId }));
+
         } else {
-          await dispatch(onCreateOffer({ payload }));
+          await dispatch(onCreateOffer({ payload, business_id: businessId }));
         }
 
         setModal(false);
-        setSelectedOffer(null);
-        setMainImageFile(null);
-        setGalleryImageFiles([]);
+        resetImageState();
         validation.resetForm();
       } catch (error) {
         console.error("Offer save error:", error);
@@ -413,72 +534,10 @@ const Offers = () => {
     },
   });
 
-  const handleCreate = () => {
-    setSelectedOffer(null);
-    setIsEdit(false);
-    setMainImageFile(null);
-    setGalleryImageFiles([]);
-    setModal(true);
-  };
-
-  const handleEdit = (offer) => {
-    setSelectedOffer(offer);
-    setIsEdit(true);
-    setMainImageFile(null);
-    setGalleryImageFiles([]);
-    setModal(true);
-  };
-
-  const handleView = (offer) => {
-    setViewModal(true);
-    startTransition(() => {
-      setSelectedOffer(offer);
-    });
-  };
-
-  const handleDeleteClick = (offer) => {
-    setSelectedOffer(offer);
-    setDeleteModal(true);
-  };
-
-  const handleDeleteOffer = async () => {
-    const id = selectedOffer?.id;
-    if (!id) return;
-    await dispatch(onDeleteOffer(id));
-    setDeleteModal(false);
-    setSelectedOffer(null);
-  };
-
-  const handlePublishOffer = async () => {
-    const id = selectedOffer?.id;
-    if (!id) return;
-    await dispatch(onPublishOffer(id));
-    setPublishModal(false);
-    setSelectedOffer(null);
-  };
-
-  const openPublishModal = (offer) => {
-    setSelectedOffer(offer);
-    setPublishModal(true);
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectFilterChange = (name, selectedOption) => {
-    setFilters((prev) => ({
-      ...prev,
-      [name]: selectedOption?.value || "",
-    }));
-  };
-
   const columns = [
     {
       name: "#",
       cell: (row, index) => index + 1,
-      width: "70px",
     },
     {
       name: "Title",
@@ -489,20 +548,7 @@ const Offers = () => {
         </div>
       ),
     },
-    {
-      name: "Business",
-      cell: (row) => (
-        <div className="d-flex align-items-center gap-2">
-          <span
-            className="d-inline-flex align-items-center justify-content-center rounded-circle bg-soft-primary text-primary"
-            style={{ width: "32px", height: "32px" }}
-          >
-            <i className="ri-store-2-line" />
-          </span>
-          <span className="fw-medium">{row.business_name || "-"}</span>
-        </div>
-      ),
-    },
+
     {
       name: "Offer Price",
       cell: (row) => (
@@ -570,9 +616,15 @@ const Offers = () => {
               <i className="ri-check-double-line" />
             </Button>
           )}
-          <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)}>
-            <i className="ri-pencil-line" />
-          </Button>
+          {!isOfferPublished(row.status) ? (
+            <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)}>
+              <i className="ri-pencil-line" />
+            </Button>
+          ) : (
+            <Button color="soft-secondary" size="sm" disabled title="No Edit After Published">
+              <i className="ri-check-double-line" />
+            </Button>
+          )}
           <Button
             color="soft-danger"
             size="sm"
@@ -654,365 +706,399 @@ const Offers = () => {
         </Card>
       </Container>
 
-      <Modal isOpen={modal} toggle={() => setModal(false)} size="xl">
-        <ModalHeader toggle={() => setModal(false)}>
+      {/* Offer Form Modal with Enhanced Image Management */}
+      <Modal isOpen={modal} toggle={() => {
+        setModal(false);
+        resetImageState();
+      }} size="xl">
+        <ModalHeader toggle={() => {
+          setModal(false);
+          resetImageState();
+        }}>
           {isEdit ? "Edit Offer" : "Add New Offer"}
         </ModalHeader>
         <Form
           onSubmit={(e) => {
             e.preventDefault();
-            validation.handleSubmit();
+            validation.handleSubmit(e);  // ← pass the event
           }}
         >
           <ModalBody>
-            <Row>
-              <Col md={4}>
-                <FormGroup>
-                  <Label>
-                    Business <span className="text-danger">*</span>
-                  </Label>
-                  <Select
-                    options={businessOptions}
-                    value={
-                      businessOptions.find(
-                        (option) => option.value === validation.values.business_id,
-                      ) || null
-                    }
-                    onChange={(option) =>
-                      validation.setFieldValue("business_id", option?.value || "")
-                    }
-                    onBlur={() => validation.setFieldTouched("business_id", true)}
-                    placeholder="Select business"
-                  />
-                  {validation.touched.business_id &&
-                    validation.errors.business_id ? (
-                    <div className="text-danger mt-1 small">
-                      {validation.errors.business_id}
-                    </div>
-                  ) : null}
-                </FormGroup>
-              </Col>
 
-              <Col md={4}>
-                <FormGroup>
-                  <Label>
-                    Title <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    name="title"
-                    placeholder="Family Lunch Combo"
-                    value={validation.values.title}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={validation.touched.title && !!validation.errors.title}
-                  />
-                  <FormFeedback>{validation.errors.title}</FormFeedback>
-                </FormGroup>
-              </Col>
-            </Row>
+            {/* ── Basic Information ─────────────────────────── */}
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <span className="d-flex align-items-center justify-content-center rounded bg-soft-primary text-primary" style={{ width: 24, height: 24, fontSize: 13 }}>
+                  <i className="ri-file-list-3-line" />
+                </span>
+                <p className="text-uppercase fw-semibold text-muted mb-0" style={{ fontSize: 11, letterSpacing: "0.07em" }}>Basic information</p>
+              </div>
 
-            <Row>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>
-                    Short Description <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    name="short_description"
-                    placeholder="Lunch combo for 2"
-                    value={validation.values.short_description}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.short_description &&
-                      !!validation.errors.short_description
-                    }
-                  />
-                  <FormFeedback>
-                    {validation.errors.short_description}
-                  </FormFeedback>
-                </FormGroup>
-              </Col>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>
-                    Tags (comma separated) <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    name="tags"
-                    placeholder="lunch, combo, family"
-                    value={validation.values.tags}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={validation.touched.tags && !!validation.errors.tags}
-                  />
-                  <FormFeedback>{validation.errors.tags}</FormFeedback>
-                </FormGroup>
-              </Col>
-            </Row>
+              <Row className="g-3">
+                <Col md={12}>
+                  <FormGroup className="mb-0">
+                    <Label>Title <span className="text-danger">*</span></Label>
+                    <Input name="title" placeholder="e.g. Family Lunch Combo"
+                      value={validation.values.title} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.title && !!validation.errors.title} />
+                    <FormFeedback>{validation.errors.title}</FormFeedback>
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup className="mb-0">
+                    <Label>Short description <span className="text-danger">*</span></Label>
+                    <Input name="short_description" placeholder="e.g. Lunch combo for 2 people"
+                      value={validation.values.short_description} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.short_description && !!validation.errors.short_description} />
+                    <FormFeedback>{validation.errors.short_description}</FormFeedback>
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup className="mb-0">
+                    <Label>Tags <span className="text-danger">*</span></Label>
+                    <Input name="tags" placeholder="e.g. lunch, combo, family"
+                      value={validation.values.tags} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.tags && !!validation.errors.tags} />
+                    <FormFeedback>{validation.errors.tags}</FormFeedback>
+                    <small className="text-muted">Comma-separated values</small>
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup className="mb-0">
+                    <Label>Description <span className="text-danger">*</span></Label>
+                    <Input type="textarea" rows={3} name="description"
+                      placeholder="e.g. Rice, chicken, salad and juice for two people."
+                      value={validation.values.description} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.description && !!validation.errors.description} />
+                    <FormFeedback>{validation.errors.description}</FormFeedback>
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup className="mb-0">
+                    <Label>Contents <span className="text-danger">*</span></Label>
+                    <Input type="textarea" rows={3} name="contents"
+                      placeholder="e.g. Rice, Chicken, Salad, Juice"
+                      value={validation.values.contents} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.contents && !!validation.errors.contents} />
+                    <FormFeedback>{validation.errors.contents}</FormFeedback>
+                    <small className="text-muted">Comma-separated values</small>
+                  </FormGroup>
+                </Col>
+              </Row>
+            </div>
 
-            <Row>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>
-                    Description <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="textarea"
-                    rows="4"
-                    name="description"
-                    placeholder="Rice, chicken, salad and juice for two people."
-                    value={validation.values.description}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.description &&
-                      !!validation.errors.description
-                    }
-                  />
-                  <FormFeedback>{validation.errors.description}</FormFeedback>
-                </FormGroup>
-              </Col>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>
-                    Contents (comma separated) <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="textarea"
-                    rows="4"
-                    name="contents"
-                    placeholder="Rice, Chicken, Salad, Juice"
-                    value={validation.values.contents}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.contents && !!validation.errors.contents
-                    }
-                  />
-                  <FormFeedback>{validation.errors.contents}</FormFeedback>
-                </FormGroup>
-              </Col>
-            </Row>
+            {/* ── Pricing & Quantity ────────────────────────── */}
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <span className="d-flex align-items-center justify-content-center rounded bg-soft-success text-success" style={{ width: 24, height: 24, fontSize: 13 }}>
+                  <i className="ri-coins-line" />
+                </span>
+                <p className="text-uppercase fw-semibold text-muted mb-0" style={{ fontSize: 11, letterSpacing: "0.07em" }}>Pricing & quantity</p>
+              </div>
 
-            <Row>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>Main Image</Label>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      setMainImageFile(e.currentTarget.files?.[0] || null)
-                    }
-                  />
-                </FormGroup>
-              </Col>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>Gallery Images</Label>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) =>
-                      setGalleryImageFiles(Array.from(e.currentTarget.files || []))
-                    }
-                  />
-                </FormGroup>
-              </Col>
-            </Row>
+              <Row className="g-3">
+                {[
+                  { label: "Original price", name: "original_price_minor", placeholder: "0.00", step: "0.01", min: 0 },
+                  { label: "Offer price", name: "offer_price_minor", placeholder: "0.00", step: "0.01", min: 0 },
+                  { label: "Quantity total", name: "quantity_total", placeholder: "e.g. 50", step: "1", min: 0 },
+                  { label: "Max per user", name: "max_per_user", placeholder: "e.g. 2", step: "1", min: 1 },
+                ].map(({ label, name, placeholder, step, min }) => (
+                  <Col md={3} key={name}>
+                    <FormGroup className="mb-0">
+                      <Label>{label} <span className="text-danger">*</span></Label>
+                      <Input
+                        type="number"
+                        name={name}
+                        placeholder={placeholder}
+                        step={step}
+                        min={min}
+                        value={validation.values[name]}
+                        // On the number inputs, replace the custom onChange/onBlur with:
+                        onChange={validation.handleChange}
+                        onBlur={(e) => {
+                          const clamped = clampToMin(e.target.value, min);
+                          validation.setFieldValue(name, clamped);
+                          validation.handleBlur(e);
+                        }}
+                        onKeyDown={blockInvalidNumberKeys}
+                        invalid={validation.touched[name] && !!validation.errors[name]}
 
-            <Row>
-              <Col md={4}>
-                <FormGroup check className="mt-2">
-                  <Input
-                    type="checkbox"
-                    id="is_order_time_limited"
-                    name="is_order_time_limited"
-                    checked={validation.values.is_order_time_limited}
-                    onChange={validation.handleChange}
-                  />
-                  <Label check for="is_order_time_limited">
-                    Order Time Limited
-                  </Label>
-                </FormGroup>
-              </Col>
-              <Col md={8}>
-                <FormGroup>
-                  <Label>
-                    Order Cutoff At
-                    {validation.values.is_order_time_limited ? (
-                      <span className="text-danger"> *</span>
-                    ) : null}
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    name="order_cutoff_at"
-                    value={validation.values.order_cutoff_at}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    disabled={!validation.values.is_order_time_limited}
-                    invalid={
-                      validation.touched.order_cutoff_at &&
-                      !!validation.errors.order_cutoff_at
-                    }
-                  />
-                  <FormFeedback>{validation.errors.order_cutoff_at}</FormFeedback>
-                </FormGroup>
-              </Col>
-            </Row>
+                      />
+                      <FormFeedback>{(validation.errors)[name]}</FormFeedback>
+                    </FormGroup>
+                  </Col>
+                ))}
+              </Row>
+            </div>
 
-            <Row>
-              <Col md={3}>
-                <FormGroup>
-                  <Label>
-                    Original Price <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    name="original_price_minor"
-                    value={validation.values.original_price_minor}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.original_price_minor &&
-                      !!validation.errors.original_price_minor
-                    }
-                  />
-                  <FormFeedback>
-                    {validation.errors.original_price_minor}
-                  </FormFeedback>
-                </FormGroup>
-              </Col>
-              <Col md={3}>
-                <FormGroup>
-                  <Label>
-                    Offer Price <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    name="offer_price_minor"
-                    value={validation.values.offer_price_minor}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.offer_price_minor &&
-                      !!validation.errors.offer_price_minor
-                    }
-                  />
-                  <FormFeedback>
-                    {validation.errors.offer_price_minor}
-                  </FormFeedback>
-                </FormGroup>
-              </Col>
-              <Col md={3}>
-                <FormGroup>
-                  <Label>
-                    Quantity Total <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    name="quantity_total"
-                    value={validation.values.quantity_total}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.quantity_total &&
-                      !!validation.errors.quantity_total
-                    }
-                  />
-                  <FormFeedback>{validation.errors.quantity_total}</FormFeedback>
-                </FormGroup>
-              </Col>
-              <Col md={3}>
-                <FormGroup>
-                  <Label>
-                    Max Per User <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    name="max_per_user"
-                    min="1"
-                    value={validation.values.max_per_user}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.max_per_user &&
-                      !!validation.errors.max_per_user
-                    }
-                  />
-                  <FormFeedback>{validation.errors.max_per_user}</FormFeedback>
-                </FormGroup>
-              </Col>
-            </Row>
+            {/* ── Order Cutoff ──────────────────────────────── */}
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <span className="d-flex align-items-center justify-content-center rounded bg-soft-warning text-warning" style={{ width: 24, height: 24, fontSize: 13 }}>
+                  <i className="ri-timer-line" />
+                </span>
+                <p className="text-uppercase fw-semibold text-muted mb-0" style={{ fontSize: 11, letterSpacing: "0.07em" }}>Order cutoff</p>
+              </div>
 
-            <Row>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>
-                    Pickup Start <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    name="pickup_start"
-                    value={validation.values.pickup_start}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.pickup_start &&
-                      !!validation.errors.pickup_start
-                    }
-                  />
-                  <FormFeedback>{validation.errors.pickup_start}</FormFeedback>
-                </FormGroup>
-              </Col>
-              <Col md={6}>
-                <FormGroup>
-                  <Label>
-                    Pickup End <span className="text-danger">*</span>
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    name="pickup_end"
-                    value={validation.values.pickup_end}
-                    onChange={validation.handleChange}
-                    onBlur={validation.handleBlur}
-                    invalid={
-                      validation.touched.pickup_end &&
-                      !!validation.errors.pickup_end
-                    }
-                  />
-                  <FormFeedback>{validation.errors.pickup_end}</FormFeedback>
-                </FormGroup>
-              </Col>
-            </Row>
+              <Row className="g-3 align-items-start">
+                <Col md={4}>
+                  <label className="d-flex align-items-center gap-2 p-3 rounded border bg-light cursor-pointer mb-0" style={{ cursor: "pointer" }}>
+                    <Input type="checkbox" name="is_order_time_limited"
+                      checked={validation.values.is_order_time_limited}
+                      onChange={validation.handleChange}
+                      className="m-0" style={{ width: 15, height: 15 }} />
+                    <span style={{ fontSize: 13 }}>Order time limited</span>
+                  </label>
+                </Col>
+                <Col md={8}>
+                  <FormGroup className="mb-0">
+                    <Label>
+                      Cutoff date & time
+                      {validation.values.is_order_time_limited && <span className="text-danger"> *</span>}
+                    </Label>
+                    <Input type="datetime-local" name="order_cutoff_at"
+                      value={validation.values.order_cutoff_at}
+                      onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      disabled={!validation.values.is_order_time_limited}
+                      invalid={validation.touched.order_cutoff_at && !!validation.errors.order_cutoff_at} />
+                    <FormFeedback>{validation.errors.order_cutoff_at}</FormFeedback>
+                  </FormGroup>
+                </Col>
+              </Row>
+            </div>
 
-            <FormGroup>
-              <Label>
-                Pickup Instructions <span className="text-danger">*</span>
-              </Label>
-              <Input
-                type="textarea"
-                rows="3"
-                name="pickup_instructions"
-                placeholder="Show order code at pickup desk"
-                value={validation.values.pickup_instructions}
-                onChange={validation.handleChange}
-                onBlur={validation.handleBlur}
-                invalid={
-                  validation.touched.pickup_instructions &&
-                  !!validation.errors.pickup_instructions
-                }
-              />
-              <FormFeedback>{validation.errors.pickup_instructions}</FormFeedback>
-            </FormGroup>
+            {/* ── Pickup Details ────────────────────────────── */}
+            <div className="mb-4">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <span className="d-flex align-items-center justify-content-center rounded" style={{ width: 24, height: 24, fontSize: 13, background: "#EEEDFE", color: "#3C3489" }}>
+                  <i className="ri-map-pin-line" />
+                </span>
+                <p className="text-uppercase fw-semibold text-muted mb-0" style={{ fontSize: 11, letterSpacing: "0.07em" }}>Pickup details</p>
+              </div>
+
+              <Row className="g-3">
+                <Col md={6}>
+                  <FormGroup className="mb-0">
+                    <Label>Pickup start <span className="text-danger">*</span></Label>
+                    <Input type="datetime-local" name="pickup_start"
+                      value={validation.values.pickup_start} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.pickup_start && !!validation.errors.pickup_start} />
+                    <FormFeedback>{validation.errors.pickup_start}</FormFeedback>
+                  </FormGroup>
+                </Col>
+                <Col md={6}>
+                  <FormGroup className="mb-0">
+                    <Label>Pickup end <span className="text-danger">*</span></Label>
+                    <Input type="datetime-local" name="pickup_end"
+                      value={validation.values.pickup_end} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.pickup_end && !!validation.errors.pickup_end} />
+                    <FormFeedback>{validation.errors.pickup_end}</FormFeedback>
+                  </FormGroup>
+                </Col>
+                <Col md={12}>
+                  <FormGroup className="mb-0">
+                    <Label>Pickup instructions <span className="text-danger">*</span></Label>
+                    <Input type="textarea" rows={2} name="pickup_instructions"
+                      placeholder="e.g. Show your order code at the pickup desk — counter B, ground floor"
+                      value={validation.values.pickup_instructions} onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.pickup_instructions && !!validation.errors.pickup_instructions} />
+                    <FormFeedback>{validation.errors.pickup_instructions}</FormFeedback>
+                  </FormGroup>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Enhanced Image Management Section */}
+            <div className="mb-4">
+              <h6 className="mb-3">Images</h6>
+              <Row>
+                {/* Main Image Section */}
+                <Col md={6}>
+                  <Card className="border shadow-none mb-3">
+                    <CardHeader className="bg-light py-2">
+                      <Label className="fw-semibold mb-0">Main Image</Label>
+                    </CardHeader>
+                    <CardBody>
+                      {mainImagePreview ? (
+                        <div className="position-relative d-inline-block">
+                          <img
+                            src={mainImagePreview}
+                            alt="Main preview"
+                            style={{
+                              width: "100%",
+                              height: "200px",
+                              objectFit: "cover",
+                              borderRadius: "12px",
+                            }}
+                          />
+                          <Button
+                            color="danger"
+                            size="sm"
+                            className="position-absolute top-0 end-0 rounded-circle"
+                            style={{ transform: "translate(30%, -30%)" }}
+                            onClick={handleRemoveMainImage}
+                            type="button"
+                          >
+                            <i className="ri-close-line" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="border rounded-3 d-flex flex-column align-items-center justify-content-center"
+                          style={{
+                            height: "200px",
+                            backgroundColor: "#f8f9fa",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => document.getElementById("mainImageInput").click()}
+                        >
+                          <i className="ri-image-add-line fs-1 text-muted" />
+                          <p className="text-muted mt-2 mb-0">Click to upload main image</p>
+                          <small className="text-muted">Recommended: 800x800px</small>
+                        </div>
+                      )}
+                      <Input
+                        id="mainImageInput"
+                        type="file"
+                        accept="image/*"
+                        className="d-none"
+                        onChange={handleMainImageChange}
+                      />
+                      {!mainImagePreview && (
+                        <Button
+                          color="outline-primary"
+                          size="sm"
+                          className="mt-2 w-100"
+                          onClick={() => document.getElementById("mainImageInput").click()}
+                          type="button"
+                        >
+                          <i className="ri-upload-line me-1" /> Select Image
+                        </Button>
+                      )}
+                    </CardBody>
+                  </Card>
+                </Col>
+
+                {/* Gallery Images Section */}
+                <Col md={6}>
+                  <Card className="border shadow-none mb-3">
+                    <CardHeader className="bg-light py-2 d-flex justify-content-between align-items-center">
+                      <Label className="fw-semibold mb-0">Gallery Images</Label>
+                      <Button
+                        color="outline-primary"
+                        size="sm"
+                        onClick={() => document.getElementById("galleryImagesInput").click()}
+                        type="button"
+                      >
+                        <i className="ri-add-line" /> Add Images
+                      </Button>
+                    </CardHeader>
+                    <CardBody>
+                      <Input
+                        id="galleryImagesInput"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="d-none"
+                        onChange={handleGalleryImagesChange}
+                      />
+                      {galleryImagePreviews.length > 0 || existingGalleryImages.length > 0 ? (
+                        <Row className="g-3">
+                          {/* Display existing gallery images from server */}
+                          {existingGalleryImages.map((url, idx) => (
+                            <Col xs={6} sm={4} key={`existing-${idx}`}>
+                              <div className="position-relative">
+                                <img
+                                  src={url}
+                                  alt={`Gallery ${idx + 1}`}
+                                  style={{
+                                    width: "100%",
+                                    height: "120px",
+                                    objectFit: "cover",
+                                    borderRadius: "8px",
+                                  }}
+                                />
+                                <Button
+                                  color="danger"
+                                  size="sm"
+                                  className="position-absolute top-0 end-0 rounded-circle"
+                                  style={{ transform: "translate(30%, -30%)" }}
+                                  onClick={() => handleRemoveGalleryImage(idx, true, url)}
+                                  type="button"
+                                >
+                                  <i className="ri-close-line" />
+                                </Button>
+                              </div>
+                            </Col>
+                          ))}
+                          {/* Display newly added gallery images */}
+                          {galleryImagePreviews.map((preview, idx) => {
+                            const actualIndex = existingGalleryImages.length + idx;
+                            return (
+                              <Col xs={6} sm={4} key={`new-${idx}`}>
+                                <div className="position-relative">
+                                  <img
+                                    src={preview}
+                                    alt={`New gallery ${idx + 1}`}
+                                    style={{
+                                      width: "100%",
+                                      height: "120px",
+                                      objectFit: "cover",
+                                      borderRadius: "8px",
+                                    }}
+                                  />
+                                  <Button
+                                    color="danger"
+                                    size="sm"
+                                    className="position-absolute top-0 end-0 rounded-circle"
+                                    style={{ transform: "translate(30%, -30%)" }}
+                                    onClick={() => handleRemoveGalleryImage(actualIndex)}
+                                    type="button"
+                                  >
+                                    <i className="ri-close-line" />
+                                  </Button>
+                                </div>
+                              </Col>
+                            );
+                          })}
+                        </Row>
+                      ) : (
+                        <div
+                          className="border rounded-3 d-flex flex-column align-items-center justify-content-center"
+                          style={{
+                            height: "200px",
+                            backgroundColor: "#f8f9fa",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => document.getElementById("galleryImagesInput").click()}
+                        >
+                          <i className="ri-gallery-upload-line fs-1 text-muted" />
+                          <p className="text-muted mt-2 mb-0">Click to upload gallery images</p>
+                          <small className="text-muted">You can select multiple images</small>
+                        </div>
+                      )}
+                    </CardBody>
+                  </Card>
+                </Col>
+              </Row>
+            </div>
+
           </ModalBody>
 
           <ModalFooter>
-            <Button color="light" onClick={() => setModal(false)}>
+            <Button color="light" onClick={() => {
+              setModal(false);
+              resetImageState();
+            }}>
               Cancel
             </Button>
             <Button color="primary" type="submit" disabled={isSubmitting}>
@@ -1022,6 +1108,7 @@ const Offers = () => {
         </Form>
       </Modal>
 
+      {/* View Modal */}
       <Modal isOpen={viewModal} toggle={() => setViewModal(false)} size="xl">
         <ModalHeader toggle={() => setViewModal(false)}>Offer Details</ModalHeader>
         <ModalBody>

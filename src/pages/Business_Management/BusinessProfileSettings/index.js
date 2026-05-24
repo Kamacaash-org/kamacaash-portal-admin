@@ -12,8 +12,18 @@ import {
   Input,
   Label,
   Row,
+  Progress,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  Nav,
+  NavItem,
+  NavLink,
+  TabContent,
+  TabPane,
 } from "reactstrap";
 import { toast, ToastContainer } from "react-toastify";
+import classnames from "classnames";
 
 import BreadCrumb from "../../../Components/Common/BreadCrumb";
 import Loader from "../../../Components/Common/Loader";
@@ -25,13 +35,13 @@ import {
 } from "../../../helpers/backend_helper";
 
 const days = [
-  { key: 1, label: "Monday" },
-  { key: 2, label: "Tuesday" },
-  { key: 3, label: "Wednesday" },
-  { key: 4, label: "Thursday" },
-  { key: 5, label: "Friday" },
-  { key: 6, label: "Saturday" },
-  { key: 7, label: "Sunday" },
+  { key: 1, label: "Monday", short: "MON" },
+  { key: 2, label: "Tuesday", short: "TUE" },
+  { key: 3, label: "Wednesday", short: "WED" },
+  { key: 4, label: "Thursday", short: "THU" },
+  { key: 5, label: "Friday", short: "FRI" },
+  { key: 6, label: "Saturday", short: "SAT" },
+  { key: 7, label: "Sunday", short: "SUN" },
 ];
 
 const emptyHours = () =>
@@ -84,9 +94,20 @@ const normalizeBusinessProfile = (raw) => {
     phone: raw.phone || "",
     secondaryPhone: raw.secondary_phone || "",
     websiteUrl: raw.website_url || "",
+    address: raw.address || "",
+    city: raw.city || "",
+    state: raw.state || "",
+    zipCode: raw.zip_code || "",
+    country: raw.country || "",
+    taxId: raw.tax_id || "",
+    businessType: raw.business_type || "",
+    establishedYear: raw.established_year || "",
     socialLinks: {
       facebook: raw.social_links?.facebook || "",
       instagram: raw.social_links?.instagram || "",
+      twitter: raw.social_links?.twitter || "",
+      linkedin: raw.social_links?.linkedin || "",
+      youtube: raw.social_links?.youtube || "",
     },
     openHours: normalizeOpenHours(raw.open_hours || []),
     logoFile: null,
@@ -104,6 +125,9 @@ const BusinessProfileSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [previewImage, setPreviewImage] = useState(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
 
   const logoInputRef = useRef(null);
   const bannerInputRef = useRef(null);
@@ -153,6 +177,8 @@ const BusinessProfileSettings = () => {
       profile?.email,
       profile?.phone,
       profile?.websiteUrl,
+      profile?.address,
+      profile?.city,
       profile?.logoFile || profile?.logoUrl,
       profile?.bannerFile || profile?.bannerUrl,
     ];
@@ -260,6 +286,14 @@ const BusinessProfileSettings = () => {
       formData.append("phone", profile.phone || "");
       formData.append("secondary_phone", profile.secondaryPhone || "");
       formData.append("website_url", profile.websiteUrl || "");
+      formData.append("address", profile.address || "");
+      formData.append("city", profile.city || "");
+      formData.append("state", profile.state || "");
+      formData.append("zip_code", profile.zipCode || "");
+      formData.append("country", profile.country || "");
+      formData.append("tax_id", profile.taxId || "");
+      formData.append("business_type", profile.businessType || "");
+      formData.append("established_year", profile.establishedYear || "");
       formData.append("social_links", JSON.stringify(profile.socialLinks || {}));
       formData.append(
         "open_hours",
@@ -294,6 +328,32 @@ const BusinessProfileSettings = () => {
     }
   };
 
+  const StatCard = ({ icon, color, title, value }) => (
+    <div className="text-center p-3 border rounded-3 bg-white">
+      <div className={`avatar-sm bg-${color}-subtle rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center`}>
+        <i className={`ri-${icon} text-${color} fs-4`}></i>
+      </div>
+      <div className="fs-2 fw-bold">{value}</div>
+      <div className="small text-muted">{title}</div>
+    </div>
+  );
+
+  const TabHeader = ({ id, icon, label, badge }) => (
+    <NavLink
+      className={classnames({ active: activeTab === id })}
+      onClick={() => setActiveTab(id)}
+      style={{ cursor: "pointer" }}
+    >
+      <i className={`ri-${icon} me-2`}></i>
+      {label}
+      {badge && (
+        <Badge color="primary" className="ms-2" pill>
+          {badge}
+        </Badge>
+      )}
+    </NavLink>
+  );
+
   return (
     <div className="page-content">
       <Container fluid>
@@ -308,19 +368,24 @@ const BusinessProfileSettings = () => {
           </Alert>
         ) : (
           <Form onSubmit={handleSubmit}>
-            <Card className="border-0 shadow-sm overflow-hidden mb-4">
+            {/* Hero Banner Section */}
+            <div className="position-relative rounded-4 overflow-hidden mb-5 shadow-sm">
               <div
                 className="position-relative"
                 style={{
-                  minHeight: "260px",
+                  minHeight: "320px",
                   background: bannerPreview
-                    ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url(${bannerPreview}) center/cover no-repeat`
-                    : "linear-gradient(135deg, #22991a 0%, #40c637 55%, #b0f5aa 100%)",
+                    ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url(${bannerPreview}) center/cover no-repeat`
+                    : "linear-gradient(135deg, #40c637 0%, #76e16a 50%, #b0f5aa 100%)",
                 }}
               >
                 <div className="position-absolute top-0 end-0 p-4">
-                  <Button color="light" onClick={() => bannerInputRef.current?.click()}>
-                    <i className="ri-image-edit-line me-1"></i>
+                  <Button
+                    color="light"
+                    onClick={() => bannerInputRef.current?.click()}
+                    className="shadow-sm"
+                  >
+                    <i className="ri-camera-line me-2"></i>
                     Change Banner
                   </Button>
                   <Input
@@ -331,14 +396,15 @@ const BusinessProfileSettings = () => {
                     className="d-none"
                   />
                 </div>
-              </div>
-              <CardBody className="pt-0">
-                <div className="d-flex flex-wrap align-items-end justify-content-between gap-4">
-                  <div className="d-flex align-items-end gap-4">
-                    <div >
+
+                {/* Business Info Overlay */}
+                <div className="position-absolute bottom-0 start-0 w-100 p-4">
+                  <div className="d-flex align-items-end gap-4 flex-wrap">
+                    <div className="position-relative">
                       <div
-                        className="bg-white rounded-4 shadow p-2 d-flex align-items-center justify-content-center"
-                        style={{ width: "128px", height: "128px" }}
+                        className="bg-white rounded-4 shadow-lg p-2"
+                        style={{ width: "140px", height: "140px", cursor: "pointer" }}
+                        onClick={() => logoInputRef.current?.click()}
                       >
                         {logoPreview ? (
                           <img
@@ -351,306 +417,464 @@ const BusinessProfileSettings = () => {
                             }}
                           />
                         ) : (
-                          <i className="ri-store-2-line fs-1 text-primary"></i>
+                          <div className="d-flex align-items-center justify-content-center h-100">
+                            <i className="ri-store-3-line text-primary fs-1"></i>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        color="light"
+                        size="sm"
+                        className="position-absolute bottom-0 end-0 rounded-circle p-1"
+                        style={{ width: "32px", height: "32px" }}
+                        onClick={() => logoInputRef.current?.click()}
+                      >
+                        <i className="ri-pencil-line"></i>
+                      </Button>
+                      <Input
+                        innerRef={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        className="d-none"
+                      />
+                    </div>
+
+                    <div>
+                      <h1 className="display-6 fw-bold mb-2 text-white">{profile?.displayName || "Business Name"}</h1>
+                      <div className="d-flex gap-3 flex-wrap">
+                        <Badge color="primary" className="px-3 py-2">
+                          <i className="ri-mail-line me-1"></i>
+                          {profile?.email || "No email"}
+                        </Badge>
+                        <Badge color="info" className="px-3 py-2">
+                          <i className="ri-phone-line me-1"></i>
+                          {profile?.phone || "No phone"}
+                        </Badge>
+                        {profile?.websiteUrl && (
+                          <Badge color="warning" className="px-3 py-2">
+                            <i className="ri-global-line me-1"></i>
+                            {profile.websiteUrl.replace(/^https?:\/\//, '')}
+                          </Badge>
                         )}
                       </div>
                     </div>
-                    <div className="pb-2">
-                      <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
-                        <h2 className="mb-0">{profile?.displayName || "Business Name"}</h2>
-                        <Badge color="success" pill className="px-3 py-2">
-                          Profile {profileCompletion}% complete
-                        </Badge>
-                      </div>
-                      <div className="text-muted d-flex flex-wrap gap-3">
-                        <span>
-                          <i className="ri-mail-line me-1"></i>
-                          {profile?.email || "-"}
-                        </span>
-                        <span>
-                          <i className="ri-phone-line me-1"></i>
-                          {profile?.phone || "-"}
-                        </span>
-                        <span>
-                          <i className="ri-global-line me-1"></i>
-                          {profile?.websiteUrl || "-"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pb-2 d-flex gap-2 flex-wrap">
-                    <Button color="light" onClick={() => logoInputRef.current?.click()}>
-                      <i className="ri-upload-2-line me-1"></i>
-                      Upload Logo
-                    </Button>
-                    <Button color="success" outline onClick={() => loadProfile(businessId)}>
-                      <i className="ri-refresh-line me-1"></i>
-                      Refresh
-                    </Button>
-                    <Input
-                      innerRef={logoInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoChange}
-                      className="d-none"
-                    />
                   </div>
                 </div>
-              </CardBody>
-            </Card>
+              </div>
+            </div>
 
-            <Row className="g-4">
-              <Col xl={8}>
-                <Card className="border-0 shadow-sm mb-4">
-                  <CardBody className="p-4">
-                    <h5 className="mb-1">Business Information</h5>
-                    <p className="text-muted mb-4">
-                      Update the public details customers see about your business.
-                    </p>
+            {/* Stats Row */}
+            <Row className="g-4 mb-4">
+              <Col lg={3} md={6}>
+                <StatCard icon="star-line" color="warning" title="Profile Completion" value={`${profileCompletion}%`} />
+              </Col>
+              <Col lg={3} md={6}>
+                <StatCard icon="image-line" color="primary" title="Gallery Images" value={profile?.galleryImages?.length || 0} />
+              </Col>
+              <Col lg={3} md={6}>
+                <StatCard icon="time-line" color="success" title="Operating Days" value={Object.values(profile?.openHours || {}).filter(h => h.open && h.close).length} />
+              </Col>
+              <Col lg={3} md={6}>
+                <StatCard icon="link" color="info" title="Social Links" value={Object.values(profile?.socialLinks || {}).filter(l => l).length} />
+              </Col>
+            </Row>
 
+            {/* Navigation Tabs */}
+            <Card className="border-0 shadow-sm rounded-4 mb-4">
+              <CardBody className="p-0">
+                <Nav tabs className="nav-tabs-custom p-3 pb-0">
+                  <NavItem>
+                    <TabHeader id="basic" icon="store-line" label="Basic Information" />
+                  </NavItem>
+                  <NavItem>
+                    <TabHeader id="contact" icon="mail-line" label="Contact & Location" />
+                  </NavItem>
+                  <NavItem>
+                    <TabHeader id="hours" icon="time-line" label="Business Hours"
+                      badge={Object.values(profile?.openHours || {}).filter(h => h.open && h.close).length} />
+                  </NavItem>
+                  <NavItem>
+                    <TabHeader id="social" icon="share-line" label="Social Media" />
+                  </NavItem>
+                  <NavItem>
+                    <TabHeader id="media" icon="image-line" label="Media Gallery"
+                      badge={profile?.galleryImages?.length} />
+                  </NavItem>
+                  <NavItem>
+                    <TabHeader id="advanced" icon="settings-3-line" label="Advanced" />
+                  </NavItem>
+                </Nav>
+
+                <TabContent activeTab={activeTab} className="p-4">
+                  {/* Basic Information Tab */}
+                  <TabPane tabId="basic">
                     <Row className="g-4">
                       <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Display Name</Label>
+                        <FormGroup>
+                          <Label className="fw-semibold">Display Name *</Label>
                           <Input
                             value={profile?.displayName || ""}
-                            onChange={(event) =>
-                              handleFieldChange("displayName", event.target.value)
-                            }
+                            onChange={(event) => handleFieldChange("displayName", event.target.value)}
+                            placeholder="Your business name"
+                            className="py-2"
                           />
+                          <small className="text-muted">This is how customers will see your business</small>
                         </FormGroup>
                       </Col>
                       <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Legal Name</Label>
-                          <Input value={profile?.legalName || ""} disabled />
+                        <FormGroup>
+                          <Label className="fw-semibold">Legal Name</Label>
+                          <Input value={profile?.legalName || ""} disabled className="bg-light" />
+                          <small className="text-muted">Legal name cannot be changed</small>
                         </FormGroup>
                       </Col>
                       <Col md={12}>
-                        <FormGroup className="mb-0">
-                          <Label>Description</Label>
+                        <FormGroup>
+                          <Label className="fw-semibold">Business Description</Label>
                           <Input
                             type="textarea"
                             rows="5"
                             value={profile?.description || ""}
-                            onChange={(event) =>
-                              handleFieldChange("description", event.target.value)
-                            }
+                            onChange={(event) => handleFieldChange("description", event.target.value)}
+                            placeholder="Tell customers about your business..."
+                            className="py-2"
                           />
+                          <small className="text-muted">Detailed description of your business (max 500 words)</small>
                         </FormGroup>
                       </Col>
                       <Col md={12}>
-                        <FormGroup className="mb-0">
-                          <Label>Short Description</Label>
+                        <FormGroup>
+                          <Label className="fw-semibold">Short Description</Label>
                           <Input
                             type="textarea"
                             rows="3"
                             value={profile?.shortDescription || ""}
-                            onChange={(event) =>
-                              handleFieldChange("shortDescription", event.target.value)
-                            }
+                            onChange={(event) => handleFieldChange("shortDescription", event.target.value)}
+                            placeholder="Brief summary of your business"
+                            className="py-2"
+                          />
+                          <small className="text-muted">This appears in search results and listings (max 160 characters)</small>
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Business Type</Label>
+                          <Input
+                            value={profile?.businessType || ""}
+                            onChange={(event) => handleFieldChange("businessType", event.target.value)}
+                            placeholder="e.g., Retail, Restaurant, Service"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Established Year</Label>
+                          <Input
+                            type="number"
+                            value={profile?.establishedYear || ""}
+                            onChange={(event) => handleFieldChange("establishedYear", event.target.value)}
+                            placeholder="YYYY"
+                            className="py-2"
                           />
                         </FormGroup>
                       </Col>
                     </Row>
-                  </CardBody>
-                </Card>
+                  </TabPane>
 
-                <Card className="border-0 shadow-sm mb-4">
-                  <CardBody className="p-4">
-                    <h5 className="mb-1">Contact And Social Links</h5>
-                    <p className="text-muted mb-4">
-                      Keep your contact information and links up to date.
-                    </p>
-
+                  {/* Contact & Location Tab */}
+                  <TabPane tabId="contact">
                     <Row className="g-4">
                       <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Email</Label>
+                        <FormGroup>
+                          <Label className="fw-semibold">Email Address</Label>
                           <Input
                             type="email"
                             value={profile?.email || ""}
-                            onChange={(event) =>
-                              handleFieldChange("email", event.target.value)
-                            }
+                            onChange={(event) => handleFieldChange("email", event.target.value)}
+                            placeholder="contact@yourbusiness.com"
+                            className="py-2"
                           />
                         </FormGroup>
                       </Col>
                       <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Website URL</Label>
+                        <FormGroup>
+                          <Label className="fw-semibold">Phone Number</Label>
+                          <Input
+                            value={profile?.phone || ""}
+                            onChange={(event) => handleFieldChange("phone", event.target.value)}
+                            placeholder="+1 234 567 8900"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Secondary Phone</Label>
+                          <Input
+                            value={profile?.secondaryPhone || ""}
+                            onChange={(event) => handleFieldChange("secondaryPhone", event.target.value)}
+                            placeholder="Alternative contact number"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Website URL</Label>
                           <Input
                             type="url"
                             value={profile?.websiteUrl || ""}
-                            onChange={(event) =>
-                              handleFieldChange("websiteUrl", event.target.value)
-                            }
+                            onChange={(event) => handleFieldChange("websiteUrl", event.target.value)}
+                            placeholder="https://yourbusiness.com"
+                            className="py-2"
                           />
                         </FormGroup>
                       </Col>
-                      <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Phone</Label>
+                      <Col md={12}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Street Address</Label>
                           <Input
-                            value={profile?.phone || ""}
-                            onChange={(event) =>
-                              handleFieldChange("phone", event.target.value)
-                            }
+                            value={profile?.address || ""}
+                            onChange={(event) => handleFieldChange("address", event.target.value)}
+                            placeholder="123 Business Street"
+                            className="py-2"
                           />
                         </FormGroup>
                       </Col>
-                      <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Secondary Phone</Label>
+                      <Col md={4}>
+                        <FormGroup>
+                          <Label className="fw-semibold">City</Label>
                           <Input
-                            value={profile?.secondaryPhone || ""}
-                            onChange={(event) =>
-                              handleFieldChange("secondaryPhone", event.target.value)
-                            }
+                            value={profile?.city || ""}
+                            onChange={(event) => handleFieldChange("city", event.target.value)}
+                            placeholder="City"
+                            className="py-2"
                           />
                         </FormGroup>
                       </Col>
-                      <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Facebook</Label>
+                      <Col md={4}>
+                        <FormGroup>
+                          <Label className="fw-semibold">State/Province</Label>
                           <Input
-                            type="url"
-                            value={profile?.socialLinks?.facebook || ""}
-                            onChange={(event) =>
-                              handleSocialChange("facebook", event.target.value)
-                            }
+                            value={profile?.state || ""}
+                            onChange={(event) => handleFieldChange("state", event.target.value)}
+                            placeholder="State"
+                            className="py-2"
                           />
                         </FormGroup>
                       </Col>
-                      <Col md={6}>
-                        <FormGroup className="mb-0">
-                          <Label>Instagram</Label>
+                      <Col md={4}>
+                        <FormGroup>
+                          <Label className="fw-semibold">ZIP Code</Label>
                           <Input
-                            type="url"
-                            value={profile?.socialLinks?.instagram || ""}
-                            onChange={(event) =>
-                              handleSocialChange("instagram", event.target.value)
-                            }
+                            value={profile?.zipCode || ""}
+                            onChange={(event) => handleFieldChange("zipCode", event.target.value)}
+                            placeholder="ZIP Code"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={12}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Country</Label>
+                          <Input
+                            value={profile?.country || ""}
+                            onChange={(event) => handleFieldChange("country", event.target.value)}
+                            placeholder="Country"
+                            className="py-2"
                           />
                         </FormGroup>
                       </Col>
                     </Row>
-                  </CardBody>
-                </Card>
+                  </TabPane>
 
-                <Card className="border-0 shadow-sm">
-                  <CardBody className="p-4">
-                    <h5 className="mb-1">Operating Hours</h5>
-                    <p className="text-muted mb-4">
-                      Set the opening and closing times for each day.
-                    </p>
-
-                    <Row className="g-3">
+                  {/* Business Hours Tab */}
+                  <TabPane tabId="hours">
+                    <div className="row g-3">
                       {days.map((day) => (
-                        <Col md={6} key={day.key}>
-                          <div className="border rounded-3 p-3 h-100">
+                        <div className="col-md-6" key={day.key}>
+                          <div className="p-3 bg-light rounded-3">
                             <div className="d-flex justify-content-between align-items-center mb-3">
                               <div className="fw-semibold">{day.label}</div>
-                              <Badge color="light" className="text-dark">
-                                {profile?.openHours?.[day.key]?.open &&
-                                  profile?.openHours?.[day.key]?.close
-                                  ? `${profile.openHours[day.key].open} - ${profile.openHours[day.key].close}`
-                                  : "Closed"}
+                              <Badge color={profile?.openHours?.[day.key]?.open && profile?.openHours?.[day.key]?.close ? "success" : "secondary"}>
+                                {profile?.openHours?.[day.key]?.open && profile?.openHours?.[day.key]?.close ? "Open" : "Closed"}
                               </Badge>
                             </div>
-                            <Row className="g-2">
-                              <Col xs={6}>
+                            <div className="row g-2">
+                              <div className="col-6">
+                                <Label className="small text-muted">Opening Time</Label>
                                 <Input
                                   type="time"
                                   value={profile?.openHours?.[day.key]?.open || ""}
-                                  onChange={(event) =>
-                                    handleHoursChange(
-                                      day.key,
-                                      "open",
-                                      event.target.value,
-                                    )
-                                  }
+                                  onChange={(event) => handleHoursChange(day.key, "open", event.target.value)}
+                                  className="bg-white"
                                 />
-                              </Col>
-                              <Col xs={6}>
+                              </div>
+                              <div className="col-6">
+                                <Label className="small text-muted">Closing Time</Label>
                                 <Input
                                   type="time"
                                   value={profile?.openHours?.[day.key]?.close || ""}
-                                  onChange={(event) =>
-                                    handleHoursChange(
-                                      day.key,
-                                      "close",
-                                      event.target.value,
-                                    )
-                                  }
+                                  onChange={(event) => handleHoursChange(day.key, "close", event.target.value)}
+                                  className="bg-white"
                                 />
-                              </Col>
-                            </Row>
+                              </div>
+                            </div>
                           </div>
-                        </Col>
+                        </div>
                       ))}
+                    </div>
+                    <div className="mt-4 p-3 bg-info bg-opacity-10 rounded-3">
+                      <i className="ri-information-line me-2"></i>
+                      <small>Leave both fields empty to mark the day as closed</small>
+                    </div>
+                  </TabPane>
+
+                  {/* Social Media Tab */}
+                  <TabPane tabId="social">
+                    <Row className="g-4">
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">
+                            <i className="ri-facebook-circle-line text-primary me-2"></i> Facebook
+                          </Label>
+                          <Input
+                            type="url"
+                            value={profile?.socialLinks?.facebook || ""}
+                            onChange={(event) => handleSocialChange("facebook", event.target.value)}
+                            placeholder="https://facebook.com/yourbusiness"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">
+                            <i className="ri-instagram-line text-danger me-2"></i> Instagram
+                          </Label>
+                          <Input
+                            type="url"
+                            value={profile?.socialLinks?.instagram || ""}
+                            onChange={(event) => handleSocialChange("instagram", event.target.value)}
+                            placeholder="https://instagram.com/yourbusiness"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">
+                            <i className="ri-twitter-x-line text-dark me-2"></i> Twitter/X
+                          </Label>
+                          <Input
+                            type="url"
+                            value={profile?.socialLinks?.twitter || ""}
+                            onChange={(event) => handleSocialChange("twitter", event.target.value)}
+                            placeholder="https://twitter.com/yourbusiness"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">
+                            <i className="ri-linkedin-box-line text-info me-2"></i> LinkedIn
+                          </Label>
+                          <Input
+                            type="url"
+                            value={profile?.socialLinks?.linkedin || ""}
+                            onChange={(event) => handleSocialChange("linkedin", event.target.value)}
+                            placeholder="https://linkedin.com/company/yourbusiness"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
+                      <Col md={12}>
+                        <FormGroup>
+                          <Label className="fw-semibold">
+                            <i className="ri-youtube-line text-danger me-2"></i> YouTube
+                          </Label>
+                          <Input
+                            type="url"
+                            value={profile?.socialLinks?.youtube || ""}
+                            onChange={(event) => handleSocialChange("youtube", event.target.value)}
+                            placeholder="https://youtube.com/c/yourbusiness"
+                            className="py-2"
+                          />
+                        </FormGroup>
+                      </Col>
                     </Row>
-                  </CardBody>
-                </Card>
-              </Col>
+                  </TabPane>
 
-              <Col xl={4}>
-                <Card className="border-0 shadow-sm mb-4">
-                  <CardBody className="p-4">
-                    <h5 className="mb-1">Media</h5>
-                    <p className="text-muted mb-4">
-                      Upload logo, banner, and gallery images.
-                    </p>
-
+                  {/* Media Gallery Tab */}
+                  <TabPane tabId="media">
                     <div className="mb-4">
-                      <Label className="fw-semibold mb-2">Banner Preview</Label>
+                      <Label className="fw-semibold mb-3">Banner Image</Label>
                       <div
-                        className="rounded-3 border"
-                        style={{
-                          minHeight: "140px",
-                          background: bannerPreview
-                            ? `url(${bannerPreview}) center/cover no-repeat`
-                            : "#f8f9fa",
-                        }}
-                      ></div>
+                        className="rounded-3 overflow-hidden border cursor-pointer"
+                        style={{ height: "200px", cursor: "pointer", background: "#f8f9fa" }}
+                        onClick={() => bannerPreview && setPreviewImage(bannerPreview)}
+                      >
+                        {bannerPreview ? (
+                          <img
+                            src={bannerPreview}
+                            alt="Banner"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div className="d-flex align-items-center justify-content-center h-100">
+                            <div className="text-center">
+                              <i className="ri-image-line fs-1 text-muted"></i>
+                              <div className="small text-muted mt-2">No banner image set</div>
+                              <Button color="primary" size="sm" className="mt-2" onClick={() => bannerInputRef.current?.click()}>
+                                Upload Banner
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mb-4">
-                      <Label className="fw-semibold mb-2">Gallery Images</Label>
-                      <div className="d-flex flex-wrap gap-2">
-                        {(profile?.galleryImages || []).length ? (
-                          profile.galleryImages.map((image, index) => (
-                            <div
-                              key={index}
-                              className="rounded overflow-hidden border"
-                              style={{ width: "70px", height: "70px" }}
-                            >
-                              <img
-                                src={
-                                  image instanceof File
-                                    ? URL.createObjectURL(image)
-                                    : image
-                                }
-                                alt={`Gallery ${index + 1}`}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            </div>
-                          ))
+                      <Label className="fw-semibold mb-3">Gallery Images</Label>
+                      <div className="d-flex flex-wrap gap-3">
+                        {(profile?.galleryImages || []).length > 0 ? (
+                          profile.galleryImages.map((image, index) => {
+                            const src = image instanceof File ? URL.createObjectURL(image) : image;
+                            return (
+                              <div
+                                key={index}
+                                className="rounded overflow-hidden border position-relative"
+                                style={{ width: "120px", height: "120px", cursor: "pointer" }}
+                                onClick={() => setPreviewImage(src)}
+                              >
+                                <img
+                                  src={src}
+                                  alt={`Gallery ${index + 1}`}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                                <div className="position-absolute top-0 end-0 p-1">
+                                  <Badge color="dark" className="rounded-circle">
+                                    {index + 1}
+                                  </Badge>
+                                </div>
+                              </div>
+                            );
+                          })
                         ) : (
-                          <small className="text-muted">
-                            No gallery images uploaded yet.
-                          </small>
+                          <div className="text-center w-100 py-5 bg-light rounded-3">
+                            <i className="ri-image-line fs-1 text-muted"></i>
+                            <div className="text-muted mt-2">No gallery images uploaded yet</div>
+                          </div>
                         )}
                       </div>
                     </div>
 
                     <div className="d-grid gap-2">
-                      <Button color="light" onClick={() => galleryInputRef.current?.click()}>
-                        <i className="ri-image-add-line me-1"></i>
+                      <Button color="primary" onClick={() => galleryInputRef.current?.click()}>
+                        <i className="ri-upload-2-line me-2"></i>
                         Upload Gallery Images
                       </Button>
                       <Input
@@ -661,30 +885,113 @@ const BusinessProfileSettings = () => {
                         onChange={handleGalleryChange}
                         className="d-none"
                       />
+                      <small className="text-muted text-center">Supported formats: JPG, PNG, GIF. Max size: 5MB per image</small>
                     </div>
-                  </CardBody>
-                </Card>
+                  </TabPane>
 
-                <Card className="border-0 shadow-sm">
-                  <CardBody className="p-4">
-                    <h5 className="mb-1">Save Changes</h5>
-                    <p className="text-muted mb-4">
-                      Changes will be visible after the update succeeds.
-                    </p>
+                  {/* Advanced Tab */}
+                  <TabPane tabId="advanced">
+                    <Row className="g-4">
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Tax ID / VAT Number</Label>
+                          <Input
+                            value={profile?.taxId || ""}
+                            onChange={(event) => handleFieldChange("taxId", event.target.value)}
+                            placeholder="Tax identification number"
+                            className="py-2"
+                          />
+                          <small className="text-muted">For invoice and legal purposes</small>
+                        </FormGroup>
+                      </Col>
+                      <Col md={6}>
+                        <FormGroup>
+                          <Label className="fw-semibold">Business Registration Number</Label>
+                          <Input
+                            value={profile?.legalName || ""}
+                            disabled
+                            className="bg-light"
+                          />
+                          <small className="text-muted">Linked to your legal business entity</small>
+                        </FormGroup>
+                      </Col>
+                      <Col md={12}>
+                        <div className="alert alert-info">
+                          <i className="ri-information-line me-2"></i>
+                          <strong>Note:</strong> Changes to advanced settings may require verification. Please ensure all information is accurate.
+                        </div>
+                      </Col>
+                    </Row>
+                  </TabPane>
+                </TabContent>
+              </CardBody>
+            </Card>
 
-                    <div className="d-grid">
-                      <Button color="primary" type="submit" size="lg" disabled={saving}>
-                        {saving ? "Saving..." : "Save All Changes"}
-                      </Button>
-                    </div>
-                  </CardBody>
-                </Card>
-              </Col>
-            </Row>
+            {/* Action Buttons */}
+            <Card className="border-0 shadow-sm rounded-4">
+              <CardBody className="p-4">
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                  <div>
+                    <h5 className="mb-1">Ready to publish?</h5>
+                    <small className="text-muted">Review your changes before saving</small>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <Button
+                      color="light"
+                      onClick={() => loadProfile(businessId)}
+                      disabled={saving}
+                    >
+                      <i className="ri-refresh-line me-2"></i>
+                      Reset Changes
+                    </Button>
+                    <Button
+                      color="primary"
+                      type="submit"
+                      size="lg"
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <>
+                          <i className="ri-loader-4-line spin me-2"></i>
+                          Saving Changes...
+                        </>
+                      ) : (
+                        <>
+                          <i className="ri-save-line me-2"></i>
+                          Save All Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <Progress
+                  value={profileCompletion}
+                  color="success"
+                  className="rounded-pill mt-4"
+                  style={{ height: "6px" }}
+                />
+                <div className="d-flex justify-content-between mt-2">
+                  <small className="text-muted">Profile completion</small>
+                  <small className="fw-semibold text-primary">{profileCompletion}%</small>
+                </div>
+              </CardBody>
+            </Card>
           </Form>
         )}
       </Container>
+
+      {/* Image Preview Modal */}
+      <Modal isOpen={isPreviewOpen} toggle={() => setIsPreviewOpen(false)} centered size="lg">
+        <ModalHeader toggle={() => setIsPreviewOpen(false)}>Image Preview</ModalHeader>
+        <ModalBody className="p-0">
+          <img src={previewImage} alt="Preview" style={{ width: "100%", height: "auto" }} />
+        </ModalBody>
+      </Modal>
+
       <ToastContainer />
+
+
     </div>
   );
 };

@@ -64,21 +64,24 @@ const UploadContractPage = () => {
     contractViewOptions.find((option) => option.value === activeTab) ||
     contractViewOptions[0];
 
-  const loadContractLists = async () => {
+  const loadContracts = async (type) => {
     setLoading(true);
     try {
-      await Promise.all([
-        dispatch(getBusinessesWithoutContract()),
-        dispatch(getBusinessesWithContract()),
-      ]);
+      if (type === "without" && withoutContract.length === 0) {
+        await dispatch(getBusinessesWithoutContract());
+      }
+
+      if (type === "with" && withContract.length === 0) {
+        await dispatch(getBusinessesWithContract());
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadContractLists();
-  }, [dispatch]);
+    loadContracts(activeTab); // only one API call
+  }, []);
 
   const uploadFormik = useFormik({
     initialValues: {
@@ -322,16 +325,18 @@ const UploadContractPage = () => {
                   styles={customSelectStyles}
                   options={contractViewOptions}
                   value={selectedContractView}
-                  onChange={(option) =>
-                    setActiveTab(option?.value || contractViewOptions[0].value)
-                  }
+                  onChange={(option) => {
+                    const value = option?.value || "without";
+                    setActiveTab(value);
+                    loadContracts(value); // fetch only selected type
+                  }}
                   placeholder="Select view"
                   className="react-select"
                   classNamePrefix="select"
                 />
               </Col>
               <Col md={2}>
-                <Button color="light" onClick={loadContractLists} className="w-100">
+                <Button color="light" onClick={loadContracts} className="w-100">
                   Refresh Lists
                 </Button>
               </Col>

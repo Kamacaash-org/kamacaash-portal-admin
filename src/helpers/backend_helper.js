@@ -115,8 +115,11 @@ export const BusinessContractAPI = {
       headers: { "Content-Type": undefined },
     }),
 };
+export const StaffsAPI = {
+  ...makeCRUD(url.STAFFS),
 
-export const StaffsAPI = makeCRUD(url.STAFFS);
+  ddlUnassigned: () => api.get(`${url.STAFFS}/ddl/unassigned-staff`),
+};
 export const CountriesAPI = makeCRUD(url.COUNTRIES);
 export const CitiesAPI = makeCRUD(url.CITIES);
 
@@ -124,7 +127,8 @@ export const toggleStaff2FA = (enabled) =>
   api.patch(url.TOGGLE_2FA, { enabled });
 
 export const OffersAPI = {
-  list: () => api.get(url.OFFERS),
+  list: (params) =>
+    api.get(url.OFFERS, params),
   create: (payload) =>
     payload instanceof FormData
       ? axios.post(url.OFFERS, payload, {

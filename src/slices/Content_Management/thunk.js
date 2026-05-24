@@ -4,9 +4,10 @@ import { toast } from "react-toastify";
 
 export const getOffers = createAsyncThunk(
   "content-management/offers/get",
-  async (_, thunkAPI) => {
+  async (business_id, thunkAPI) => {
     try {
-      const res = await OffersAPI.list();
+
+      const res = await OffersAPI.list({ business_id });
       if (!res.success) throw res;
       return res.data;
     } catch (error) {
@@ -19,16 +20,17 @@ export const getOffers = createAsyncThunk(
     }
   },
 );
-
 export const createOffer = createAsyncThunk(
   "content-management/offers/create",
   async (input, { dispatch, rejectWithValue }) => {
     try {
       const payload = input?.payload || input;
+      const business_id = input?.business_id;
+
       const res = await OffersAPI.create(payload);
       if (!res.success) throw res;
 
-      dispatch(getOffers());
+      dispatch(getOffers(business_id));
       toast.success(res.message || "Offer created successfully");
       return res.data;
     } catch (error) {
@@ -44,12 +46,12 @@ export const createOffer = createAsyncThunk(
 
 export const updateOffer = createAsyncThunk(
   "content-management/offers/update",
-  async ({ id, payload }, { dispatch, rejectWithValue }) => {
+  async ({ id, payload, business_id }, { dispatch, rejectWithValue }) => {
     try {
       const res = await OffersAPI.update({ id, payload });
       if (!res.success) throw res;
 
-      dispatch(getOffers());
+      dispatch(getOffers(business_id));
       toast.success(res.message || "Offer updated successfully");
       return res.data;
     } catch (error) {
@@ -65,12 +67,12 @@ export const updateOffer = createAsyncThunk(
 
 export const deleteOffer = createAsyncThunk(
   "content-management/offers/delete",
-  async (id, { dispatch, rejectWithValue }) => {
+  async ({ id, business_id }, { dispatch, rejectWithValue }) => {
     try {
       const res = await OffersAPI.delete(id);
       if (!res.success) throw res;
 
-      dispatch(getOffers());
+      dispatch(getOffers(business_id));
       toast.success(res.message || "Offer deleted successfully");
       return res.data;
     } catch (error) {
@@ -86,12 +88,12 @@ export const deleteOffer = createAsyncThunk(
 
 export const publishOffer = createAsyncThunk(
   "content-management/offers/publish",
-  async (id, { dispatch, rejectWithValue }) => {
+  async ({ id, business_id }, { dispatch, rejectWithValue }) => {
     try {
       const res = await OffersAPI.publish(id);
       if (!res.success) throw res;
 
-      dispatch(getOffers());
+      dispatch(getOffers(business_id));
       toast.success(res.message || "Offer published successfully");
       return res.data;
     } catch (error) {
