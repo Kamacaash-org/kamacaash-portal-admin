@@ -22,7 +22,7 @@ export const OFFERS = "/offers";
 export const COUNTRIES = "/countries";
 export const CITIES = "/cities";
 export const CATEGORIES = "/categories";
-
 export const ORDERS = "/orders";
+export const ADMIN_PAYMENTS = "/payments";
 
 // ================================== END OF  URL ===================================================

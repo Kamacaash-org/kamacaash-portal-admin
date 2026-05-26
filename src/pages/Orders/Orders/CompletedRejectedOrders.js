@@ -35,6 +35,7 @@ import useAuthUser from "../../../Components/Hooks/useAuthUser";
 import {
   getCancelledOrdersByBusinessID as onGetCancelledOrders,
   getCompletedOrdersByBusinessID as onGetCompletedOrders,
+  getNoShowOrdersByBusinessID as onGetNoShowOrders,
 } from "../../../slices/thunks";
 
 const selectCompletedOrdersData = createSelector(
@@ -45,6 +46,11 @@ const selectCompletedOrdersData = createSelector(
 const selectCancelledOrdersData = createSelector(
   (state) => state.Orders,
   (ordersState) => ordersState.cancelledOrders || [],
+);
+
+const selectNoShowOrdersData = createSelector(
+  (state) => state.Orders,
+  (ordersState) => ordersState.noShowOrders || [],
 );
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -176,6 +182,7 @@ const normalizeOrder = (order, type) => {
     createdAt: order?.created_at,
     collectedAt: order?.collected_at,
     cancelledAt: order?.cancelled_at,
+    noShowAt: order?.no_show_at,
     cancellationReason: order?.cancellation_reason,
     isUrgent: Boolean(order?.is_urgent),
     customerName,
@@ -212,11 +219,14 @@ const CompletedRejectedOrdersPage = () => {
   const userAuth = useAuthUser();
   const completedOrdersData = useSelector(selectCompletedOrdersData);
   const cancelledOrdersData = useSelector(selectCancelledOrdersData);
+  const noShowOrdersData = useSelector(selectNoShowOrdersData);
 
   const [completedOrders, setCompletedOrders] = useState([]);
   const [cancelledOrders, setCancelledOrders] = useState([]);
+  const [noShowOrders, setNoShowOrders] = useState([]);
   const [filteredCompletedOrders, setFilteredCompletedOrders] = useState([]);
   const [filteredCancelledOrders, setFilteredCancelledOrders] = useState([]);
+  const [filteredNoShowOrders, setFilteredNoShowOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -234,7 +244,8 @@ const CompletedRejectedOrdersPage = () => {
   const stats = useMemo(() => {
     const totalCompleted = completedOrders.length;
     const totalCancelled = cancelledOrders.length;
-    const totalOrders = totalCompleted + totalCancelled;
+    const totalNoShow = noShowOrders.length;
+    const totalOrders = totalCompleted + totalCancelled + totalNoShow;
     const totalRevenue = completedOrders.reduce(
       (sum, order) => sum + (Number(order.totalAmount) || 0),
       0,
@@ -247,13 +258,14 @@ const CompletedRejectedOrdersPage = () => {
     return {
       totalCompleted,
       totalCancelled,
+      totalNoShow,
       totalRevenue,
       avgOrderValue,
       completionRate,
     };
-  }, [cancelledOrders, completedOrders]);
+  }, [cancelledOrders, completedOrders, noShowOrders]);
 
-  const applyFilters = useCallback((completedList, cancelledList, filterState) => {
+  const applyFilters = useCallback((completedList, cancelledList, noShowList, filterState) => {
     const searchValue = filterState.search.trim().toLowerCase();
 
     const matchesAmount = (order) => {
@@ -284,6 +296,11 @@ const CompletedRejectedOrdersPage = () => {
         (order) => matchesSearch(order) && matchesAmount(order),
       ),
     );
+    setFilteredNoShowOrders(
+      noShowList.filter(
+        (order) => matchesSearch(order) && matchesAmount(order),
+      ),
+    );
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -301,6 +318,13 @@ const CompletedRejectedOrdersPage = () => {
         ),
         dispatch(
           onGetCancelledOrders({
+            businessId,
+            start: filters.startDate,
+            end: filters.endDate,
+          }),
+        ),
+        dispatch(
+          onGetNoShowOrders({
             businessId,
             start: filters.startDate,
             end: filters.endDate,
@@ -335,8 +359,16 @@ const CompletedRejectedOrdersPage = () => {
   }, [cancelledOrdersData]);
 
   useEffect(() => {
-    applyFilters(completedOrders, cancelledOrders, filters);
-  }, [applyFilters, cancelledOrders, completedOrders, filters]);
+    setNoShowOrders(
+      Array.isArray(noShowOrdersData)
+        ? noShowOrdersData.map((order) => normalizeOrder(order, "no-show"))
+        : [],
+    );
+  }, [noShowOrdersData]);
+
+  useEffect(() => {
+    applyFilters(completedOrders, cancelledOrders, noShowOrders, filters);
+  }, [applyFilters, cancelledOrders, completedOrders, noShowOrders, filters]);
 
   const openViewModal = (order) => {
     setSelectedOrder(order);
@@ -532,6 +564,94 @@ const CompletedRejectedOrdersPage = () => {
     },
   ];
 
+  const noShowColumns = [
+    {
+      name: "#",
+      width: "70px",
+      cell: (_, index) => index + 1,
+    },
+    {
+      name: "Order",
+      grow: 1.4,
+      cell: (row) => (
+        <div className="py-2">
+          <div className="fw-semibold text-warning">{row.orderNumber}</div>
+          <small className="text-muted">
+            Placed: {formatDateTime(row.createdAt, row.timezone)}
+          </small>
+        </div>
+      ),
+    },
+    {
+      name: "Customer",
+      grow: 1.4,
+      cell: (row) => (
+        <div className="py-2">
+          <div className="fw-semibold">{row.customerName}</div>
+          <small className="text-muted">{row.customerPhone}</small>
+        </div>
+      ),
+    },
+    {
+      name: "Offer",
+      grow: 1.8,
+      cell: (row) => (
+        <div className="d-flex align-items-center py-2">
+          {row.offerImage ? (
+            <img
+              src={row.offerImage}
+              alt={row.offerTitle}
+              className="rounded me-3"
+              style={{ width: "44px", height: "44px", objectFit: "cover" }}
+            />
+          ) : (
+            <div
+              className="rounded bg-light d-flex align-items-center justify-content-center me-3"
+              style={{ width: "44px", height: "44px" }}
+            >
+              <i className="ri-image-line text-muted"></i>
+            </div>
+          )}
+          <div>
+            <div className="fw-semibold">{row.offerTitle}</div>
+            <small className="text-muted">Qty: {row.quantity}</small>
+          </div>
+        </div>
+      ),
+    },
+    {
+      name: "Amount",
+      minWidth: "140px",
+      cell: (row) => formatCurrency(row.totalAmount),
+    },
+    {
+      name: "No-Show At",
+      grow: 1.4,
+      cell: (row) => (
+        <div className="py-2">
+          <div>{formatDateTime(row.noShowAt, row.timezone)}</div>
+          <small className="text-muted">
+            {formatRelativeTime(row.noShowAt)}
+          </small>
+        </div>
+      ),
+    },
+    {
+      name: "Actions",
+      minWidth: "110px",
+      cell: (row) => (
+        <Button
+          color="outline-info"
+          size="sm"
+          onClick={() => openViewModal(row)}
+          className="btn-icon"
+        >
+          <i className="ri-eye-line" />
+        </Button>
+      ),
+    },
+  ];
+
   const customStyles = {
     headCells: {
       style: {
@@ -595,6 +715,31 @@ const CompletedRejectedOrdersPage = () => {
                     <div className="avatar-sm">
                       <span className="avatar-title bg-danger-subtle text-danger rounded-circle fs-2">
                         <i className="ri-close-circle-line"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </Col>
+
+          <Col xl={3} md={6}>
+            <Card className="card-animate">
+              <CardBody>
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1">
+                    <p className="text-uppercase fw-medium text-muted mb-0">
+                      No-Show Orders
+                    </p>
+                    <h4 className="mb-0">{stats.totalNoShow}</h4>
+                    <p className="text-warning mb-0">
+                      Customers who missed pickup
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <div className="avatar-sm">
+                      <span className="avatar-title bg-warning-subtle text-warning rounded-circle fs-2">
+                        <i className="ri-user-unfollow-line"></i>
                       </span>
                     </div>
                   </div>
@@ -692,6 +837,18 @@ const CompletedRejectedOrdersPage = () => {
                   Cancelled Orders
                   <Badge color="danger" className="ms-2">
                     {filteredCancelledOrders.length}
+                  </Badge>
+                </NavLink>
+              </NavItem>
+              <NavItem>
+                <NavLink
+                  className={activeTab === "no-show" ? "active" : ""}
+                  onClick={() => setActiveTab("no-show")}
+                >
+                  <i className="ri-user-unfollow-line me-1"></i>
+                  No-Show Orders
+                  <Badge color="warning" className="ms-2 text-dark">
+                    {filteredNoShowOrders.length}
                   </Badge>
                 </NavLink>
               </NavItem>
@@ -843,6 +1000,31 @@ const CompletedRejectedOrdersPage = () => {
                   />
                 )}
               </TabPane>
+
+              <TabPane tabId="no-show">
+                {loading ? (
+                  <div className="text-center py-5">
+                    <Loader />
+                  </div>
+                ) : (
+                  <DataTable
+                    columns={noShowColumns}
+                    data={filteredNoShowOrders}
+                    pagination
+                    responsive
+                    customStyles={customStyles}
+                    noDataComponent={
+                      <NoDataFound
+                        message={
+                          filters.search || filters.amountRange !== "all"
+                            ? "Try adjusting your search criteria."
+                            : "No no-show orders found for the selected date range."
+                        }
+                      />
+                    }
+                  />
+                )}
+              </TabPane>
             </TabContent>
           </CardBody>
         </Card>
@@ -922,7 +1104,9 @@ const CompletedRejectedOrdersPage = () => {
                 <h6>
                   {selectedOrder.type === "completed"
                     ? "Completion Details"
-                    : "Cancellation Details"}
+                    : selectedOrder.type === "cancelled"
+                    ? "Cancellation Details"
+                    : "No-Show Details"}
                 </h6>
                 <div className="border rounded p-3 h-100">
                   <p className="mb-2">
@@ -955,7 +1139,7 @@ const CompletedRejectedOrdersPage = () => {
                         {formatRelativeTime(selectedOrder.collectedAt)}
                       </p>
                     </>
-                  ) : (
+                  ) : selectedOrder.type === "cancelled" ? (
                     <>
                       <p className="mb-2">
                         <strong>Cancelled At:</strong>{" "}
@@ -972,6 +1156,24 @@ const CompletedRejectedOrdersPage = () => {
                       <Alert color="info" className="mt-3 mb-0">
                         <i className="ri-information-line me-2"></i>
                         This order was cancelled in the selected date range.
+                      </Alert>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mb-2">
+                        <strong>No-Show At:</strong>{" "}
+                        {formatDateTime(
+                          selectedOrder.noShowAt,
+                          selectedOrder.timezone,
+                        )}
+                      </p>
+                      <p className="mb-0">
+                        <strong>Time Since Missed Pickup:</strong>{" "}
+                        {formatRelativeTime(selectedOrder.noShowAt)}
+                      </p>
+                      <Alert color="warning" className="mt-3 mb-0">
+                        <i className="ri-alert-line me-2"></i>
+                        Customer failed to pick up this package within the required window.
                       </Alert>
                     </>
                   )}

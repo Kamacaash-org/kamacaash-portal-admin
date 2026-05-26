@@ -494,6 +494,7 @@ const SurplusCategories = () => {
               <Col md={6}>
                 <FormGroup>
                   <Label>Icon Image (Optional)</Label>
+                  <small className="text-muted font-size-11 d-block mb-1">Recommended: 200x200px (1:1 Aspect Ratio)</small>
                   <Input
                     type="file"
                     accept="image/*"
@@ -507,8 +508,10 @@ const SurplusCategories = () => {
                         marginTop: "8px",
                         width: "72px",
                         height: "72px",
-                        objectFit: "cover",
+                        objectFit: "contain",
                         borderRadius: "8px",
+                        backgroundColor: "#f8f9fa",
+                        border: "1px solid #e9ebec",
                       }}
                     />
                   )}
@@ -517,6 +520,7 @@ const SurplusCategories = () => {
               <Col md={6}>
                 <FormGroup>
                   <Label>Category Image (Optional)</Label>
+                  <small className="text-muted font-size-11 d-block mb-1">Recommended: 800x400px (2:1 Aspect Ratio)</small>
                   <Input
                     type="file"
                     accept="image/*"
@@ -530,8 +534,10 @@ const SurplusCategories = () => {
                         marginTop: "8px",
                         width: "140px",
                         height: "72px",
-                        objectFit: "cover",
+                        objectFit: "contain",
                         borderRadius: "8px",
+                        backgroundColor: "#f8f9fa",
+                        border: "1px solid #e9ebec",
                       }}
                     />
                   )}

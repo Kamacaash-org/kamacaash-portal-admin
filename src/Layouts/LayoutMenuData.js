@@ -119,6 +119,7 @@ const Navdata = () => {
       icon: "ri-dashboard-2-line",
       link: "/dashboard",
     },
+
     {
       id: "BUSINESS",
       label: "Business",
@@ -254,6 +255,92 @@ const Navdata = () => {
     },
 
     {
+      id: "PAYMENTS",
+      label: "Payments",
+      icon: "ri-bank-card-line",
+      link: "/#",
+      stateVariables: menuStates["PAYMENTS"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, PAYMENTS: !prev.PAYMENTS }));
+        setIscurrentState("PAYMENTS");
+        updateIconSidebar(e);
+      },
+      subItems: [
+        {
+          id: "PaymentDiagnostics",
+          label: "Diagnostics",
+          link: "/payments/diagnostics",
+          parentId: "PAYMENTS",
+        },
+      ],
+    },
+
+    {
+      id: "REPORTS",
+      label: "Reports",
+      icon: "ri-file-chart-line",
+      link: "/#",
+      stateVariables: menuStates["REPORTS"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, REPORTS: !prev.REPORTS }));
+        setIscurrentState("REPORTS");
+        updateIconSidebar(e);
+      },
+      subItems: [
+        {
+          id: "AdminDailyCommission",
+          label: "Daily Commission Ledger",
+          link: "/reports/admin/commission-daily",
+          parentId: "REPORTS",
+        },
+        {
+          id: "AdminWeeklyCommission",
+          label: "Weekly Commission Rollup",
+          link: "/reports/admin/commission-weekly",
+          parentId: "REPORTS",
+        },
+        {
+          id: "AdminMonthlyCommission",
+          label: "Monthly Commission Statement",
+          link: "/reports/admin/commission-monthly",
+          parentId: "REPORTS",
+        },
+        {
+          id: "TopProviders",
+          label: "Top Providers",
+          link: "/reports/admin/providers",
+          parentId: "REPORTS",
+        },
+        {
+          id: "TopCategories",
+          label: "Top Categories",
+          link: "/reports/admin/categories",
+          parentId: "REPORTS",
+        },
+        {
+          id: "TopSavers",
+          label: "Top Savers",
+          link: "/reports/admin/savers",
+          parentId: "REPORTS",
+        },
+        {
+          id: "MostFavorited",
+          label: "Most Favorited",
+          link: "/reports/admin/favorites",
+          parentId: "REPORTS",
+        },
+        {
+          id: "UserGrowth",
+          label: "User Growth",
+          link: "/reports/admin/user-growth",
+          parentId: "REPORTS",
+        },
+      ],
+    },
+
+    {
       id: "USERS",
       label: "Users",
       icon: "ri-team-line",
@@ -305,6 +392,45 @@ const Navdata = () => {
   ];
 
   const businessOwnerFlatMenu = [
+    {
+      id: "BO_REPORTS",
+      label: "Reports",
+      icon: "ri-file-chart-line",
+      link: "/#",
+      stateVariables: menuStates["BO_REPORTS"] || false,
+      click: function (e) {
+        e.preventDefault();
+        setMenuStates((prev) => ({ ...prev, BO_REPORTS: !prev.BO_REPORTS }));
+        setIscurrentState("BO_REPORTS");
+        updateIconSidebar(e);
+      },
+      subItems: [
+        {
+          id: "BODailyLedger",
+          label: "Daily Ledger",
+          link: "/reports/daily",
+          parentId: "BO_REPORTS",
+        },
+        {
+          id: "BOWeeklyRollup",
+          label: "Weekly Rollup",
+          link: "/reports/weekly",
+          parentId: "BO_REPORTS",
+        },
+        {
+          id: "BOMonthlyStatement",
+          label: "Monthly Statement",
+          link: "/reports/monthly",
+          parentId: "BO_REPORTS",
+        },
+        {
+          id: "BOOfferPerformance",
+          label: "Offer Performance",
+          link: "/reports/performance",
+          parentId: "BO_REPORTS",
+        },
+      ],
+    },
     {
       id: "BO_OFFERS",
       label: "Offers",

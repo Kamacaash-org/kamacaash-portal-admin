@@ -94,14 +94,16 @@ const normalizeBusinessProfile = (raw) => {
     phone: raw.phone || "",
     secondaryPhone: raw.secondary_phone || "",
     websiteUrl: raw.website_url || "",
-    address: raw.address || "",
-    city: raw.city || "",
+    addressLine: raw.address_line || "",
+    cityId: raw.city_id || "",
     state: raw.state || "",
     zipCode: raw.zip_code || "",
     country: raw.country || "",
     taxId: raw.tax_id || "",
     businessType: raw.business_type || "",
     establishedYear: raw.established_year || "",
+    defaultGracePeriod: raw.default_grace_period !== undefined && raw.default_grace_period !== null ? raw.default_grace_period : 30,
+    defaultOrderCutoff: raw.default_order_cutoff !== undefined && raw.default_order_cutoff !== null ? raw.default_order_cutoff : 45,
     socialLinks: {
       facebook: raw.social_links?.facebook || "",
       instagram: raw.social_links?.instagram || "",
@@ -128,6 +130,8 @@ const BusinessProfileSettings = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
+
+
 
   const logoInputRef = useRef(null);
   const bannerInputRef = useRef(null);
@@ -286,14 +290,8 @@ const BusinessProfileSettings = () => {
       formData.append("phone", profile.phone || "");
       formData.append("secondary_phone", profile.secondaryPhone || "");
       formData.append("website_url", profile.websiteUrl || "");
-      formData.append("address", profile.address || "");
-      formData.append("city", profile.city || "");
-      formData.append("state", profile.state || "");
-      formData.append("zip_code", profile.zipCode || "");
-      formData.append("country", profile.country || "");
-      formData.append("tax_id", profile.taxId || "");
-      formData.append("business_type", profile.businessType || "");
-      formData.append("established_year", profile.establishedYear || "");
+      formData.append("default_grace_period", profile.defaultGracePeriod !== undefined && profile.defaultGracePeriod !== null ? profile.defaultGracePeriod : 30);
+      formData.append("default_order_cutoff", profile.defaultOrderCutoff !== undefined && profile.defaultOrderCutoff !== null ? profile.defaultOrderCutoff : 45);
       formData.append("social_links", JSON.stringify(profile.socialLinks || {}));
       formData.append(
         "open_hours",
@@ -421,6 +419,9 @@ const BusinessProfileSettings = () => {
                             <i className="ri-store-3-line text-primary fs-1"></i>
                           </div>
                         )}
+                      </div>
+                      <div className="text-muted font-size-10 mt-1 text-center" style={{ maxWidth: "140px" }}>
+                        Logo: 500x500px (1:1)
                       </div>
                       <Button
                         color="light"
@@ -557,29 +558,7 @@ const BusinessProfileSettings = () => {
                           <small className="text-muted">This appears in search results and listings (max 160 characters)</small>
                         </FormGroup>
                       </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label className="fw-semibold">Business Type</Label>
-                          <Input
-                            value={profile?.businessType || ""}
-                            onChange={(event) => handleFieldChange("businessType", event.target.value)}
-                            placeholder="e.g., Retail, Restaurant, Service"
-                            className="py-2"
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={6}>
-                        <FormGroup>
-                          <Label className="fw-semibold">Established Year</Label>
-                          <Input
-                            type="number"
-                            value={profile?.establishedYear || ""}
-                            onChange={(event) => handleFieldChange("establishedYear", event.target.value)}
-                            placeholder="YYYY"
-                            className="py-2"
-                          />
-                        </FormGroup>
-                      </Col>
+
                     </Row>
                   </TabPane>
 
@@ -632,61 +611,7 @@ const BusinessProfileSettings = () => {
                           />
                         </FormGroup>
                       </Col>
-                      <Col md={12}>
-                        <FormGroup>
-                          <Label className="fw-semibold">Street Address</Label>
-                          <Input
-                            value={profile?.address || ""}
-                            onChange={(event) => handleFieldChange("address", event.target.value)}
-                            placeholder="123 Business Street"
-                            className="py-2"
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={4}>
-                        <FormGroup>
-                          <Label className="fw-semibold">City</Label>
-                          <Input
-                            value={profile?.city || ""}
-                            onChange={(event) => handleFieldChange("city", event.target.value)}
-                            placeholder="City"
-                            className="py-2"
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={4}>
-                        <FormGroup>
-                          <Label className="fw-semibold">State/Province</Label>
-                          <Input
-                            value={profile?.state || ""}
-                            onChange={(event) => handleFieldChange("state", event.target.value)}
-                            placeholder="State"
-                            className="py-2"
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={4}>
-                        <FormGroup>
-                          <Label className="fw-semibold">ZIP Code</Label>
-                          <Input
-                            value={profile?.zipCode || ""}
-                            onChange={(event) => handleFieldChange("zipCode", event.target.value)}
-                            placeholder="ZIP Code"
-                            className="py-2"
-                          />
-                        </FormGroup>
-                      </Col>
-                      <Col md={12}>
-                        <FormGroup>
-                          <Label className="fw-semibold">Country</Label>
-                          <Input
-                            value={profile?.country || ""}
-                            onChange={(event) => handleFieldChange("country", event.target.value)}
-                            placeholder="Country"
-                            className="py-2"
-                          />
-                        </FormGroup>
-                      </Col>
+
                     </Row>
                   </TabPane>
 
@@ -811,7 +736,8 @@ const BusinessProfileSettings = () => {
                   {/* Media Gallery Tab */}
                   <TabPane tabId="media">
                     <div className="mb-4">
-                      <Label className="fw-semibold mb-3">Banner Image</Label>
+                      <Label className="fw-semibold mb-1">Banner Image</Label>
+                      <div className="text-muted font-size-11 mb-2">Recommended Store Banner: 1200x400px (3:1 Aspect Ratio)</div>
                       <div
                         className="rounded-3 overflow-hidden border cursor-pointer"
                         style={{ height: "200px", cursor: "pointer", background: "#f8f9fa" }}
@@ -821,7 +747,7 @@ const BusinessProfileSettings = () => {
                           <img
                             src={bannerPreview}
                             alt="Banner"
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            style={{ width: "100%", height: "100%", objectFit: "contain", backgroundColor: "#f8f9fa" }}
                           />
                         ) : (
                           <div className="d-flex align-items-center justify-content-center h-100">
@@ -838,7 +764,8 @@ const BusinessProfileSettings = () => {
                     </div>
 
                     <div className="mb-4">
-                      <Label className="fw-semibold mb-3">Gallery Images</Label>
+                      <Label className="fw-semibold mb-1">Gallery Images</Label>
+                      <div className="text-muted font-size-11 mb-2">Recommended size: 800x600px (4:3 Aspect Ratio)</div>
                       <div className="d-flex flex-wrap gap-3">
                         {(profile?.galleryImages || []).length > 0 ? (
                           profile.galleryImages.map((image, index) => {
@@ -853,7 +780,7 @@ const BusinessProfileSettings = () => {
                                 <img
                                   src={src}
                                   alt={`Gallery ${index + 1}`}
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  style={{ width: "100%", height: "100%", objectFit: "contain", backgroundColor: "#f8f9fa" }}
                                 />
                                 <div className="position-absolute top-0 end-0 p-1">
                                   <Badge color="dark" className="rounded-circle">
@@ -892,33 +819,37 @@ const BusinessProfileSettings = () => {
                   {/* Advanced Tab */}
                   <TabPane tabId="advanced">
                     <Row className="g-4">
+
                       <Col md={6}>
                         <FormGroup>
-                          <Label className="fw-semibold">Tax ID / VAT Number</Label>
+                          <Label className="fw-semibold">Default Grace Period (minutes)</Label>
                           <Input
-                            value={profile?.taxId || ""}
-                            onChange={(event) => handleFieldChange("taxId", event.target.value)}
-                            placeholder="Tax identification number"
+                            type="number"
+                            value={profile?.defaultGracePeriod !== undefined ? profile.defaultGracePeriod : ""}
+                            onChange={(event) => handleFieldChange("defaultGracePeriod", Number(event.target.value))}
+                            placeholder="e.g. 30"
                             className="py-2"
                           />
-                          <small className="text-muted">For invoice and legal purposes</small>
+                          <small className="text-muted">Additional minutes customers have for late collections before a No-Show trigger</small>
                         </FormGroup>
                       </Col>
                       <Col md={6}>
                         <FormGroup>
-                          <Label className="fw-semibold">Business Registration Number</Label>
+                          <Label className="fw-semibold">Default Order Cut-off (minutes)</Label>
                           <Input
-                            value={profile?.legalName || ""}
-                            disabled
-                            className="bg-light"
+                            type="number"
+                            value={profile?.defaultOrderCutoff !== undefined ? profile.defaultOrderCutoff : ""}
+                            onChange={(event) => handleFieldChange("defaultOrderCutoff", Number(event.target.value))}
+                            placeholder="e.g. 45"
+                            className="py-2"
                           />
-                          <small className="text-muted">Linked to your legal business entity</small>
+                          <small className="text-muted">Minutes before the pickup window ends to stop accepting new orders</small>
                         </FormGroup>
                       </Col>
                       <Col md={12}>
                         <div className="alert alert-info">
                           <i className="ri-information-line me-2"></i>
-                          <strong>Note:</strong> Changes to advanced settings may require verification. Please ensure all information is accurate.
+                          <strong>Note:</strong> Editing default grace periods and order cut-offs updates the default behavior for all new offers.
                         </div>
                       </Col>
                     </Row>

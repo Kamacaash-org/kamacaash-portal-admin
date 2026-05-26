@@ -38,6 +38,18 @@ export const getCancelledOrdersByBusinessID = createAsyncThunk("orders/order/ret
 
 });
 
+export const getNoShowOrdersByBusinessID = createAsyncThunk("orders/order/return-noshow-orders", async (payload) => {
+    try {
+        const res = await OrdersAPI.listNoShowOrders(payload);
+        if (!res.success) throw res;
+        return res.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to load no-show orders';
+        toast.error(errorMessage);
+    }
+
+});
+
 export const completeOrder = createAsyncThunk("orders/complete-order", async (payload) => {
     try {
         const res = await OrdersAPI.completeOrder({

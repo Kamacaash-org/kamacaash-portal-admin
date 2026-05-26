@@ -8,12 +8,12 @@ import {
   CardHeader,
   Col,
   Container,
-  Row,
-  Table,
+  Row
 } from "reactstrap";
 
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import Loader from "../../Components/Common/Loader";
+import TableContainer from "../../Components/Common/TableContainer";
 import useAuthUser from "../../Components/Hooks/useAuthUser";
 import { setAuthorization } from "../../helpers/api_helper";
 import { getDashboardOverview } from "../../helpers/backend_helper";
@@ -168,128 +168,60 @@ const Dashboard = () => {
   const recentActivity =
     dashboard?.recent_activity || defaultOverview.recent_activity;
 
-  const summaryCards = useMemo(
+  // React Table Columns definitions for Recent Orders
+  const orderColumns = useMemo(
     () => [
       {
-        key: "users",
-        title: "Total Users",
-        value: overview.total_users || 0,
-        icon: "ri-team-line",
-        color: "primary",
+        header: "Order Number",
+        accessorKey: "order_number",
+        cell: (cell) => <span className="fw-semibold text-primary">{cell.getValue() || "-"}</span>,
+        enableColumnFilter: false,
       },
       {
-        key: "staff",
-        title: "Total Staff",
-        value: overview.total_staff || 0,
-        icon: "ri-user-star-line",
-        color: "info",
+        header: "Customer",
+        accessorKey: "customer_name",
+        cell: (cell) => cell.getValue() || "-",
+        enableColumnFilter: false,
       },
       {
-        key: "businesses",
-        title: "Businesses",
-        value: overview.total_businesses || 0,
-        icon: "ri-store-2-line",
-        color: "success",
+        header: "Business Display",
+        accessorKey: "business_name",
+        cell: (cell) => <span className="fw-semibold text-dark">{cell.getValue() || "-"}</span>,
+        enableColumnFilter: false,
       },
       {
-        key: "offers",
-        title: "Offers",
-        value: overview.total_offers || 0,
-        icon: "ri-price-tag-3-line",
-        color: "warning",
+        header: "Status",
+        accessorKey: "status",
+        cell: (cell) => (
+          <Badge
+            color={getStatusColor(cell.getValue())}
+            className={`bg-${getStatusColor(cell.getValue())}-subtle text-${getStatusColor(cell.getValue())} border-0`}
+          >
+            {formatStatus(cell.getValue())}
+          </Badge>
+        ),
+        enableColumnFilter: false,
       },
       {
-        key: "orders",
-        title: "Orders",
-        value: overview.total_orders || 0,
-        icon: "ri-shopping-bag-3-line",
-        color: "secondary",
+        header: "Amount",
+        accessorKey: "total_amount_minor",
+        cell: (cell) => <span className="fw-bold">{formatCurrencyFromMinor(cell.getValue())}</span>,
+        enableColumnFilter: false,
       },
       {
-        key: "published",
-        title: "Published Offers",
-        value: overview.published_offers || 0,
-        icon: "ri-megaphone-line",
-        color: "dark",
+        header: "Created Date",
+        accessorKey: "created_at",
+        cell: (cell) =>
+          cell.getValue()
+            ? new Date(cell.getValue()).toLocaleString("en-US", {
+                dateStyle: "short",
+                timeStyle: "short",
+              })
+            : "-",
+        enableColumnFilter: false,
       },
     ],
-    [overview],
-  );
-
-  const financeCards = useMemo(
-    () => [
-      {
-        key: "today",
-        title: "Today's Revenue",
-        value: formatCurrencyFromMinor(finance.today_revenue_minor),
-        icon: "ri-calendar-check-line",
-        color: "primary",
-      },
-      {
-        key: "month",
-        title: "This Month",
-        value: formatCurrencyFromMinor(finance.month_revenue_minor),
-        icon: "ri-bar-chart-box-line",
-        color: "success",
-      },
-      {
-        key: "total",
-        title: "Total Revenue",
-        value: formatCurrencyFromMinor(finance.total_revenue_minor),
-        icon: "ri-money-dollar-circle-line",
-        color: "warning",
-      },
-      {
-        key: "fees",
-        title: "Platform Fees",
-        value: formatCurrencyFromMinor(finance.total_platform_fees_minor),
-        icon: "ri-bank-card-line",
-        color: "info",
-      },
-    ],
-    [finance],
-  );
-
-  const operationsCards = useMemo(
-    () => [
-      {
-        key: "active",
-        title: "Active Businesses",
-        value: overview.active_businesses || 0,
-        color: "success",
-      },
-      {
-        key: "pendingStaff",
-        title: "Pending Staff Approvals",
-        value: operations.pending_staff_approvals || 0,
-        color: "warning",
-      },
-      {
-        key: "pendingBusiness",
-        title: "Pending Business Verifications",
-        value: operations.pending_business_verifications || 0,
-        color: "info",
-      },
-      {
-        key: "cancelled",
-        title: "Cancelled Orders",
-        value: operations.cancelled_orders || 0,
-        color: "danger",
-      },
-      {
-        key: "noShow",
-        title: "No Show Orders",
-        value: operations.no_show_orders || 0,
-        color: "secondary",
-      },
-      {
-        key: "confirmedPayments",
-        title: "Confirmed Payments",
-        value: finance.confirmed_payments || 0,
-        color: "primary",
-      },
-    ],
-    [finance.confirmed_payments, operations, overview.active_businesses],
+    []
   );
 
   return (
@@ -317,34 +249,37 @@ const Dashboard = () => {
           </Card>
         ) : (
           <>
+            {/* Row 1: Welcome and Snapshot Quick Stats */}
             <Row className="mb-4 g-3">
               <Col lg={8}>
-                <Card className="border-0 shadow-sm bg-primary h-100 text-white overflow-hidden">
+                <Card className="border-0 shadow-sm bg-primary text-white overflow-hidden h-100">
                   <div className="position-absolute end-0 top-0 opacity-10">
-                    <i className="ri-dashboard-2-line" style={{ fontSize: "120px" }}></i>
+                    <i className="ri-dashboard-2-line" style={{ fontSize: "150px" }}></i>
                   </div>
-                  <CardBody className="p-4">
-                    <h1 className="display-6 fw-bold mb-2 text-white">
-                      Welcome back, {staffName}
-                    </h1>
-                    <p className="text-white-75 mb-4 fs-5">
-                      Here's today's snapshot of your platform.
-                    </p>
-                    <div className="d-flex gap-3 flex-wrap">
+                  <CardBody className="p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <h1 className="display-6 fw-bold mb-2 text-white">
+                        Welcome back, {staffName}
+                      </h1>
+                      <p className="text-white-75 mb-4 fs-5">
+                        Here's the snapshot of the platform aggregates.
+                      </p>
+                    </div>
+                    <div className="d-flex gap-3 flex-wrap mt-auto">
                       <div className="bg-white-10 rounded-3 px-3 py-2">
-                        <small className="text-white-75 d-block">Total Orders</small>
+                        <small className="text-white-75 d-block text-uppercase fs-11">Total Orders</small>
                         <span className="text-white fw-bold fs-4">
                           <CounterNumber value={overview.total_orders} />
                         </span>
                       </div>
                       <div className="bg-white-10 rounded-3 px-3 py-2">
-                        <small className="text-white-75 d-block">Today's Revenue</small>
+                        <small className="text-white-75 d-block text-uppercase fs-11">Today's Revenue</small>
                         <span className="text-white fw-bold fs-4">
                           <CounterCurrencyFromMinor value={finance.today_revenue_minor} />
                         </span>
                       </div>
                       <div className="bg-white-10 rounded-3 px-3 py-2">
-                        <small className="text-white-75 d-block">Active Businesses</small>
+                        <small className="text-white-75 d-block text-uppercase fs-11">Active Businesses</small>
                         <span className="text-white fw-bold fs-4">
                           <CounterNumber value={overview.active_businesses} />
                         </span>
@@ -358,7 +293,7 @@ const Dashboard = () => {
                   <CardBody className="p-4 d-flex flex-column justify-content-between">
                     <div>
                       <div className="d-flex align-items-center justify-content-between mb-3">
-                        <h6 className="text-muted mb-0">Dashboard Refresh</h6>
+                        <h6 className="text-muted mb-0">System Snapshot</h6>
                         <Button
                           color="light"
                           size="sm"
@@ -390,10 +325,10 @@ const Dashboard = () => {
                         })}
                       </p>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-4 border-top pt-3">
                       <div className="d-flex justify-content-between mb-2">
                         <span className="text-muted">Business Payouts</span>
-                        <span className="fw-semibold">
+                        <span className="fw-semibold text-success">
                           <CounterCurrencyFromMinor
                             value={finance.total_business_payout_minor}
                           />
@@ -401,7 +336,7 @@ const Dashboard = () => {
                       </div>
                       <div className="d-flex justify-content-between">
                         <span className="text-muted">Pending Reviews</span>
-                        <span className="fw-semibold">
+                        <span className="fw-semibold text-warning">
                           <CounterNumber value={operations.pending_reviews} />
                         </span>
                       </div>
@@ -411,216 +346,264 @@ const Dashboard = () => {
               </Col>
             </Row>
 
-            <Row className="g-3 mb-4">
-              {summaryCards.map((item) => (
-                <Col xl={2} md={4} sm={6} key={item.key}>
-                  <Card className="border-0 shadow-sm h-100">
-                    <CardBody className="p-3">
-                      <div className="d-flex align-items-center justify-content-between mb-3">
-                        <div className={`avatar-sm`}>
-                          <div
-                            className={`avatar-title bg-${item.color}-subtle text-${item.color} rounded-circle fs-4`}
-                          >
-                            <i className={item.icon}></i>
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-muted text-uppercase fs-12 mb-1">{item.title}</p>
-                      <h4 className="mb-0 fw-bold">
-                        <CounterNumber value={item.value} />
-                      </h4>
-                    </CardBody>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-
-            <Row className="g-3 mb-4">
-              {financeCards.map((item) => (
-                <Col xl={3} md={6} key={item.key}>
-                  <Card className="border-0 shadow-sm h-100">
-                    <CardBody className="p-4">
-                      <div className="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                          <p className="text-muted text-uppercase fs-12 mb-1">
-                            {item.title}
-                          </p>
-                          <h4 className="mb-0 fw-bold">
-                            <CounterCurrencyFromMinor
-                              value={
-                                item.key === "today"
-                                  ? finance.today_revenue_minor
-                                  : item.key === "month"
-                                    ? finance.month_revenue_minor
-                                    : item.key === "total"
-                                      ? finance.total_revenue_minor
-                                      : finance.total_platform_fees_minor
-                              }
-                            />
-                          </h4>
-                        </div>
-                        <div className={`avatar-sm`}>
-                          <div
-                            className={`avatar-title bg-${item.color}-subtle text-${item.color} rounded-circle fs-4`}
-                          >
-                            <i className={item.icon}></i>
-                          </div>
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-
-            <Row className="g-3 mb-4">
-              {operationsCards.map((item) => (
-                <Col xl={2} md={4} sm={6} key={item.key}>
-                  <Card className="border-0 shadow-sm h-100">
-                    <CardBody className="p-3">
-                      <p className="text-muted text-uppercase fs-12 mb-2">{item.title}</p>
-                      <Badge
-                        color={item.color}
-                        className={`bg-${item.color}-subtle text-${item.color} border-0 px-3 py-2 rounded-pill`}
-                      >
-                        <CounterNumber value={item.value} />
-                      </Badge>
-                    </CardBody>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-
-            <Row className="g-4">
-              <Col xl={8}>
-                <Card className="border-0 shadow-sm h-100">
-                  <CardHeader className="bg-transparent border-0">
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div>
-                        <h5 className="card-title mb-1">Recent Orders</h5>
-                        <p className="text-muted small mb-0">
-                          Latest customer order activity
-                        </p>
-                      </div>
-                      <Badge color="primary" className="rounded-pill px-3 py-2">
-                        {recentActivity.recent_orders?.length || 0} Orders
-                      </Badge>
-                    </div>
+            {/* Row 2: Financial Panel & Growth Stats Panel */}
+            <Row className="mb-4 g-3">
+              {/* Financial Dashboard Summary Card */}
+              <Col lg={4}>
+                <Card className="border-0 shadow-sm h-100 bg-light-subtle">
+                  <CardHeader className="bg-transparent border-0 pb-0">
+                    <h5 className="card-title mb-0">Financial Summary</h5>
                   </CardHeader>
-                  <CardBody className="pt-0">
-                    {(recentActivity.recent_orders || []).length === 0 ? (
-                      <div className="text-center py-5 text-muted">
-                        No recent orders found.
-                      </div>
-                    ) : (
-                      <div className="table-responsive">
-                        <Table className="align-middle mb-0">
-                          <thead>
-                            <tr>
-                              <th>Order</th>
-                              <th>Customer</th>
-                              <th>Business</th>
-                              <th>Status</th>
-                              <th>Amount</th>
-                              <th>Date</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(recentActivity.recent_orders || []).map((item) => (
-                              <tr key={item.id}>
-                                <td className="fw-semibold">{item.order_number || "-"}</td>
-                                <td>{item.customer_name || "-"}</td>
-                                <td>{item.business_name || "-"}</td>
-                                <td>
-                                  <Badge
-                                    color={getStatusColor(item.status)}
-                                    className={`bg-${getStatusColor(item.status)}-subtle text-${getStatusColor(item.status)} border-0`}
-                                  >
-                                    {formatStatus(item.status)}
-                                  </Badge>
-                                </td>
-                                <td>{formatCurrencyFromMinor(item.total_amount_minor)}</td>
-                                <td>
-                                  {item.created_at
-                                    ? new Date(item.created_at).toLocaleString("en-US")
-                                    : "-"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-                    )}
+                  <CardBody className="d-flex flex-column justify-content-around">
+                    <div className="mb-3 text-center">
+                      <p className="text-muted text-uppercase fs-12 mb-1">
+                        Total Platform Revenue
+                      </p>
+                      <h2 className="fw-bold text-dark">
+                        <CounterCurrencyFromMinor value={finance.total_revenue_minor} />
+                      </h2>
+                    </div>
+
+                    <div className="border-top pt-3">
+                      <Row className="g-2 text-center">
+                        <Col xs={6} className="border-end">
+                          <small className="text-muted text-uppercase fs-10 d-block">
+                            Platform Fees Collected
+                          </small>
+                          <span className="fw-semibold text-info fs-6">
+                            <CounterCurrencyFromMinor value={finance.total_platform_fees_minor} />
+                          </span>
+                        </Col>
+                        <Col xs={6}>
+                          <small className="text-muted text-uppercase fs-10 d-block">
+                            This Month Revenue
+                          </small>
+                          <span className="fw-semibold text-success fs-6">
+                            <CounterCurrencyFromMinor value={finance.month_revenue_minor} />
+                          </span>
+                        </Col>
+                      </Row>
+                    </div>
                   </CardBody>
                 </Card>
               </Col>
 
-              <Col xl={4}>
-                <Card className="border-0 shadow-sm mb-4">
-                  <CardHeader className="bg-transparent border-0">
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div>
-                        <h5 className="card-title mb-1">Recent Businesses</h5>
-                        <p className="text-muted small mb-0">Latest registered businesses</p>
+              {/* Growth Stats Card (6 items in a grid layout) */}
+              <Col lg={8}>
+                <Card className="border-0 shadow-sm h-100">
+                  <CardHeader className="bg-transparent border-0 pb-0">
+                    <h5 className="card-title mb-0">Platform Growth & Stats</h5>
+                  </CardHeader>
+                  <CardBody>
+                    <Row className="g-3 text-center">
+                      <Col xs={4} className="border-bottom border-end pb-3">
+                        <div className="avatar-xs mx-auto mb-2">
+                          <div className="avatar-title bg-primary-subtle text-primary rounded-circle fs-5">
+                            <i className="ri-team-line"></i>
+                          </div>
+                        </div>
+                        <small className="text-muted text-uppercase fs-11 d-block mb-1">Total Users</small>
+                        <h4 className="mb-0 fw-bold"><CounterNumber value={overview.total_users} /></h4>
+                      </Col>
+                      <Col xs={4} className="border-bottom border-end pb-3">
+                        <div className="avatar-xs mx-auto mb-2">
+                          <div className="avatar-title bg-info-subtle text-info rounded-circle fs-5">
+                            <i className="ri-user-star-line"></i>
+                          </div>
+                        </div>
+                        <small className="text-muted text-uppercase fs-11 d-block mb-1">Staff Accounts</small>
+                        <h4 className="mb-0 fw-bold"><CounterNumber value={overview.total_staff} /></h4>
+                      </Col>
+                      <Col xs={4} className="border-bottom pb-3">
+                        <div className="avatar-xs mx-auto mb-2">
+                          <div className="avatar-title bg-success-subtle text-success rounded-circle fs-5">
+                            <i className="ri-store-2-line"></i>
+                          </div>
+                        </div>
+                        <small className="text-muted text-uppercase fs-11 d-block mb-1">Businesses Registered</small>
+                        <h4 className="mb-0 fw-bold"><CounterNumber value={overview.total_businesses} /></h4>
+                      </Col>
+                      <Col xs={4} className="border-end pt-2">
+                        <div className="avatar-xs mx-auto mb-2">
+                          <div className="avatar-title bg-warning-subtle text-warning rounded-circle fs-5">
+                            <i className="ri-price-tag-3-line"></i>
+                          </div>
+                        </div>
+                        <small className="text-muted text-uppercase fs-11 d-block mb-1">Total surplus packages</small>
+                        <h4 className="mb-0 fw-bold"><CounterNumber value={overview.total_offers} /></h4>
+                      </Col>
+                      <Col xs={4} className="border-end pt-2">
+                        <div className="avatar-xs mx-auto mb-2">
+                          <div className="avatar-title bg-dark-subtle text-dark rounded-circle fs-5">
+                            <i className="ri-megaphone-line"></i>
+                          </div>
+                        </div>
+                        <small className="text-muted text-uppercase fs-11 d-block mb-1">Published Offers</small>
+                        <h4 className="mb-0 fw-bold"><CounterNumber value={overview.published_offers} /></h4>
+                      </Col>
+                      <Col xs={4} className="pt-2">
+                        <div className="avatar-xs mx-auto mb-2">
+                          <div className="avatar-title bg-secondary-subtle text-secondary rounded-circle fs-5">
+                            <i className="ri-shopping-bag-3-line"></i>
+                          </div>
+                        </div>
+                        <small className="text-muted text-uppercase fs-11 d-block mb-1">Total Orders</small>
+                        <h4 className="mb-0 fw-bold"><CounterNumber value={overview.total_orders} /></h4>
+                      </Col>
+                    </Row>
+                  </CardBody>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Row 3: Operations Actions Panel & Recent Orders Table Container */}
+            <Row className="mb-4 g-3">
+              {/* Operations Action Alert Panel */}
+              <Col lg={4}>
+                <Card className="border-0 shadow-sm h-100 bg-danger-subtle text-danger overflow-hidden">
+                  <CardHeader className="bg-transparent border-0 pb-0">
+                    <h5 className="card-title mb-0 text-danger">Operational Tasks</h5>
+                  </CardHeader>
+                  <CardBody className="p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <p className="text-danger-85 mb-4">
+                        Items requiring immediate platform moderation:
+                      </p>
+                      
+                      <div className="d-flex flex-column gap-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span>Pending Business Verification</span>
+                          <Badge color="warning" className="px-3 py-2 fs-6 bg-warning-subtle text-warning">
+                            {operations.pending_business_verifications}
+                          </Badge>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span>Pending Staff Approvals</span>
+                          <Badge color="info" className="px-3 py-2 fs-6 bg-info-subtle text-info">
+                            {operations.pending_staff_approvals}
+                          </Badge>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span>Cancelled Orders</span>
+                          <Badge color="danger" className="px-3 py-2 fs-6 bg-danger text-white">
+                            {operations.cancelled_orders}
+                          </Badge>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span>No-Show Order Expiries</span>
+                          <Badge color="secondary" className="px-3 py-2 fs-6 bg-secondary-subtle text-secondary">
+                            {operations.no_show_orders}
+                          </Badge>
+                        </div>
                       </div>
-                      <Badge color="info" className="rounded-pill px-3 py-2">
-                        {recentActivity.recent_businesses?.length || 0}
-                      </Badge>
                     </div>
+                  </CardBody>
+                </Card>
+              </Col>
+
+              {/* Redesigned Searchable/Paginated Recent Orders using TableContainer */}
+              <Col lg={8}>
+                <Card className="border-0 shadow-sm mb-0">
+                  <CardHeader className="bg-transparent border-0 pb-0">
+                    <h5 className="card-title mb-0">Recent Orders</h5>
                   </CardHeader>
                   <CardBody className="pt-0">
+                    {(() => {
+                      const filteredOrders = (recentActivity.recent_orders || [])
+                        .filter(order => ["PAID", "READY_FOR_PICKUP", "COLLECTED", "NO_SHOW"].includes(order.status))
+                        .slice(0, 10);
+                      return filteredOrders.length === 0 ? (
+                        <div className="text-center py-5 text-muted">
+                          No recent orders found.
+                        </div>
+                      ) : (
+                        <TableContainer
+                          columns={orderColumns}
+                          data={filteredOrders}
+                          isGlobalFilter={true}
+                          customPageSize={10}
+                          tableClass="align-middle table-nowrap mb-0"
+                          theadClass="table-light"
+                          divClass="table-responsive"
+                          SearchPlaceholder="Search recent orders..."
+                        />
+                      );
+                    })()}
+                  </CardBody>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Row 4: Recent Businesses and Payments Side-by-Side Rollup */}
+            <Row className="g-3 mb-5">
+              <Col lg={6}>
+                <Card className="border-0 shadow-sm h-100">
+                  <CardHeader className="bg-transparent border-0 pb-0">
+                    <h5 className="card-title mb-0">Recent Registered Businesses</h5>
+                  </CardHeader>
+                  <CardBody>
                     {(recentActivity.recent_businesses || []).length === 0 ? (
                       <div className="text-center py-4 text-muted">
                         No recent businesses found.
                       </div>
                     ) : (
                       <div className="list-group list-group-flush">
-                        {(recentActivity.recent_businesses || []).map((item) => (
+                        {(recentActivity.recent_businesses || []).slice(0, 10).map((item) => (
                           <div
                             key={item.id}
-                            className="list-group-item border-0 px-0 py-3"
+                            className="list-group-item border-0 px-0 py-2 d-flex justify-content-between align-items-center"
                           >
-                            <div className="d-flex justify-content-between align-items-start">
-                              <div>
-                                <h6 className="mb-1">{item.display_name || "-"}</h6>
-                                <small className="text-muted">
-                                  {item.created_at
-                                    ? new Date(item.created_at).toLocaleDateString("en-US")
-                                    : "-"}
-                                </small>
-                              </div>
-                              <Badge
-                                color={getStatusColor(item.verification_status)}
-                                className={`bg-${getStatusColor(item.verification_status)}-subtle text-${getStatusColor(item.verification_status)} border-0`}
-                              >
-                                {formatStatus(item.verification_status)}
-                              </Badge>
+                            <div>
+                              <h6 className="mb-0 fw-semibold text-dark">{item.display_name || "-"}</h6>
+                              <small className="text-muted">
+                                Registered: {item.created_at
+                                  ? new Date(item.created_at).toLocaleDateString("en-US")
+                                  : "-"}
+                              </small>
                             </div>
+                            <Badge
+                              color={getStatusColor(item.verification_status)}
+                              className={`bg-${getStatusColor(item.verification_status)}-subtle text-${getStatusColor(item.verification_status)} border-0`}
+                            >
+                              {formatStatus(item.verification_status)}
+                            </Badge>
                           </div>
                         ))}
                       </div>
                     )}
                   </CardBody>
                 </Card>
+              </Col>
 
-                <Card className="border-0 shadow-sm">
-                  <CardHeader className="bg-transparent border-0">
-                    <h5 className="card-title mb-1">Recent Payments</h5>
-                    <p className="text-muted small mb-0">Latest confirmed payments</p>
+              <Col lg={6}>
+                <Card className="border-0 shadow-sm h-100">
+                  <CardHeader className="bg-transparent border-0 pb-0">
+                    <h5 className="card-title mb-0">Recent Confirmed Payments</h5>
                   </CardHeader>
-                  <CardBody className="pt-0">
+                  <CardBody>
                     {(recentActivity.recent_payments || []).length === 0 ? (
                       <div className="text-center py-4 text-muted">
                         No recent payments found.
                       </div>
                     ) : (
                       <div className="list-group list-group-flush">
-                        {(recentActivity.recent_payments || []).map((item, index) => (
+                        {(recentActivity.recent_payments || []).slice(0, 10).map((item, index) => (
                           <div
                             key={item.id || index}
-                            className="list-group-item border-0 px-0 py-3"
+                            className="list-group-item border-0 px-0 py-2 d-flex justify-content-between align-items-center"
                           >
-                            <div className="fw-semibold">{item.reference || "-"}</div>
+                            <div>
+                              <h6 className="mb-0 fw-semibold text-dark">
+                                {item.payment_number || "Payment"}
+                              </h6>
+                              <small className="text-muted">
+                                {item.business_name ? `${item.business_name} • ` : ""}
+                                {formatCurrencyFromMinor(item.amount_minor)}
+                              </small>
+                            </div>
+                            <Badge color="success" className="bg-success-subtle text-success border-0">
+                              Confirmed
+                            </Badge>
                           </div>
                         ))}
                       </div>
@@ -637,9 +620,21 @@ const Dashboard = () => {
         .text-white-75 {
           color: rgba(255, 255, 255, 0.75);
         }
+        .text-danger-85 {
+          color: rgba(220, 53, 69, 0.85);
+        }
         .bg-white-10 {
           background-color: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(4px);
+        }
+        .fs-11 {
+          font-size: 11px;
+        }
+        .fs-12 {
+          font-size: 12px;
+        }
+        .fs-10 {
+          font-size: 10px;
         }
       `}</style>
     </div>

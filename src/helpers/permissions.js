@@ -7,6 +7,10 @@ export const BUSINESS_OWNER_ALLOWED_PATHS = [
   "/users/staff-profile",
   "/business/profile-settings",
   "/auth-change-password",
+  "/reports/daily",
+  "/reports/weekly",
+  "/reports/monthly",
+  "/reports/performance",
 ];
 
 export const getDefaultRouteForRole = (role) => {

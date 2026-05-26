@@ -3,13 +3,15 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
     getPendingOrdersByBusinessID,
     getCancelledOrdersByBusinessID,
-    getCompletedOrdersByBusinessID
+    getCompletedOrdersByBusinessID,
+    getNoShowOrdersByBusinessID,
 } from "./thunk";
 
 export const initialState = {
     pendingOrdersData: [],
     completedOrders: [],
     cancelledOrders: [],
+    noShowOrders: [],
     error: {},
 };
 const OrderSlice = createSlice({
@@ -38,6 +40,14 @@ const OrderSlice = createSlice({
             state.cancelledOrders = action.payload;
         });
         builder.addCase(getCancelledOrdersByBusinessID.rejected, (state, action) => {
+            state.error = action.payload?.error || null;
+        });
+
+        // === no-show-orders ===
+        builder.addCase(getNoShowOrdersByBusinessID.fulfilled, (state, action) => {
+            state.noShowOrders = action.payload;
+        });
+        builder.addCase(getNoShowOrdersByBusinessID.rejected, (state, action) => {
             state.error = action.payload?.error || null;
         });
 

@@ -159,6 +159,31 @@ export const OrdersAPI = {
     api.get(
       `${url.ORDERS}/business/${businessId}/cancelled?start=${start}&end=${end}`,
     ),
+  listNoShowOrders: ({ businessId, start, end }) =>
+    api.get(
+      `${url.ORDERS}/business/${businessId}/no-show?start=${start}&end=${end}`,
+    ),
+};
+
+export const PaymentsAPI = {
+  list: (params) => api.get(url.ADMIN_PAYMENTS, params),
+  getDiagnostics: (id) => api.get(`${url.ADMIN_PAYMENTS}/${id}/diagnostics`),
+};
+
+export const AnalyticsAPI = {
+  getVendorDaily: (date) => api.get(`/vendor/analytics/daily?date=${date}`),
+  getVendorWeekly: () => api.get(`/vendor/analytics/weekly`),
+  getVendorMonthly: (year) => api.get(`/vendor/analytics/monthly?year=${year}`),
+  getVendorPerformance: () => api.get(`/vendor/analytics/performance`),
+
+  getAdminDaily: (date) => api.get(`/analytics/commission/daily?date=${date}`),
+  getAdminWeekly: () => api.get(`/analytics/commission/weekly`),
+  getAdminMonthly: (year) => api.get(`/analytics/commission/monthly?year=${year}`),
+  getAdminProviders: () => api.get(`/analytics/leaderboard/providers`),
+  getAdminCategories: () => api.get(`/analytics/leaderboard/categories`),
+  getAdminSavers: () => api.get(`/analytics/leaderboard/savers`),
+  getAdminUserIngestion: (from, to, interval) => api.get(`/analytics/cohort/user-ingestion?from=${from}&to=${to}&interval=${interval}`),
+  getAdminFavorites: () => api.get(`/analytics/engagement/favorites`),
 };
 
 // // ================================== END OF  URL ===================================================

@@ -4,6 +4,18 @@ import { Navigate } from "react-router-dom";
 // //AuthenticationInner pages
 import SignIn from "../pages/AuthenticationInner/Login";
 import Dashboard from "../pages/Dashboard";
+import DailyLedger from "../pages/Reports/DailyLedger";
+import WeeklyRollup from "../pages/Reports/WeeklyRollup";
+import MonthlyStatement from "../pages/Reports/MonthlyStatement";
+import OfferPerformance from "../pages/Reports/OfferPerformance";
+import AdminDailyCommission from "../pages/Reports/AdminDailyCommission";
+import AdminWeeklyCommission from "../pages/Reports/AdminWeeklyCommission";
+import AdminMonthlyCommission from "../pages/Reports/AdminMonthlyCommission";
+import TopProviders from "../pages/Reports/TopProviders";
+import TopCategories from "../pages/Reports/TopCategories";
+import TopSavers from "../pages/Reports/TopSavers";
+import MostFavorited from "../pages/Reports/MostFavorited";
+import UserGrowthCohort from "../pages/Reports/UserGrowthCohort";
 //pages
 import Categories from "../pages/Business_Management/Categories";
 import Business from "../pages/Business_Management/Businesses";
@@ -21,6 +33,7 @@ import Cities from "../pages/Settings/Cities";
 
 import PendingOrders from "../pages/Orders/Orders/index";
 import CompletedRejectedOrders from "../pages/Orders/Orders/CompletedRejectedOrders";
+import PaymentDiagnostics from "../pages/Payments/PaymentDiagnostics";
 
 import TwosVerify from "../pages/AuthenticationInner/TwoStepVerification";
 import ChangePassword from "../pages/AuthenticationInner/ChangePassword";
@@ -40,6 +53,20 @@ const RootRedirect = () => {
 const authProtectedRoutes = [
   // Dashboard
   { path: "/dashboard", component: <Dashboard /> },
+  
+  // Reports
+  { path: "/reports/daily", component: <DailyLedger /> },
+  { path: "/reports/weekly", component: <WeeklyRollup /> },
+  { path: "/reports/monthly", component: <MonthlyStatement /> },
+  { path: "/reports/performance", component: <OfferPerformance /> },
+  { path: "/reports/admin/commission-daily", component: <AdminDailyCommission /> },
+  { path: "/reports/admin/commission-weekly", component: <AdminWeeklyCommission /> },
+  { path: "/reports/admin/commission-monthly", component: <AdminMonthlyCommission /> },
+  { path: "/reports/admin/providers", component: <TopProviders /> },
+  { path: "/reports/admin/categories", component: <TopCategories /> },
+  { path: "/reports/admin/savers", component: <TopSavers /> },
+  { path: "/reports/admin/favorites", component: <MostFavorited /> },
+  { path: "/reports/admin/user-growth", component: <UserGrowthCohort /> },
 
   // Business
   { path: "/business/categories", component: <Categories /> },
@@ -72,13 +99,15 @@ const authProtectedRoutes = [
   { path: "/settings/country", component: <Country /> },
   { path: "/settings/cities", component: <Cities /> },
 
+  // Payments
+  { path: "/payments/diagnostics", component: <PaymentDiagnostics /> },
+
   // Default
   {
     path: "/",
     exact: true,
     component: <RootRedirect />,
   },
-  // { path: "*", component: <Navigate to="/not-found-404" /> },
 ];
 
 const publicRoutes = [

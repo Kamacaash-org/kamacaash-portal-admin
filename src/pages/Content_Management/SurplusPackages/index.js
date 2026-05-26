@@ -46,6 +46,7 @@ import {
   updateOffer as onUpdateOffer,
 } from "../../../slices/thunks";
 import useAuthUser from "../../../Components/Hooks/useAuthUser";
+import { getAdminBusinessProfile } from "../../../helpers/backend_helper";
 
 const normalizeArray = (payload, keys = []) => {
   if (Array.isArray(payload)) return payload;
@@ -137,7 +138,8 @@ const buildInitialValues = () => ({
   tags: "",
   contents: "",
   is_order_time_limited: true,
-  order_cutoff_at: "",
+  order_cutoff_minutes: "",
+  grace_period_minutes: "",
   original_price_minor: "",
   offer_price_minor: "",
   quantity_total: "",
@@ -171,6 +173,9 @@ const normalizeOffer = (offer = {}) => ({
   pickup_start: offer.pickup_start || "",
   pickup_end: offer.pickup_end || "",
   pickup_instructions: offer.pickup_instructions || "",
+  grace_period_minutes: offer.grace_period_minutes ?? "",
+  order_cutoff_minutes: offer.order_cutoff_minutes ?? "",
+  order_count: offer.order_count ?? 0,
   status: (offer.status || offer.offer_status || "DRAFT").toUpperCase(),
 });
 
@@ -238,6 +243,27 @@ const Offers = () => {
 
   const authUser = useAuthUser();
   const businessId = authUser?.businessId;
+
+  const [businessDefaults, setBusinessDefaults] = useState({ default_grace_period: 30, default_order_cutoff: 45 });
+
+  const loadBusinessProfile = async () => {
+    if (!businessId) return;
+    try {
+      const response = await getAdminBusinessProfile(businessId);
+      if (response && response.success && response.data) {
+        setBusinessDefaults({
+          default_grace_period: response.data.default_grace_period !== undefined && response.data.default_grace_period !== null ? response.data.default_grace_period : 30,
+          default_order_cutoff: response.data.default_order_cutoff !== undefined && response.data.default_order_cutoff !== null ? response.data.default_order_cutoff : 45,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load business profile defaults", err);
+    }
+  };
+
+  useEffect(() => {
+    loadBusinessProfile();
+  }, [businessId]);
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -416,7 +442,8 @@ const Offers = () => {
         tags: toCsv(selectedOffer.tags),
         contents: toCsv(selectedOffer.contents),
         is_order_time_limited: selectedOffer.is_order_time_limited ?? true,
-        order_cutoff_at: formatForDateTimeLocal(selectedOffer.order_cutoff_at),
+        order_cutoff_minutes: selectedOffer.order_cutoff_minutes ?? "",
+        grace_period_minutes: selectedOffer.grace_period_minutes ?? "",
         original_price_minor: selectedOffer.original_price_minor ?? "",
         offer_price_minor: selectedOffer.offer_price_minor ?? "",
         quantity_total: selectedOffer.quantity_total ?? "",
@@ -436,11 +463,14 @@ const Offers = () => {
       tags: Yup.string().required("Tags are required"),
       contents: Yup.string().required("Contents are required"),
       is_order_time_limited: Yup.boolean(),
-      order_cutoff_at: Yup.string().when("is_order_time_limited", {
+      order_cutoff_minutes: Yup.number().when("is_order_time_limited", {
         is: true,
-        then: (schema) => schema.required("Order cutoff is required"),
+        then: (schema) => schema.required("Order cutoff offset is required").min(0, "Offset must be 0 or greater"),
         otherwise: (schema) => schema.nullable(),
       }),
+      grace_period_minutes: Yup.number()
+        .nullable()
+        .min(0, "Grace period override must be 0 or greater"),
       original_price_minor: Yup.number()
         .typeError("Original price must be a number")
         .required("Original price is required")
@@ -493,11 +523,12 @@ const Offers = () => {
           values.pickup_instructions.trim(),
         );
 
-        if (values.is_order_time_limited && values.order_cutoff_at) {
-          payload.append(
-            "order_cutoff_at",
-            new Date(values.order_cutoff_at).toISOString(),
-          );
+        if (values.is_order_time_limited && values.order_cutoff_minutes !== "" && values.order_cutoff_minutes !== null) {
+          payload.append("order_cutoff_minutes", String(values.order_cutoff_minutes));
+        }
+
+        if (values.grace_period_minutes !== "" && values.grace_period_minutes !== null) {
+          payload.append("grace_period_minutes", String(values.grace_period_minutes));
         }
 
         fromCsv(values.tags).forEach((tag, index) => {
@@ -518,7 +549,6 @@ const Offers = () => {
 
         if (isEdit) {
           await dispatch(onUpdateOffer({ id: selectedOffer?.id, payload, business_id: businessId }));
-
         } else {
           await dispatch(onCreateOffer({ payload, business_id: businessId }));
         }
@@ -616,15 +646,9 @@ const Offers = () => {
               <i className="ri-check-double-line" />
             </Button>
           )}
-          {!isOfferPublished(row.status) ? (
-            <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)}>
-              <i className="ri-pencil-line" />
-            </Button>
-          ) : (
-            <Button color="soft-secondary" size="sm" disabled title="No Edit After Published">
-              <i className="ri-check-double-line" />
-            </Button>
-          )}
+          <Button color="soft-primary" size="sm" onClick={() => handleEdit(row)} title="Edit offer">
+            <i className="ri-pencil-line" />
+          </Button>
           <Button
             color="soft-danger"
             size="sm"
@@ -818,7 +842,6 @@ const Offers = () => {
                         step={step}
                         min={min}
                         value={validation.values[name]}
-                        // On the number inputs, replace the custom onChange/onBlur with:
                         onChange={validation.handleChange}
                         onBlur={(e) => {
                           const clamped = clampToMin(e.target.value, min);
@@ -827,7 +850,11 @@ const Offers = () => {
                         }}
                         onKeyDown={blockInvalidNumberKeys}
                         invalid={validation.touched[name] && !!validation.errors[name]}
-
+                        disabled={
+                          (name === "original_price_minor" || name === "offer_price_minor") &&
+                          isEdit &&
+                          selectedOffer?.order_count > 0
+                        }
                       />
                       <FormFeedback>{(validation.errors)[name]}</FormFeedback>
                     </FormGroup>
@@ -836,13 +863,13 @@ const Offers = () => {
               </Row>
             </div>
 
-            {/* ── Order Cutoff ──────────────────────────────── */}
+            {/* ── Order Cutoff & Grace Period ────────────────── */}
             <div className="mb-4">
               <div className="d-flex align-items-center gap-2 mb-3">
                 <span className="d-flex align-items-center justify-content-center rounded bg-soft-warning text-warning" style={{ width: 24, height: 24, fontSize: 13 }}>
                   <i className="ri-timer-line" />
                 </span>
-                <p className="text-uppercase fw-semibold text-muted mb-0" style={{ fontSize: 11, letterSpacing: "0.07em" }}>Order cutoff</p>
+                <p className="text-uppercase fw-semibold text-muted mb-0" style={{ fontSize: 11, letterSpacing: "0.07em" }}>Timing & limits</p>
               </div>
 
               <Row className="g-3 align-items-start">
@@ -855,19 +882,40 @@ const Offers = () => {
                     <span style={{ fontSize: 13 }}>Order time limited</span>
                   </label>
                 </Col>
-                <Col md={8}>
+                <Col md={4}>
                   <FormGroup className="mb-0">
                     <Label>
-                      Cutoff date & time
+                      Stop orders (minutes before end)
                       {validation.values.is_order_time_limited && <span className="text-danger"> *</span>}
                     </Label>
-                    <Input type="datetime-local" name="order_cutoff_at"
-                      value={validation.values.order_cutoff_at}
+                    <Input
+                      type="number"
+                      name="order_cutoff_minutes"
+                      placeholder={`Default: ${businessDefaults.default_order_cutoff} mins`}
+                      value={validation.values.order_cutoff_minutes}
                       onChange={validation.handleChange}
                       onBlur={validation.handleBlur}
                       disabled={!validation.values.is_order_time_limited}
-                      invalid={validation.touched.order_cutoff_at && !!validation.errors.order_cutoff_at} />
-                    <FormFeedback>{validation.errors.order_cutoff_at}</FormFeedback>
+                      invalid={validation.touched.order_cutoff_minutes && !!validation.errors.order_cutoff_minutes}
+                    />
+                    <FormFeedback>{validation.errors.order_cutoff_minutes}</FormFeedback>
+                  </FormGroup>
+                </Col>
+                <Col md={4}>
+                  <FormGroup className="mb-0">
+                    <Label>
+                      Grace period override (minutes)
+                    </Label>
+                    <Input
+                      type="number"
+                      name="grace_period_minutes"
+                      placeholder={`Default: ${businessDefaults.default_grace_period} mins`}
+                      value={validation.values.grace_period_minutes}
+                      onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={validation.touched.grace_period_minutes && !!validation.errors.grace_period_minutes}
+                    />
+                    <FormFeedback>{validation.errors.grace_period_minutes}</FormFeedback>
                   </FormGroup>
                 </Col>
               </Row>
@@ -936,8 +984,10 @@ const Offers = () => {
                             style={{
                               width: "100%",
                               height: "200px",
-                              objectFit: "cover",
+                              objectFit: "contain",
                               borderRadius: "12px",
+                              backgroundColor: "#f8f9fa",
+                              border: "1px solid #e9ebec",
                             }}
                           />
                           <Button
@@ -953,7 +1003,7 @@ const Offers = () => {
                         </div>
                       ) : (
                         <div
-                          className="border rounded-3 d-flex flex-column align-items-center justify-content-center"
+                          className="border rounded-3 d-flex flex-column align-items-center justify-content-center text-center p-3"
                           style={{
                             height: "200px",
                             backgroundColor: "#f8f9fa",
@@ -963,7 +1013,7 @@ const Offers = () => {
                         >
                           <i className="ri-image-add-line fs-1 text-muted" />
                           <p className="text-muted mt-2 mb-0">Click to upload main image</p>
-                          <small className="text-muted">Recommended: 800x800px</small>
+                          <small className="text-muted font-size-11 d-block mt-1">Recommended Voucher Banner: 1200x400px (3:1 Aspect Ratio)</small>
                         </div>
                       )}
                       <Input
@@ -1023,8 +1073,10 @@ const Offers = () => {
                                   style={{
                                     width: "100%",
                                     height: "120px",
-                                    objectFit: "cover",
+                                    objectFit: "contain",
                                     borderRadius: "8px",
+                                    backgroundColor: "#f8f9fa",
+                                    border: "1px solid #e9ebec",
                                   }}
                                 />
                                 <Button
@@ -1052,8 +1104,10 @@ const Offers = () => {
                                     style={{
                                       width: "100%",
                                       height: "120px",
-                                      objectFit: "cover",
+                                      objectFit: "contain",
                                       borderRadius: "8px",
+                                      backgroundColor: "#f8f9fa",
+                                      border: "1px solid #e9ebec",
                                     }}
                                   />
                                   <Button
@@ -1073,7 +1127,7 @@ const Offers = () => {
                         </Row>
                       ) : (
                         <div
-                          className="border rounded-3 d-flex flex-column align-items-center justify-content-center"
+                          className="border rounded-3 d-flex flex-column align-items-center justify-content-center text-center p-3"
                           style={{
                             height: "200px",
                             backgroundColor: "#f8f9fa",
@@ -1083,7 +1137,7 @@ const Offers = () => {
                         >
                           <i className="ri-gallery-upload-line fs-1 text-muted" />
                           <p className="text-muted mt-2 mb-0">Click to upload gallery images</p>
-                          <small className="text-muted">You can select multiple images</small>
+                          <small className="text-muted font-size-11 d-block mt-1">Recommended Banner: 1200x400px (3:1 Aspect Ratio)</small>
                         </div>
                       )}
                     </CardBody>
@@ -1301,8 +1355,10 @@ const Offers = () => {
                               style={{
                                 width: "100%",
                                 height: "220px",
-                                objectFit: "cover",
+                                objectFit: "contain",
                                 borderRadius: "12px",
+                                backgroundColor: "#f8f9fa",
+                                border: "1px solid #e9ebec",
                               }}
                             />
                           ) : (
@@ -1322,8 +1378,10 @@ const Offers = () => {
                                     style={{
                                       width: "100%",
                                       height: "140px",
-                                      objectFit: "cover",
+                                      objectFit: "contain",
                                       borderRadius: "12px",
+                                      backgroundColor: "#f8f9fa",
+                                      border: "1px solid #e9ebec",
                                     }}
                                   />
                                 </Col>

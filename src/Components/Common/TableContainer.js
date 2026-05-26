@@ -40,7 +40,7 @@ const Filter = ({
       <DebouncedInput
         type="text"
         value={(columnFilterValue ?? '')}
-        onChange={(event) => column.setFilterValue(event.target.value)}
+        onChange={(val) => column.setFilterValue(val)}
         placeholder="Search..."
         className="w-36 border shadow rounded"
         list={column.id + 'list'}
@@ -264,7 +264,7 @@ const TableContainer = ({
 
       <Row className="align-items-center mt-2 g-3 text-center text-sm-start">
         <div className="col-sm">
-          <div className="text-muted">Showing<span className="fw-semibold ms-1">{getState().pagination.pageSize}</span> of <span className="fw-semibold">{data.length}</span> Results
+          <div className="text-muted">Showing<span className="fw-semibold ms-1">{getRowModel().rows.length}</span> of <span className="fw-semibold">{data.length}</span> Results
           </div>
         </div>
         <div className="col-sm-auto">
