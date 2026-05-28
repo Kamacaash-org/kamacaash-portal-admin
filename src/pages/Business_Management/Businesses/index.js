@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import DataTable from "react-data-table-component";
 import Select from "react-select";
+import { useJsApiLoader, Autocomplete, GoogleMap, Marker } from "@react-google-maps/api";
 import {
   Badge,
   Button,
@@ -52,6 +53,9 @@ const buildInitialValues = () => ({
   primary_staff_id: "",
   city_id: "",
   address_line: "",
+  google_place_id: "",
+  google_places_payload: null,
+  location: null,
   phone: "",
   secondary_phone: "",
   email: "",
@@ -133,6 +137,9 @@ const normalizeBusiness = (business = {}) => {
     city_id: business.city_id || getEntityId(business.city) || "",
     city_name: business.city?.name || business.city_name || "",
     address_line: business.address_line || business.addressLine || "",
+    google_place_id: business.google_place_id || "",
+    google_places_payload: business.google_places_payload || null,
+    location: business.location || null,
 
     phone: business.phone || "",
     secondary_phone: business.secondary_phone || business.secondaryPhone || "",
@@ -165,6 +172,8 @@ const normalizeBusiness = (business = {}) => {
   };
 };
 
+const MAP_LIBRARIES = ["places"];
+
 const BusinessesPage = () => {
   document.title = "Businesses | Kamacaash";
 
@@ -186,6 +195,44 @@ const BusinessesPage = () => {
     useSelector(selectPageData);
 
   const [businesses, setBusinesses] = useState([]);
+
+  const autocompleteRef = useRef(null);
+  const [mapCenter, setMapCenter] = useState({ lat: 2.0469, lng: 45.3182 });
+
+  const { isLoaded } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "",
+    libraries: MAP_LIBRARIES,
+  });
+
+  const onLoadAutocomplete = (autocomplete) => {
+    autocompleteRef.current = autocomplete;
+  };
+
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (!place.geometry || !place.geometry.location) {
+        console.warn("No geometry details available for place: ", place.name);
+        return;
+      }
+
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      const formattedAddress = place.formatted_address || place.name;
+      const placeId = place.place_id;
+
+      validation.setFieldValue("address_line", formattedAddress);
+      validation.setFieldValue("google_place_id", placeId);
+      validation.setFieldValue("google_places_payload", place);
+      validation.setFieldValue("location", {
+        type: "Point",
+        coordinates: [lng, lat]
+      });
+
+      setMapCenter({ lat, lng });
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modal, setModal] = useState(false);
@@ -348,6 +395,9 @@ const BusinessesPage = () => {
         phone: values.phone.trim(),
         email: values.email.trim(),
         status: values.status,
+        google_place_id: values.google_place_id || undefined,
+        google_places_payload: values.google_places_payload || undefined,
+        location: values.location || undefined,
       };
 
 
@@ -389,13 +439,23 @@ const BusinessesPage = () => {
     setIsEdit(false);
     setActiveTab("1");
     setModal(true);
+    setMapCenter({ lat: 2.0469, lng: 45.3182 });
   };
 
   const handleEdit = (business) => {
-    setSelectedBusiness(business);
+    const norm = normalizeBusiness(business);
+    setSelectedBusiness(norm);
     setIsEdit(true);
     setActiveTab("1");
     setModal(true);
+    if (norm.location?.coordinates && norm.location.coordinates.length === 2) {
+      setMapCenter({
+        lng: Number(norm.location.coordinates[0]),
+        lat: Number(norm.location.coordinates[1]),
+      });
+    } else {
+      setMapCenter({ lat: 2.0469, lng: 45.3182 });
+    }
   };
 
   const handleView = (business) => {
@@ -832,28 +892,70 @@ const BusinessesPage = () => {
               </TabPane>
 
               <TabPane tabId="2">
-                <Row>
-                  <Col md={3}>
+                <Row className="gy-3">
+                  <Col md={12}>
                     <FormGroup>
                       <Label>
-                        Address Line <span className="text-danger">*</span>
+                        Address Line (Google Places Autocomplete) <span className="text-danger">*</span>
                       </Label>
-                      <Input
-                        name="address_line"
-                        placeholder="KM4, Hodan District"
-                        value={validation.values.address_line}
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.address_line &&
-                          !!validation.errors.address_line
-                        }
-                      />
+                      {isLoaded ? (
+                        <Autocomplete
+                          onLoad={onLoadAutocomplete}
+                          onPlaceChanged={handlePlaceChanged}
+                          options={{
+                            componentRestrictions: { country: "so" }
+                          }}
+                        >
+                          <Input
+                            type="text"
+                            name="address_line"
+                            placeholder="KM4, Hodan District or Search Place..."
+                            autoComplete="new-password"
+                            value={validation.values.address_line}
+                            onChange={validation.handleChange}
+                            onBlur={validation.handleBlur}
+                            invalid={
+                              validation.touched.address_line &&
+                              !!validation.errors.address_line
+                            }
+                          />
+                        </Autocomplete>
+                      ) : (
+                        <Input
+                          type="text"
+                          name="address_line"
+                          placeholder="KM4, Hodan District..."
+                          autoComplete="new-password"
+                          value={validation.values.address_line}
+                          onChange={validation.handleChange}
+                          onBlur={validation.handleBlur}
+                          invalid={
+                            validation.touched.address_line &&
+                            !!validation.errors.address_line
+                          }
+                        />
+                      )}
                       <FormFeedback>{validation.errors.address_line}</FormFeedback>
                     </FormGroup>
                   </Col>
 
-                  <Col md={3}>
+                  {isLoaded && (
+                    <Col md={12}>
+                      <div className="border rounded p-2 bg-light">
+                        <div style={{ height: "250px", width: "100%", borderRadius: "6px", overflow: "hidden" }}>
+                          <GoogleMap
+                            mapContainerStyle={{ height: "100%", width: "100%" }}
+                            center={mapCenter}
+                            zoom={15}
+                          >
+                            <Marker position={mapCenter} />
+                          </GoogleMap>
+                        </div>
+                      </div>
+                    </Col>
+                  )}
+
+                  <Col md={4}>
                     <FormGroup>
                       <Label>
                         Phone <span className="text-danger">*</span>
@@ -869,7 +971,7 @@ const BusinessesPage = () => {
                       <FormFeedback>{validation.errors.phone}</FormFeedback>
                     </FormGroup>
                   </Col>
-                  <Col md={3}>
+                  <Col md={4}>
                     <FormGroup>
                       <Label>Secondary Phone</Label>
                       <Input
@@ -888,7 +990,7 @@ const BusinessesPage = () => {
                       </FormFeedback>
                     </FormGroup>
                   </Col>
-                  <Col md={3}>
+                  <Col md={4}>
                     <FormGroup>
                       <Label>
                         Email <span className="text-danger">*</span>

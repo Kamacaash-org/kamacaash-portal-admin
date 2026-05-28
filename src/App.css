@@ -58,3 +58,8 @@
 .media-edit-btn {
   box-shadow: 0 4px 10px rgba(18, 38, 63, 0.18);
 }
+
+/* Fix Google Places Autocomplete dropdown z-index behind modals */
+.pac-container {
+  z-index: 10000 !important;
+}
